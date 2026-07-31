@@ -534,7 +534,10 @@ body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   flex-shrink: 0;
-  max-height: 100%;
+  position: sticky;
+  top: 2rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 12rem);
   animation: slideIn 0.2s ease-out;
 }
 
@@ -667,6 +670,8 @@ body {
     width: 100%;
     max-height: none;
     margin-top: 1rem;
+    position: static;
+    align-self: stretch;
   }
 }
 
