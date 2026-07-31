@@ -8,6 +8,10 @@ export default function MeetingDetailsModal({
   setMeetCopied,
   onVerMensagem,
   onAddParticipant,
+  onEditParticipant,
+  onCancelParticipant,
+  onReactivateParticipant,
+  onRescheduleParticipant,
   meetingErrorMsg
 }) {
   if (!selectedMeeting) return null
@@ -130,12 +134,65 @@ export default function MeetingDetailsModal({
             {selectedMeeting.participantsList.length > 0 ? (
               <div className="participants-list">
                 {selectedMeeting.participantsList.map((participant) => (
-                  <div key={participant.id} className="participant-item-card">
+                  <div key={participant.id} className={`participant-item-card ${!participant.statusAtivo ? 'cancelled' : ''}`}>
                     <div className="participant-item-header">
-                      <span className="participant-item-name">{participant.nome}</span>
-                      {participant.agencia && (
-                        <span className="participant-item-agency">{participant.agencia}</span>
-                      )}
+                      <div className="participant-item-identity">
+                        <span className="participant-item-name">{participant.nome}</span>
+                        {!participant.statusAtivo && (
+                          <span className="cancelled-badge">Cancelado</span>
+                        )}
+                      </div>
+                      <div className="participant-item-actions">
+                        {participant.statusAtivo ? (
+                          <>
+                            {participant.agencia && (
+                              <span className="participant-item-agency">{participant.agencia}</span>
+                            )}
+                            <button
+                              type="button"
+                              className="btn-edit-participant"
+                              onClick={() => onEditParticipant(participant)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-reschedule-participant"
+                              onClick={() => onRescheduleParticipant(participant)}
+                            >
+                              Remarcar
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-cancel-participant"
+                              onClick={() => {
+                                if (window.confirm('Deseja realmente cancelar este participante?')) {
+                                  onCancelParticipant(participant.id)
+                                }
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {participant.agencia && (
+                              <span className="participant-item-agency">{participant.agencia}</span>
+                            )}
+                            <button
+                              type="button"
+                              className="btn-reactivate-participant"
+                              onClick={() => {
+                                if (window.confirm('Deseja realmente reativar este participante?')) {
+                                  onReactivateParticipant(participant.id)
+                                }
+                              }}
+                            >
+                              Reativar
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <div className="participant-item-details">
                       <span className="participant-item-phone">{participant.telefone}</span>

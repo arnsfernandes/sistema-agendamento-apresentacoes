@@ -2,6 +2,7 @@ import { useState } from 'react'
 import './App.css'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
 import AddParticipantModal from './components/AddParticipantModal'
+import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 
 const navigationItems = [
   {
@@ -43,9 +44,9 @@ const INITIAL_MEETINGS = [
     title: 'Apresentação Comercial A',
     meetLink: 'https://meet.google.com/abc-defg-hij',
     participantsList: [
-      { id: '1-p1', nome: 'Carlos Souza', telefone: '11999998888', agencia: 'Santander', observacao: 'Tomador de decisão', statusAtivo: true, linkEnviado: false },
-      { id: '1-p2', nome: 'Mariana Lima', telefone: '11988887777', agencia: 'Santander', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '1-p3', nome: 'Rafael Santos', telefone: '11977776666', agencia: '', observacao: 'Parceiro técnico', statusAtivo: true, linkEnviado: false }
+      { id: '1-p1', nome: 'Carlos Souza', telefone: '11999998888', agencia: 'Santander', observacao: 'Tomador de decisão', statusAtivo: true },
+      { id: '1-p2', nome: 'Mariana Lima', telefone: '11988887777', agencia: 'Santander', observacao: '', statusAtivo: true },
+      { id: '1-p3', nome: 'Rafael Santos', telefone: '11977776666', agencia: '', observacao: 'Parceiro técnico', statusAtivo: true }
     ]
   },
   {
@@ -55,10 +56,10 @@ const INITIAL_MEETINGS = [
     title: 'Alinhamento de Vendas',
     meetLink: 'https://meet.google.com/xyz-pdqr-wst',
     participantsList: [
-      { id: '2-p1', nome: 'Ana Clara', telefone: '21999991111', agencia: 'Itaú', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '2-p2', nome: 'Bruno Alves', telefone: '21999992222', agencia: 'Itaú', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '2-p3', nome: 'Camila Costa', telefone: '21999993333', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '2-p4', nome: 'Daniel Silva', telefone: '21999994444', agencia: '', observacao: 'Gerente geral', statusAtivo: true, linkEnviado: false }
+      { id: '2-p1', nome: 'Ana Clara', telefone: '21999991111', agencia: 'Itaú', observacao: '', statusAtivo: true },
+      { id: '2-p2', nome: 'Bruno Alves', telefone: '21999992222', agencia: 'Itaú', observacao: '', statusAtivo: true },
+      { id: '2-p3', nome: 'Camila Costa', telefone: '21999993333', agencia: '', observacao: '', statusAtivo: true },
+      { id: '2-p4', nome: 'Daniel Silva', telefone: '21999994444', agencia: '', observacao: 'Gerente geral', statusAtivo: true }
     ]
   },
   {
@@ -68,8 +69,8 @@ const INITIAL_MEETINGS = [
     title: 'Apresentação Produto X',
     meetLink: null,
     participantsList: [
-      { id: '3-p1', nome: 'Eduardo Rocha', telefone: '31988882222', agencia: 'Bradesco', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '3-p2', nome: 'Fernanda Souza', telefone: '31988883333', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false }
+      { id: '3-p1', nome: 'Eduardo Rocha', telefone: '31988882222', agencia: 'Bradesco', observacao: '', statusAtivo: true },
+      { id: '3-p2', nome: 'Fernanda Souza', telefone: '31988883333', agencia: '', observacao: '', statusAtivo: true }
     ]
   },
   {
@@ -79,11 +80,11 @@ const INITIAL_MEETINGS = [
     title: 'Feedback de Proposta',
     meetLink: 'https://meet.google.com/mno-pqrs-tuv',
     participantsList: [
-      { id: '4-p1', nome: 'Gabriel Nogueira', telefone: '11955551111', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '4-p2', nome: 'Helena Pinheiro', telefone: '11955552222', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '4-p3', nome: 'Igor Mendes', telefone: '11955553333', agencia: 'Safra', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '4-p4', nome: 'Julia Cardoso', telefone: '11955554444', agencia: 'Safra', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '4-p5', nome: 'Lucas Oliveira', telefone: '11955555555', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false }
+      { id: '4-p1', nome: 'Gabriel Nogueira', telefone: '11955551111', agencia: '', observacao: '', statusAtivo: true },
+      { id: '4-p2', nome: 'Helena Pinheiro', telefone: '11955552222', agencia: '', observacao: '', statusAtivo: true },
+      { id: '4-p3', nome: 'Igor Mendes', telefone: '11955553333', agencia: 'Safra', observacao: '', statusAtivo: true },
+      { id: '4-p4', nome: 'Julia Cardoso', telefone: '11955554444', agencia: 'Safra', observacao: '', statusAtivo: true },
+      { id: '4-p5', nome: 'Lucas Oliveira', telefone: '11955555555', agencia: '', observacao: '', statusAtivo: true }
     ]
   },
   {
@@ -93,9 +94,9 @@ const INITIAL_MEETINGS = [
     title: 'Apresentação Comercial B',
     meetLink: 'https://meet.google.com/cde-fghi-jkl',
     participantsList: [
-      { id: '5-p1', nome: 'Mateus Lima', telefone: '11944445555', agencia: 'C6 Bank', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '5-p2', nome: 'Natalia Ribeiro', telefone: '11944446666', agencia: 'C6 Bank', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '5-p3', nome: 'Otávio Dias', telefone: '11944447777', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false }
+      { id: '5-p1', nome: 'Mateus Lima', telefone: '11944445555', agencia: 'C6 Bank', observacao: '', statusAtivo: true },
+      { id: '5-p2', nome: 'Natalia Ribeiro', telefone: '11944446666', agencia: 'C6 Bank', observacao: '', statusAtivo: true },
+      { id: '5-p3', nome: 'Otávio Dias', telefone: '11944447777', agencia: '', observacao: '', statusAtivo: true }
     ]
   },
   {
@@ -105,8 +106,8 @@ const INITIAL_MEETINGS = [
     title: 'Reunião de Fechamento',
     meetLink: null,
     participantsList: [
-      { id: '6-p1', nome: 'Patrícia Gomes', telefone: '51933337777', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '6-p2', nome: 'Roberto Cruz', telefone: '51933338888', agencia: 'Banrisul', observacao: '', statusAtivo: true, linkEnviado: false }
+      { id: '6-p1', nome: 'Patrícia Gomes', telefone: '51933337777', agencia: '', observacao: '', statusAtivo: true },
+      { id: '6-p2', nome: 'Roberto Cruz', telefone: '51933338888', agencia: 'Banrisul', observacao: '', statusAtivo: true }
     ]
   },
   {
@@ -116,12 +117,12 @@ const INITIAL_MEETINGS = [
     title: 'Kickoff Projeto Y',
     meetLink: 'https://meet.google.com/stu-vwxy-z12',
     participantsList: [
-      { id: '7-p1', nome: 'Sandra Duarte', telefone: '11912345678', agencia: 'Banco do Brasil', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '7-p2', nome: 'Thiago Ramos', telefone: '11923456789', agencia: 'Banco do Brasil', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '7-p3', nome: 'Vanessa Lima', telefone: '11934567890', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '7-p4', nome: 'Wagner Reis', telefone: '11945678901', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '7-p5', nome: 'Yago Borges', telefone: '11956789012', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
-      { id: '7-p6', nome: 'Zara Martins', telefone: '11967890123', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false }
+      { id: '7-p1', nome: 'Sandra Duarte', telefone: '11912345678', agencia: 'Banco do Brasil', observacao: '', statusAtivo: true },
+      { id: '7-p2', nome: 'Thiago Ramos', telefone: '11923456789', agencia: 'Banco do Brasil', observacao: '', statusAtivo: true },
+      { id: '7-p3', nome: 'Vanessa Lima', telefone: '11934567890', agencia: '', observacao: '', statusAtivo: true },
+      { id: '7-p4', nome: 'Wagner Reis', telefone: '11945678901', agencia: '', observacao: '', statusAtivo: true },
+      { id: '7-p5', nome: 'Yago Borges', telefone: '11956789012', agencia: '', observacao: '', statusAtivo: true },
+      { id: '7-p6', nome: 'Zara Martins', telefone: '11967890123', agencia: '', observacao: '', statusAtivo: true }
     ]
   }
 ]
@@ -149,12 +150,16 @@ function App() {
 
   // Participant form state
   const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
+  const [editingParticipant, setEditingParticipant] = useState(null)
+  const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
 
   const resetMessageStates = () => {
     setShowMessageModal(false)
     setMessageCopied(false)
     setMeetingErrorMsg(null)
     setShowAddParticipantModal(false)
+    setEditingParticipant(null)
+    setReschedulingParticipant(null)
   }
 
   const handlePrevMonth = () => {
@@ -181,8 +186,7 @@ function App() {
         const newParticipant = {
           id: Date.now().toString(),
           ...participantData,
-          statusAtivo: true,
-          linkEnviado: false
+          statusAtivo: true
         }
         return {
           ...m,
@@ -191,6 +195,144 @@ function App() {
       }
       return m
     }))
+  }
+
+  const handleUpdateParticipant = (meetingId, participantId, updatedData) => {
+    const currentMeeting = meetings.find(m => m.id === meetingId)
+    const oldParticipant = currentMeeting?.participantsList.find(p => p.id === participantId)
+    if (!oldParticipant) return
+
+    const oldPhone = oldParticipant.telefone
+
+    setMeetings(prevMeetings => prevMeetings.map(m => {
+      const updatedList = m.participantsList.map(p => {
+        // 1. If it's the exact participant being edited in the current meeting:
+        if (m.id === meetingId && p.id === participantId) {
+          return {
+            ...p,
+            nome: updatedData.nome,
+            telefone: updatedData.telefone,
+            agencia: updatedData.agencia,
+            observacao: updatedData.observacao // update observation only for this participation
+          }
+        }
+        // 2. If it's a participant in another meeting that has the same phone number:
+        if (p.telefone === oldPhone) {
+          return {
+            ...p,
+            nome: updatedData.nome,
+            telefone: updatedData.telefone,
+            agencia: updatedData.agencia
+          }
+        }
+        return p
+      })
+
+      return {
+        ...m,
+        participantsList: updatedList
+      }
+    }))
+  }
+
+  const handleCancelParticipant = (meetingId, participantId) => {
+    setMeetings(prevMeetings => prevMeetings.map(m => {
+      if (m.id === meetingId) {
+        return {
+          ...m,
+          participantsList: m.participantsList.map(p => {
+            if (p.id === participantId) {
+              return {
+                ...p,
+                statusAtivo: false
+              }
+            }
+            return p
+          })
+        }
+      }
+      return m
+    }))
+  }
+
+  const handleReactivateParticipant = (meetingId, participantId) => {
+    const meeting = meetings.find(m => m.id === meetingId)
+    if (!meeting) return
+
+    // Check if the meeting is in the future
+    const now = new Date()
+    const meetingDate = new Date(`${meeting.date}T${meeting.time}:00`)
+    if (meetingDate < now) {
+      alert('Não é possível reativar participante de uma reunião que já ocorreu.')
+      return
+    }
+
+    // Find the participant to get their telephone
+    const participant = meeting.participantsList.find(p => p.id === participantId)
+    if (!participant) return
+
+    // Check if duplicate client is already active
+    const isAlreadyActive = meeting.participantsList.some(
+      p => p.telefone === participant.telefone && p.statusAtivo && p.id !== participantId
+    )
+    if (isAlreadyActive) {
+      alert('Este cliente já está ativo nesta reunião.')
+      return
+    }
+
+    setMeetings(prevMeetings => prevMeetings.map(m => {
+      if (m.id === meetingId) {
+        return {
+          ...m,
+          participantsList: m.participantsList.map(p => {
+            if (p.id === participantId) {
+              return {
+                ...p,
+                statusAtivo: true
+              }
+            }
+            return p
+          })
+        }
+      }
+      return m
+    }))
+  }
+
+  const handleRescheduleParticipant = (participantId, fromMeetingId, toMeetingId) => {
+    setMeetings(prevMeetings => {
+      const fromMeeting = prevMeetings.find(m => m.id === fromMeetingId)
+      const participantToMove = fromMeeting?.participantsList.find(p => p.id === participantId)
+      if (!participantToMove) return prevMeetings
+
+      return prevMeetings.map(m => {
+        if (m.id === fromMeetingId) {
+          return {
+            ...m,
+            participantsList: m.participantsList.filter(p => p.id !== participantId)
+          }
+        }
+        if (m.id === toMeetingId) {
+          return {
+            ...m,
+            participantsList: [...m.participantsList, { ...participantToMove }]
+          }
+        }
+        return m
+      })
+    })
+  }
+
+  const findClientByPhone = (phone) => {
+    const cleanTel = phone.replace(/\D/g, '')
+    if (!cleanTel) return null
+    for (const meeting of meetings) {
+      const found = meeting.participantsList.find(p => p.telefone === cleanTel)
+      if (found) {
+        return { nome: found.nome, agencia: found.agencia }
+      }
+    }
+    return null
   }
 
   const getMonthDays = () => {
@@ -432,6 +574,16 @@ function App() {
     return `Olá, confirmo nossa apresentação "${meeting.title}" no dia ${formattedDate} às ${meeting.time}. Link do Meet: ${meeting.meetLink}`
   }
 
+  // Filter future meetings, sorted by date and time
+  const now = new Date()
+  const futureMeetings = meetings
+    .filter(m => new Date(`${m.date}T${m.time}:00`) > now)
+    .sort((a, b) => {
+      const dateDiff = a.date.localeCompare(b.date)
+      if (dateDiff !== 0) return dateDiff
+      return a.time.localeCompare(b.time)
+    })
+
   return (
     <div className="dashboard-layout">
       {/* Sidebar Navigation */}
@@ -499,6 +651,13 @@ function App() {
           }
         }}
         onAddParticipant={() => setShowAddParticipantModal(true)}
+        onEditParticipant={(participant) => {
+          setEditingParticipant(participant)
+          setShowAddParticipantModal(true)
+        }}
+        onCancelParticipant={(participantId) => handleCancelParticipant(selectedMeeting.id, participantId)}
+        onReactivateParticipant={(participantId) => handleReactivateParticipant(selectedMeeting.id, participantId)}
+        onRescheduleParticipant={(participant) => setReschedulingParticipant(participant)}
         meetingErrorMsg={meetingErrorMsg}
       />
 
@@ -561,14 +720,37 @@ function App() {
         </div>
       )}
 
-      {/* Add Participant Sub-Modal */}
+      {/* Add / Edit Participant Sub-Modal */}
       <AddParticipantModal
         isOpen={showAddParticipantModal}
         selectedMeeting={selectedMeeting}
-        onClose={() => setShowAddParticipantModal(false)}
-        onAdd={(participantData) => {
-          handleAddParticipant(selectedMeeting.id, participantData)
+        editingParticipant={editingParticipant}
+        onClose={() => {
           setShowAddParticipantModal(false)
+          setEditingParticipant(null)
+        }}
+        onAdd={(participantData) => {
+          if (editingParticipant) {
+            handleUpdateParticipant(selectedMeeting.id, editingParticipant.id, participantData)
+            setShowAddParticipantModal(false)
+            setEditingParticipant(null)
+          } else {
+            handleAddParticipant(selectedMeeting.id, participantData)
+            setShowAddParticipantModal(false)
+          }
+        }}
+        onFindClient={findClientByPhone}
+      />
+
+      {/* Reschedule Participant Sub-Modal */}
+      <RescheduleParticipantModal
+        isOpen={!!reschedulingParticipant}
+        participant={reschedulingParticipant}
+        futureMeetings={futureMeetings}
+        onClose={() => setReschedulingParticipant(null)}
+        onReschedule={(targetMeetingId) => {
+          handleRescheduleParticipant(reschedulingParticipant.id, selectedMeeting.id, targetMeetingId)
+          setReschedulingParticipant(null)
         }}
       />
     </div>
