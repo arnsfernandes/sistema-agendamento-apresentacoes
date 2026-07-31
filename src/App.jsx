@@ -1,49 +1,251 @@
 import { useState } from 'react'
 import './App.css'
 
+const navigationItems = [
+  {
+    id: 'calendario',
+    label: 'Calendário',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+      </svg>
+    )
+  },
+  {
+    id: 'clientes',
+    label: 'Clientes',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
+      </svg>
+    )
+  },
+  {
+    id: 'configuracoes',
+    label: 'Configurações',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.936 6.936 0 010-.255c.007-.38-.138-.751-.43.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    )
+  }
+]
+
+// Mock list of meetings with expanded details
+const mockMeetings = [
+  { id: 1, date: '2026-07-15', time: '10:00', title: 'Apresentação Comercial A', participants: 3 },
+  { id: 2, date: '2026-07-28', time: '09:00', title: 'Alinhamento de Vendas', participants: 4 },
+  { id: 3, date: '2026-07-28', time: '14:30', title: 'Apresentação Produto X', participants: 2 },
+  { id: 4, date: '2026-07-28', time: '16:00', title: 'Feedback de Proposta', participants: 5 },
+  { id: 5, date: '2026-08-05', time: '11:00', title: 'Apresentação Comercial B', participants: 3 },
+  { id: 6, date: '2026-08-05', time: '15:00', title: 'Reunião de Fechamento', participants: 2 },
+  { id: 7, date: '2026-08-12', time: '10:00', title: 'Kickoff Projeto Y', participants: 6 },
+]
+
 function App() {
   const [activeTab, setActiveTab] = useState('calendario')
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDateKey, setSelectedDateKey] = useState(null)
 
-  const navigationItems = [
-    {
-      id: 'calendario',
-      label: 'Calendário',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
-        </svg>
-      )
-    },
-    {
-      id: 'clientes',
-      label: 'Clientes',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
-        </svg>
-      )
-    },
-    {
-      id: 'configuracoes',
-      label: 'Configurações',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.936 6.936 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      )
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
+    setSelectedDateKey(null)
+  }
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+    setSelectedDateKey(null)
+  }
+
+  const getMonthDays = () => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    
+    const firstDay = new Date(year, month, 1)
+    const startDayOfWeek = firstDay.getDay()
+    const totalDays = new Date(year, month + 1, 0).getDate()
+    
+    const days = []
+    
+    for (let i = 0; i < startDayOfWeek; i++) {
+      days.push({ type: 'empty', id: `empty-${i}` })
     }
-  ]
+    
+    const today = new Date()
+    for (let day = 1; day <= totalDays; day++) {
+      const isToday = 
+        day === today.getDate() && 
+        month === today.getMonth() && 
+        year === today.getFullYear()
+      
+      const monthStr = String(month + 1).padStart(2, '0')
+      const dayStr = String(day).padStart(2, '0')
+      const dateKey = `${year}-${monthStr}-${dayStr}`
+      
+      const meetingsCount = mockMeetings.filter(m => m.date === dateKey).length
+        
+      days.push({
+        type: 'day',
+        dayNumber: day,
+        isToday,
+        meetingsCount,
+        dateKey,
+        id: `day-${day}`
+      })
+    }
+    
+    return days
+  }
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'calendario':
+      case 'calendario': {
+        const days = getMonthDays()
+        const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+        const monthName = currentDate.toLocaleString('pt-BR', { month: 'long' })
+        const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+        const year = currentDate.getFullYear()
+
+        let formattedSelectedDate = ''
+        let dayMeetings = []
+        if (selectedDateKey) {
+          const [sYear, sMonth, sDay] = selectedDateKey.split('-').map(Number)
+          const sDate = new Date(sYear, sMonth - 1, sDay)
+          formattedSelectedDate = sDate.toLocaleDateString('pt-BR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          })
+          dayMeetings = mockMeetings
+            .filter((m) => m.date === selectedDateKey)
+            .sort((a, b) => a.time.localeCompare(b.time))
+        }
+
         return (
           <div className="view-container">
-            <h1 className="view-title">Calendário</h1>
-            <p className="view-description">Visualização e agendamentos de apresentações comerciais.</p>
+            <div className="view-header">
+              <h1 className="view-title">Calendário</h1>
+              <p className="view-description">
+                Esta área será usada para visualizar e gerenciar apresentações comerciais.
+              </p>
+            </div>
+            
+            <div className="action-bar">
+              <button className="btn btn-primary" type="button">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                </svg>
+                Cadastrar cliente
+              </button>
+              <button className="btn btn-secondary" type="button">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+                </svg>
+                Resumo da semana
+              </button>
+              <button className="btn btn-secondary" type="button">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                Atualizar agenda
+              </button>
+            </div>
+            
+            <div className="calendar-area">
+              <div className="calendar-card">
+                {/* Calendar Navigation Header */}
+                <div className="calendar-header-nav">
+                  <button className="btn-nav" onClick={handlePrevMonth} type="button" aria-label="Mês anterior">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+                  <h2 className="calendar-month-title">{capitalizedMonthName} {year}</h2>
+                  <button className="btn-nav" onClick={handleNextMonth} type="button" aria-label="Próximo mês">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Weekdays Labels */}
+                <div className="calendar-weekdays-grid">
+                  {weekDays.map((wd) => (
+                    <div key={wd} className="weekday-label">
+                      {wd}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Days Grid */}
+                <div className="calendar-days-grid">
+                  {days.map((day) => {
+                    if (day.type === 'empty') {
+                      return <div key={day.id} className="calendar-day-cell empty" />
+                    }
+                    const isSelected = day.dateKey === selectedDateKey
+                    return (
+                      <div
+                        key={day.id}
+                        className={`calendar-day-cell ${day.isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
+                        onClick={() => setSelectedDateKey(day.dateKey)}
+                      >
+                        <span className="day-number">{day.dayNumber}</span>
+                        {day.meetingsCount > 0 && (
+                          <span className="meetings-count-badge">
+                            {day.meetingsCount} {day.meetingsCount === 1 ? 'reunião' : 'reuniões'}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {selectedDateKey && (
+                <aside className="meetings-panel">
+                  <div className="panel-header">
+                    <h3 className="panel-title">{formattedSelectedDate}</h3>
+                    <button
+                      className="btn-close"
+                      onClick={() => setSelectedDateKey(null)}
+                      type="button"
+                      aria-label="Fechar painel"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="panel-body">
+                    {dayMeetings.length > 0 ? (
+                      <div className="meetings-list">
+                        {dayMeetings.map((meeting) => (
+                          <div key={meeting.id} className="meeting-item-card">
+                            <span className="meeting-time-badge">{meeting.time}</span>
+                            <h4 className="meeting-item-title">{meeting.title}</h4>
+                            <div className="meeting-participants-info">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
+                              </svg>
+                              <span>
+                                {meeting.participants} {meeting.participants === 1 ? 'participante' : 'participantes'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="no-meetings-message">Nenhuma reunião encontrada para esta data</p>
+                    )}
+                  </div>
+                </aside>
+              )}
+            </div>
           </div>
         )
+      }
       case 'clientes':
         return (
           <div className="view-container">
@@ -80,6 +282,7 @@ function App() {
           {navigationItems.map((item) => (
             <button
               key={item.id}
+              type="button"
               className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
               onClick={() => setActiveTab(item.id)}
             >
