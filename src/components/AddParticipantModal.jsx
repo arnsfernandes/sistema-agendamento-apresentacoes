@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-export default function AddParticipantModal({ isOpen, selectedMeeting, onClose, onAdd }) {
+export default function AddParticipantModal({ isOpen, selectedMeeting, editingParticipant, onClose, onAdd, onFindClient }) {
   if (!isOpen || !selectedMeeting) return null
 
   const [nome, setNome] = useState('')
@@ -8,6 +8,25 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, onClose, 
   const [agencia, setAgencia] = useState('')
   const [observacao, setObservacao] = useState('')
   const [errors, setErrors] = useState({})
+  const [foundClient, setFoundClient] = useState(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editingParticipant) {
+        setNome(editingParticipant.nome)
+        setTelefone(editingParticipant.telefone)
+        setAgencia(editingParticipant.agencia || '')
+        setObservacao(editingParticipant.observacao || '')
+      } else {
+        setNome('')
+        setTelefone('')
+        setAgencia('')
+        setObservacao('')
+      }
+      setErrors({})
+      setFoundClient(null)
+    }
+  }, [editingParticipant, isOpen])
 
   const handleClose = () => {
     setNome('')
@@ -15,7 +34,39 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, onClose, 
     setAgencia('')
     setObservacao('')
     setErrors({})
+    setFoundClient(null)
     onClose()
+  }
+
+  const handlePhoneChange = (val) => {
+    setTelefone(val)
+    const cleanTel = val.replace(/\D/g, '')
+
+    // Clear previous error
+    setErrors(prev => ({ ...prev, telefone: null }))
+
+    if (!cleanTel) {
+      setFoundClient(null)
+      return
+    }
+
+    // Check duplicate in current meeting (exclude the participant currently being edited)
+    const isDuplicate = selectedMeeting.participantsList.some(
+      p => p.telefone === cleanTel && (!editingParticipant || p.id !== editingParticipant.id)
+    )
+    if (isDuplicate) {
+      setErrors(prev => ({ ...prev, telefone: 'Este cliente já está cadastrado nesta reunião.' }))
+      setFoundClient(null)
+      return
+    }
+
+    // Find in other meetings
+    const found = onFindClient(cleanTel)
+    if (found) {
+      setFoundClient(found)
+    } else {
+      setFoundClient(null)
+    }
   }
 
   const handleSubmit = (e) => {
@@ -31,6 +82,14 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, onClose, 
       newErrors.telefone = 'Telefone é obrigatório'
     } else if (cleanTel.length !== 10 && cleanTel.length !== 11) {
       newErrors.telefone = 'Telefone deve conter 10 ou 11 dígitos'
+    } else {
+      // Final check for duplicates (exclude the participant currently being edited)
+      const isDuplicate = selectedMeeting.participantsList.some(
+        p => p.telefone === cleanTel && (!editingParticipant || p.id !== editingParticipant.id)
+      )
+      if (isDuplicate) {
+        newErrors.telefone = 'Este cliente já está cadastrado nesta reunião.'
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -51,13 +110,16 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, onClose, 
     setAgencia('')
     setObservacao('')
     setErrors({})
+    setFoundClient(null)
   }
 
   return (
     <div className="sub-modal-overlay" onClick={handleClose}>
       <div className="sub-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="sub-modal-header">
-          <h4 className="sub-modal-title">Adicionar Participante</h4>
+          <h4 className="sub-modal-title">
+            {editingParticipant ? 'Editar Participante' : 'Adicionar Participante'}
+          </h4>
           <button
             className="btn-close"
             onClick={handleClose}
@@ -82,6 +144,39 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, onClose, 
             </div>
             
             <div className="form-group">
+              <label className="form-label">Telefone <span className="required-marker">*</span></label>
+              <input
+                type="tel"
+                className={`form-input ${errors.telefone ? 'has-error' : ''}`}
+                placeholder="(00) 00000-0000"
+                value={telefone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+              />
+              {errors.telefone && <span className="form-error-msg">{errors.telefone}</span>}
+
+              {foundClient && (
+                <div className="found-client-tip">
+                  <div className="found-client-info">
+                    <span>Cliente encontrado: <strong>{foundClient.nome}</strong>{foundClient.agencia ? ` (${foundClient.agencia})` : ''}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-use-client"
+                    onClick={() => {
+                      setNome(foundClient.nome)
+                      if (foundClient.agencia) {
+                        setAgencia(foundClient.agencia)
+                      }
+                      setFoundClient(null)
+                    }}
+                  >
+                    Usar este cliente
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Nome <span className="required-marker">*</span></label>
               <input
                 type="text"
@@ -94,21 +189,6 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, onClose, 
                 }}
               />
               {errors.nome && <span className="form-error-msg">{errors.nome}</span>}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Telefone <span className="required-marker">*</span></label>
-              <input
-                type="tel"
-                className={`form-input ${errors.telefone ? 'has-error' : ''}`}
-                placeholder="(00) 00000-0000"
-                value={telefone}
-                onChange={(e) => {
-                  setTelefone(e.target.value)
-                  if (errors.telefone) setErrors(prev => ({ ...prev, telefone: null }))
-                }}
-              />
-              {errors.telefone && <span className="form-error-msg">{errors.telefone}</span>}
             </div>
 
             <div className="form-group">
@@ -143,8 +223,9 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, onClose, 
               <button
                 className="btn btn-primary"
                 type="submit"
+                disabled={!!errors.telefone && errors.telefone.includes('já está cadastrado')}
               >
-                Adicionar
+                {editingParticipant ? 'Salvar' : 'Adicionar'}
               </button>
             </div>
           </form>
