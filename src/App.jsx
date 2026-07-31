@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
+import AddParticipantModal from './components/AddParticipantModal'
 
 const navigationItems = [
   {
@@ -33,22 +34,110 @@ const navigationItems = [
   }
 ]
 
-// Mock list of meetings with expanded details and Meet links
-const mockMeetings = [
-  { id: 1, date: '2026-07-15', time: '10:00', title: 'Apresentação Comercial A', participants: 3, meetLink: 'https://meet.google.com/abc-defg-hij' },
-  { id: 2, date: '2026-07-28', time: '09:00', title: 'Alinhamento de Vendas', participants: 4, meetLink: 'https://meet.google.com/xyz-pdqr-wst' },
-  { id: 3, date: '2026-07-28', time: '14:30', title: 'Apresentação Produto X', participants: 2, meetLink: null },
-  { id: 4, date: '2026-07-28', time: '16:00', title: 'Feedback de Proposta', participants: 5, meetLink: 'https://meet.google.com/mno-pqrs-tuv' },
-  { id: 5, date: '2026-08-05', time: '11:00', title: 'Apresentação Comercial B', participants: 3, meetLink: 'https://meet.google.com/cde-fghi-jkl' },
-  { id: 6, date: '2026-08-05', time: '15:00', title: 'Reunião de Fechamento', participants: 2, meetLink: null },
-  { id: 7, date: '2026-08-12', time: '10:00', title: 'Kickoff Projeto Y', participants: 6, meetLink: 'https://meet.google.com/stu-vwxy-z12' },
+// Initial mock list of meetings with detail lists of participants
+const INITIAL_MEETINGS = [
+  {
+    id: 1,
+    date: '2026-07-15',
+    time: '10:00',
+    title: 'Apresentação Comercial A',
+    meetLink: 'https://meet.google.com/abc-defg-hij',
+    participantsList: [
+      { id: '1-p1', nome: 'Carlos Souza', telefone: '11999998888', agencia: 'Santander', observacao: 'Tomador de decisão', statusAtivo: true, linkEnviado: false },
+      { id: '1-p2', nome: 'Mariana Lima', telefone: '11988887777', agencia: 'Santander', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '1-p3', nome: 'Rafael Santos', telefone: '11977776666', agencia: '', observacao: 'Parceiro técnico', statusAtivo: true, linkEnviado: false }
+    ]
+  },
+  {
+    id: 2,
+    date: '2026-07-28',
+    time: '09:00',
+    title: 'Alinhamento de Vendas',
+    meetLink: 'https://meet.google.com/xyz-pdqr-wst',
+    participantsList: [
+      { id: '2-p1', nome: 'Ana Clara', telefone: '21999991111', agencia: 'Itaú', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '2-p2', nome: 'Bruno Alves', telefone: '21999992222', agencia: 'Itaú', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '2-p3', nome: 'Camila Costa', telefone: '21999993333', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '2-p4', nome: 'Daniel Silva', telefone: '21999994444', agencia: '', observacao: 'Gerente geral', statusAtivo: true, linkEnviado: false }
+    ]
+  },
+  {
+    id: 3,
+    date: '2026-07-28',
+    time: '14:30',
+    title: 'Apresentação Produto X',
+    meetLink: null,
+    participantsList: [
+      { id: '3-p1', nome: 'Eduardo Rocha', telefone: '31988882222', agencia: 'Bradesco', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '3-p2', nome: 'Fernanda Souza', telefone: '31988883333', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false }
+    ]
+  },
+  {
+    id: 4,
+    date: '2026-07-28',
+    time: '16:00',
+    title: 'Feedback de Proposta',
+    meetLink: 'https://meet.google.com/mno-pqrs-tuv',
+    participantsList: [
+      { id: '4-p1', nome: 'Gabriel Nogueira', telefone: '11955551111', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '4-p2', nome: 'Helena Pinheiro', telefone: '11955552222', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '4-p3', nome: 'Igor Mendes', telefone: '11955553333', agencia: 'Safra', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '4-p4', nome: 'Julia Cardoso', telefone: '11955554444', agencia: 'Safra', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '4-p5', nome: 'Lucas Oliveira', telefone: '11955555555', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false }
+    ]
+  },
+  {
+    id: 5,
+    date: '2026-08-05',
+    time: '11:00',
+    title: 'Apresentação Comercial B',
+    meetLink: 'https://meet.google.com/cde-fghi-jkl',
+    participantsList: [
+      { id: '5-p1', nome: 'Mateus Lima', telefone: '11944445555', agencia: 'C6 Bank', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '5-p2', nome: 'Natalia Ribeiro', telefone: '11944446666', agencia: 'C6 Bank', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '5-p3', nome: 'Otávio Dias', telefone: '11944447777', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false }
+    ]
+  },
+  {
+    id: 6,
+    date: '2026-08-05',
+    time: '15:00',
+    title: 'Reunião de Fechamento',
+    meetLink: null,
+    participantsList: [
+      { id: '6-p1', nome: 'Patrícia Gomes', telefone: '51933337777', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '6-p2', nome: 'Roberto Cruz', telefone: '51933338888', agencia: 'Banrisul', observacao: '', statusAtivo: true, linkEnviado: false }
+    ]
+  },
+  {
+    id: 7,
+    date: '2026-08-12',
+    time: '10:00',
+    title: 'Kickoff Projeto Y',
+    meetLink: 'https://meet.google.com/stu-vwxy-z12',
+    participantsList: [
+      { id: '7-p1', nome: 'Sandra Duarte', telefone: '11912345678', agencia: 'Banco do Brasil', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '7-p2', nome: 'Thiago Ramos', telefone: '11923456789', agencia: 'Banco do Brasil', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '7-p3', nome: 'Vanessa Lima', telefone: '11934567890', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '7-p4', nome: 'Wagner Reis', telefone: '11945678901', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '7-p5', nome: 'Yago Borges', telefone: '11956789012', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false },
+      { id: '7-p6', nome: 'Zara Martins', telefone: '11967890123', agencia: '', observacao: '', statusAtivo: true, linkEnviado: false }
+    ]
+  }
 ]
 
 function App() {
   const [activeTab, setActiveTab] = useState('calendario')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDateKey, setSelectedDateKey] = useState(null)
-  const [selectedMeeting, setSelectedMeeting] = useState(null)
+  
+  // Reactive list of meetings
+  const [meetings, setMeetings] = useState(INITIAL_MEETINGS)
+  const [selectedMeetingId, setSelectedMeetingId] = useState(null)
+
+  // Derive selectedMeeting reactively
+  const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
+
   const [showMeetLink, setShowMeetLink] = useState(false)
   const [meetCopied, setMeetCopied] = useState(false)
 
@@ -71,7 +160,7 @@ function App() {
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
     setSelectedDateKey(null)
-    setSelectedMeeting(null)
+    setSelectedMeetingId(null)
     setShowMeetLink(false)
     setMeetCopied(false)
     resetMessageStates()
@@ -80,10 +169,28 @@ function App() {
   const handleNextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
     setSelectedDateKey(null)
-    setSelectedMeeting(null)
+    setSelectedMeetingId(null)
     setShowMeetLink(false)
     setMeetCopied(false)
     resetMessageStates()
+  }
+
+  const handleAddParticipant = (meetingId, participantData) => {
+    setMeetings(prevMeetings => prevMeetings.map(m => {
+      if (m.id === meetingId) {
+        const newParticipant = {
+          id: Date.now().toString(),
+          ...participantData,
+          statusAtivo: true,
+          linkEnviado: false
+        }
+        return {
+          ...m,
+          participantsList: [...m.participantsList, newParticipant]
+        }
+      }
+      return m
+    }))
   }
 
   const getMonthDays = () => {
@@ -111,7 +218,7 @@ function App() {
       const dayStr = String(day).padStart(2, '0')
       const dateKey = `${year}-${monthStr}-${dayStr}`
       
-      const meetingsCount = mockMeetings.filter(m => m.date === dateKey).length
+      const meetingsCount = meetings.filter(m => m.date === dateKey).length
         
       days.push({
         type: 'day',
@@ -145,7 +252,7 @@ function App() {
             month: 'long',
             year: 'numeric'
           })
-          dayMeetings = mockMeetings
+          dayMeetings = meetings
             .filter((m) => m.date === selectedDateKey)
             .sort((a, b) => a.time.localeCompare(b.time))
         }
@@ -239,7 +346,7 @@ function App() {
                       className="btn-close"
                       onClick={() => {
                         setSelectedDateKey(null)
-                        setSelectedMeeting(null)
+                        setSelectedMeetingId(null)
                         setShowMeetLink(false)
                         setMeetCopied(false)
                         resetMessageStates()
@@ -258,9 +365,9 @@ function App() {
                         {dayMeetings.map((meeting) => (
                           <div
                             key={meeting.id}
-                            className={`meeting-item-card ${selectedMeeting?.id === meeting.id ? 'active' : ''}`}
+                            className={`meeting-item-card ${selectedMeetingId === meeting.id ? 'active' : ''}`}
                             onClick={() => {
-                              setSelectedMeeting(meeting)
+                              setSelectedMeetingId(meeting.id)
                               setShowMeetLink(false)
                               setMeetCopied(false)
                               resetMessageStates()
@@ -273,7 +380,7 @@ function App() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
                               </svg>
                               <span>
-                                {meeting.participants} {meeting.participants === 1 ? 'participante' : 'participantes'}
+                                {meeting.participantsList.length} {meeting.participantsList.length === 1 ? 'participante' : 'participantes'}
                               </span>
                             </div>
                           </div>
@@ -346,7 +453,7 @@ function App() {
               className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
               onClick={() => {
                 setActiveTab(item.id)
-                setSelectedMeeting(null)
+                setSelectedMeetingId(null)
                 setShowMeetLink(false)
                 setMeetCopied(false)
                 resetMessageStates()
@@ -374,7 +481,7 @@ function App() {
         selectedMeeting={selectedMeeting}
         formattedMeetingDate={formattedMeetingDate}
         onClose={() => {
-          setSelectedMeeting(null)
+          setSelectedMeetingId(null)
           setShowMeetLink(false)
           setMeetCopied(false)
           resetMessageStates()
@@ -455,87 +562,15 @@ function App() {
       )}
 
       {/* Add Participant Sub-Modal */}
-      {showAddParticipantModal && selectedMeeting && (
-        <div className="sub-modal-overlay" onClick={() => setShowAddParticipantModal(false)}>
-          <div className="sub-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="sub-modal-header">
-              <h4 className="sub-modal-title">Adicionar Participante</h4>
-              <button
-                className="btn-close"
-                onClick={() => setShowAddParticipantModal(false)}
-                type="button"
-                aria-label="Fechar formulário"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="sub-modal-body">
-              <form className="participant-form" onSubmit={(e) => e.preventDefault()}>
-                <div className="form-group">
-                  <label className="form-label">Reunião</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={selectedMeeting.title}
-                    disabled
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Nome <span className="required-marker">*</span></label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Nome completo do participante"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Telefone <span className="required-marker">*</span></label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    placeholder="(00) 00000-0000"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Agência</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Agência vinculada (opcional)"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Observação</label>
-                  <textarea
-                    className="form-input form-textarea"
-                    placeholder="Observações adicionais (opcional)"
-                  />
-                </div>
-                
-                <div className="form-actions">
-                  <button
-                    className="btn btn-secondary"
-                    type="button"
-                    onClick={() => setShowAddParticipantModal(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    type="submit"
-                  >
-                    Adicionar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddParticipantModal
+        isOpen={showAddParticipantModal}
+        selectedMeeting={selectedMeeting}
+        onClose={() => setShowAddParticipantModal(false)}
+        onAdd={(participantData) => {
+          handleAddParticipant(selectedMeeting.id, participantData)
+          setShowAddParticipantModal(false)
+        }}
+      />
     </div>
   )
 }

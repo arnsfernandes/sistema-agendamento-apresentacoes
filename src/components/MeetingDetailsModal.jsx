@@ -124,8 +124,31 @@ export default function MeetingDetailsModal({
           )}
 
           <div className="modal-participants-section">
-            <h4 className="participants-section-title">Participantes</h4>
-            <p className="no-participants-message">Nenhum participante cadastrado</p>
+            <h4 className="participants-section-title">
+              Participantes ({selectedMeeting.participantsList.length})
+            </h4>
+            {selectedMeeting.participantsList.length > 0 ? (
+              <div className="participants-list">
+                {selectedMeeting.participantsList.map((participant) => (
+                  <div key={participant.id} className="participant-item-card">
+                    <div className="participant-item-header">
+                      <span className="participant-item-name">{participant.nome}</span>
+                      {participant.agencia && (
+                        <span className="participant-item-agency">{participant.agencia}</span>
+                      )}
+                    </div>
+                    <div className="participant-item-details">
+                      <span className="participant-item-phone">{participant.telefone}</span>
+                      {participant.observacao && (
+                        <p className="participant-item-obs">{participant.observacao}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-participants-message">Nenhum participante cadastrado</p>
+            )}
           </div>
         </div>
       </div>
