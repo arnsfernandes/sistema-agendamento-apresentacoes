@@ -6,6 +6,8 @@ import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
+import { findClientByPhone, createClient } from './services/clientService'
+import { findParticipation, createParticipation } from './services/participationService'
 
 const navigationItems = [
   {
@@ -253,21 +255,34 @@ function App() {
     resetMessageStates()
   }
 
-  const handleAddParticipant = (meetingId, participantData) => {
-    setMeetings(prevMeetings => prevMeetings.map(m => {
-      if (m.id === meetingId) {
-        const newParticipant = {
-          id: Date.now().toString(),
-          ...participantData,
-          statusAtivo: true
-        }
-        return {
-          ...m,
-          participantsList: [...m.participantsList, newParticipant]
-        }
+  const handleAddParticipant = async (meetingId, participantData) => {
+    let client = await findClientByPhone(participantData.telefone)
+    
+    if (!client) {
+      client = await createClient({
+        nome: participantData.nome,
+        telefone: participantData.telefone,
+        agencia: participantData.agencia
+      })
+    }
+    
+    const existingPart = await findParticipation(client.id, meetingId)
+    if (existingPart) {
+      if (existingPart.status === 'ativo') {
+        throw new Error('Este cliente já está cadastrado nesta reunião.')
+      } else {
+        throw new Error('Este cliente já possui uma participação cancelada nesta reunião.')
       }
-      return m
-    }))
+    }
+    
+    await createParticipation({
+      clienteId: client.id,
+      apresentacaoId: meetingId,
+      observacao: participantData.observacao
+    })
+    
+    const updatedData = await listPresentations()
+    setMeetings(updatedData)
   }
 
   const handleUpdateParticipant = (meetingId, participantId, updatedData) => {
@@ -991,13 +1006,13 @@ function App() {
           setShowAddParticipantModal(false)
           setEditingParticipant(null)
         }}
-        onAdd={(participantData) => {
+        onAdd={async (participantData) => {
           if (editingParticipant) {
             handleUpdateParticipant(selectedMeeting.id, editingParticipant.id, participantData)
             setShowAddParticipantModal(false)
             setEditingParticipant(null)
           } else {
-            handleAddParticipant(selectedMeeting.id, participantData)
+            await handleAddParticipant(selectedMeeting.id, participantData)
             setShowAddParticipantModal(false)
           }
         }}

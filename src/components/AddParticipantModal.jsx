@@ -9,6 +9,8 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
   const [observacao, setObservacao] = useState('')
   const [errors, setErrors] = useState({})
   const [foundClient, setFoundClient] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -25,6 +27,8 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
       }
       setErrors({})
       setFoundClient(null)
+      setIsSubmitting(false)
+      setSubmitError(null)
     }
   }, [editingParticipant, isOpen])
 
@@ -35,6 +39,8 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
     setObservacao('')
     setErrors({})
     setFoundClient(null)
+    setIsSubmitting(false)
+    setSubmitError(null)
     onClose()
   }
 
@@ -69,8 +75,9 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    if (isSubmitting) return
     const newErrors = {}
 
     if (!nome.trim()) {
@@ -97,20 +104,29 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
       return
     }
 
-    onAdd({
-      nome: nome.trim(),
-      telefone: cleanTel,
-      agencia: agencia.trim(),
-      observacao: observacao.trim()
-    })
+    setSubmitError(null)
+    setIsSubmitting(true)
 
-    // Reset form fields
-    setNome('')
-    setTelefone('')
-    setAgencia('')
-    setObservacao('')
-    setErrors({})
-    setFoundClient(null)
+    try {
+      await onAdd({
+        nome: nome.trim(),
+        telefone: cleanTel,
+        agencia: agencia.trim(),
+        observacao: observacao.trim()
+      })
+
+      // Reset form fields only on success
+      setNome('')
+      setTelefone('')
+      setAgencia('')
+      setObservacao('')
+      setErrors({})
+      setFoundClient(null)
+    } catch (err) {
+      setSubmitError(err.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -125,6 +141,7 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
             onClick={handleClose}
             type="button"
             aria-label="Fechar formulário"
+            disabled={isSubmitting}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -151,6 +168,7 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
                 placeholder="(00) 00000-0000"
                 value={telefone}
                 onChange={(e) => handlePhoneChange(e.target.value)}
+                disabled={isSubmitting}
               />
               {errors.telefone && <span className="form-error-msg">{errors.telefone}</span>}
 
@@ -169,6 +187,7 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
                       }
                       setFoundClient(null)
                     }}
+                    disabled={isSubmitting}
                   >
                     Usar este cliente
                   </button>
@@ -187,6 +206,7 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
                   setNome(e.target.value)
                   if (errors.nome) setErrors(prev => ({ ...prev, nome: null }))
                 }}
+                disabled={isSubmitting}
               />
               {errors.nome && <span className="form-error-msg">{errors.nome}</span>}
             </div>
@@ -199,6 +219,7 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
                 placeholder="Agência vinculada (opcional)"
                 value={agencia}
                 onChange={(e) => setAgencia(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
 
@@ -209,23 +230,31 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
                 placeholder="Observações adicionais (opcional)"
                 value={observacao}
                 onChange={(e) => setObservacao(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
             
+            {submitError && (
+              <div className="form-error-msg submit-error" style={{ marginBottom: '1rem', textAlign: 'center', fontWeight: '500' }}>
+                {submitError}
+              </div>
+            )}
+
             <div className="form-actions">
               <button
                 className="btn btn-secondary"
                 type="button"
                 onClick={handleClose}
+                disabled={isSubmitting}
               >
                 Cancelar
               </button>
               <button
                 className="btn btn-primary"
                 type="submit"
-                disabled={!!errors.telefone && errors.telefone.includes('já está cadastrado')}
+                disabled={isSubmitting || (!!errors.telefone && errors.telefone.includes('já está cadastrado'))}
               >
-                {editingParticipant ? 'Salvar' : 'Adicionar'}
+                {isSubmitting ? 'Salvando...' : (editingParticipant ? 'Salvar' : 'Adicionar')}
               </button>
             </div>
           </form>
