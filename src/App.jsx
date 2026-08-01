@@ -4,6 +4,7 @@ import MeetingDetailsModal from './components/MeetingDetailsModal'
 import AddParticipantModal from './components/AddParticipantModal'
 import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 import meetLogo from './assets/meet-logo.png'
+import { supabase } from './supabaseClient'
 
 const navigationItems = [
   {
@@ -129,7 +130,24 @@ const INITIAL_MEETINGS = [
 ]
 
 function App() {
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('calendario')
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setAuthLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setAuthLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDateKey, setSelectedDateKey] = useState(null)
   
@@ -166,6 +184,31 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  // Login form states & handlers
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState(null)
+  const [loginLoading, setLoginLoading] = useState(false)
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault()
+    setLoginError(null)
+    setLoginLoading(true)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setLoginError(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message)
+    } else {
+      // Clear fields upon successful login
+      setEmail('')
+      setPassword('')
+    }
+    setLoginLoading(false)
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
 
   const resetMessageStates = () => {
     setShowMessageModal(false)
@@ -723,6 +766,62 @@ function App() {
       return a.time.localeCompare(b.time)
     })
 
+  if (authLoading) {
+    return (
+      <div className="auth-loading-screen">
+        <div className="loading-spinner"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="login-screen-wrapper">
+        <div className="login-card">
+          <div className="login-header">
+            <img src={meetLogo} alt="Google Meet Logo" className="login-logo-img" />
+            <h2 className="login-title">Acesso ao Agendamento</h2>
+            <p className="login-subtitle">Entre com sua conta para gerenciar as apresentações</p>
+          </div>
+          <form className="login-form" onSubmit={handleLoginSubmit}>
+            <div className="form-group">
+              <label className="form-label">E-mail</label>
+              <input
+                type="email"
+                className="form-input"
+                placeholder="seu-email@dominio.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loginLoading}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Senha</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loginLoading}
+              />
+            </div>
+            {loginError && <span className="login-error-msg">{loginError}</span>}
+            <button
+              className="btn btn-primary btn-login"
+              type="submit"
+              disabled={loginLoading}
+            >
+              {loginLoading ? 'Carregando...' : 'Entrar'}
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="dashboard-layout">
       {/* Sidebar Navigation */}
@@ -752,6 +851,20 @@ function App() {
               <span className="menu-label">{item.label}</span>
             </button>
           ))}
+          
+          <button
+            type="button"
+            className="menu-item logout-menu-item"
+            onClick={handleLogout}
+            style={{ marginTop: 'auto' }}
+          >
+            <span className="menu-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
+            </span>
+            <span className="menu-label">Sair</span>
+          </button>
         </nav>
       </aside>
 

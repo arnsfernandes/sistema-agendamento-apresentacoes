@@ -121,6 +121,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex-grow: 1;
 }
 
 .menu-item {
@@ -682,7 +683,7 @@ body {
 
 .meetings-panel {
   width: 320px;
-  background-color: var(--bg-card);
+  background-color: var(--calendar-bg);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 1.5rem;
@@ -847,7 +848,7 @@ body {
     width: 100% !important;
     max-width: calc(100% - 1.5rem) !important;
     max-height: calc(100vh - 2rem) !important;
-    background-color: var(--bg-secondary) !important;
+    background-color: var(--calendar-bg) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: 20px !important;
     padding: 1.5rem !important;
@@ -1780,4 +1781,100 @@ body {
 .theme-icon {
   width: 18px;
   height: 18px;
+}
+
+/* Auth Loading Screen */
+.auth-loading-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Login Screen */
+.login-screen-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-primary);
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.login-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.login-logo-img {
+  height: 48px;
+  object-fit: contain;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.login-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 0.8rem !important;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.login-error-msg {
+  color: var(--text-error);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
 }
