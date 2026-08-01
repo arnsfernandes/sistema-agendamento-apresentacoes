@@ -5,6 +5,7 @@ import AddParticipantModal from './components/AddParticipantModal'
 import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
+import { listPresentations } from './services/presentationService'
 
 const navigationItems = [
   {
@@ -148,11 +149,25 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (user) {
+      listPresentations()
+        .then(data => {
+          setMeetings(data)
+        })
+        .catch(err => {
+          console.error('Erro ao carregar apresentações:', err.message)
+        })
+    } else {
+      setMeetings([])
+    }
+  }, [user])
+
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDateKey, setSelectedDateKey] = useState(null)
   
   // Reactive list of meetings
-  const [meetings, setMeetings] = useState(INITIAL_MEETINGS)
+  const [meetings, setMeetings] = useState([])
   const [selectedMeetingId, setSelectedMeetingId] = useState(null)
 
   // Derive selectedMeeting reactively
