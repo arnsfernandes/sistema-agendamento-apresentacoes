@@ -492,11 +492,22 @@ function App() {
                         onClick={() => setSelectedDateKey(day.dateKey)}
                       >
                         <span className="day-number">{day.dayNumber}</span>
-                        {day.meetingsCount > 0 && (
-                          <span className="meetings-count-badge">
-                            {day.meetingsCount} {day.meetingsCount === 1 ? 'reunião' : 'reuniões'}
-                          </span>
-                        )}
+                        {(() => {
+                          const dayMeetings = meetings.filter(m => m.date === day.dateKey)
+                          const hasMeetings = dayMeetings.length > 0
+                          const hasParticipants = dayMeetings.some(m => m.participantsList && m.participantsList.length > 0)
+                          
+                          if (!hasMeetings) return null
+                          
+                          return (
+                            <>
+                              <span className="meetings-count-badge">
+                                {dayMeetings.length} {dayMeetings.length === 1 ? 'reunião' : 'reuniões'}
+                              </span>
+                              <span className={`meetings-dot-indicator ${hasParticipants ? 'purple-dot' : 'grey-dot'}`} />
+                            </>
+                          )
+                        })()}
                       </div>
                     )
                   })}

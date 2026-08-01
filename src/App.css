@@ -573,6 +573,33 @@ body {
   .weekday-label {
     font-size: 0.7rem !important;
   }
+
+  .meetings-count-badge {
+    display: none !important;
+  }
+
+  .meetings-dot-indicator {
+    display: block !important;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 4px;
+    margin-right: 4px;
+    align-self: flex-end;
+    flex-shrink: 0;
+  }
+
+  .meetings-dot-indicator.grey-dot {
+    background-color: var(--text-muted) !important;
+  }
+
+  .meetings-dot-indicator.purple-dot {
+    background-color: var(--text-accent) !important;
+  }
+}
+
+.meetings-dot-indicator {
+  display: none;
 }
 
 .meetings-count-badge {
