@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
 import AddParticipantModal from './components/AddParticipantModal'
@@ -153,6 +153,19 @@ function App() {
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
 
+  // Client search state
+  const [clientSearchTerm, setClientSearchTerm] = useState('')
+
+  // Theme state
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'dark'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
   const resetMessageStates = () => {
     setShowMessageModal(false)
     setMessageCopied(false)
@@ -160,6 +173,7 @@ function App() {
     setShowAddParticipantModal(false)
     setEditingParticipant(null)
     setReschedulingParticipant(null)
+    setClientSearchTerm('')
   }
 
   const handlePrevMonth = () => {
@@ -333,6 +347,28 @@ function App() {
       }
     }
     return null
+  }
+
+  const getUniqueClients = () => {
+    const clientsMap = {}
+    meetings.forEach(meeting => {
+      meeting.participantsList.forEach(participant => {
+        const cleanTel = participant.telefone.replace(/\D/g, '')
+        if (!cleanTel) return
+
+        if (!clientsMap[cleanTel]) {
+          clientsMap[cleanTel] = {
+            nome: participant.nome,
+            telefone: participant.telefone,
+            agencia: participant.agencia,
+            totalAgendamentos: 0
+          }
+        }
+        clientsMap[cleanTel].totalAgendamentos += 1
+      })
+    })
+
+    return Object.values(clientsMap).sort((a, b) => a.nome.localeCompare(b.nome))
   }
 
   const getMonthDays = () => {
@@ -538,18 +574,114 @@ function App() {
           </div>
         )
       }
-      case 'clientes':
+      case 'clientes': {
+        const uniqueClients = getUniqueClients()
+        const filteredClients = uniqueClients.filter(client => {
+          const term = clientSearchTerm.toLowerCase()
+          return (
+            client.nome.toLowerCase().includes(term) ||
+            client.telefone.replace(/\D/g, '').includes(term) ||
+            client.agencia.toLowerCase().includes(term)
+          )
+        })
+
         return (
           <div className="view-container">
-            <h1 className="view-title">Clientes</h1>
-            <p className="view-description">Lista de clientes e contatos comerciais.</p>
+            <div className="view-header">
+              <h1 className="view-title">Clientes</h1>
+              <p className="view-description">Lista de clientes e contatos comerciais consolidados a partir dos agendamentos.</p>
+            </div>
+
+            <div className="client-search-wrapper">
+              <div className="search-input-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="search-icon">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.637 10.637z" />
+                </svg>
+                <input
+                  type="text"
+                  className="client-search-input"
+                  placeholder="Pesquisar por nome, telefone ou agência..."
+                  value={clientSearchTerm}
+                  onChange={(e) => setClientSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="clients-table-container">
+              {filteredClients.length > 0 ? (
+                <table className="clients-table">
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>Telefone</th>
+                      <th>Agência</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredClients.map((client) => (
+                      <tr key={client.telefone}>
+                        <td>
+                          <span className="client-table-name">{client.nome}</span>
+                        </td>
+                        <td>
+                          <span className="client-table-phone">{client.telefone}</span>
+                        </td>
+                        <td>
+                          {client.agencia ? (
+                            <span className="client-table-agency">{client.agencia}</span>
+                          ) : (
+                            <span className="client-table-agency-empty">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="no-clients-found">
+                  <p>Nenhum cliente encontrado para os termos da busca.</p>
+                </div>
+              )}
+            </div>
           </div>
         )
+      }
       case 'configuracoes':
         return (
           <div className="view-container">
-            <h1 className="view-title">Configurações</h1>
-            <p className="view-description">Configurações da conta, integrações e preferências.</p>
+            <div className="view-header">
+              <h1 className="view-title">Configurações</h1>
+              <p className="view-description">Gerencie as preferências da aplicação, incluindo o tema de exibição.</p>
+            </div>
+            
+            <div className="settings-section-card">
+              <h3 className="settings-section-title">Tema do Sistema</h3>
+              <p className="settings-section-subtitle">Escolha entre a aparência Clara ou Escura para a interface da plataforma.</p>
+              
+              <div className="theme-toggle-options">
+                <button
+                  type="button"
+                  className={`theme-option-btn ${theme === 'dark' ? 'active' : ''}`}
+                  onClick={() => setTheme('dark')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="theme-icon">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                  </svg>
+                  <span>Escuro (Padrão)</span>
+                </button>
+                
+                <button
+                  type="button"
+                  className={`theme-option-btn ${theme === 'light' ? 'active' : ''}`}
+                  onClick={() => setTheme('light')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="theme-icon">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m0 13.5V21M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M3 12h2.25m13.5 0H21M6.34 17.66l-1.42 1.42m12.72-12.72l1.42-1.42A9 9 0 1111.25 3v11.25H3z" />
+                  </svg>
+                  <span>Claro</span>
+                </button>
+              </div>
+            </div>
           </div>
         )
       default:
