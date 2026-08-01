@@ -3,7 +3,25 @@ import { supabase } from '../supabaseClient'
 export const listPresentations = async () => {
   const { data, error } = await supabase
     .from('apresentacoes')
-    .select('id, data, horario, titulo, meet_link')
+    .select(`
+      id,
+      data,
+      horario,
+      titulo,
+      meet_link,
+      participacoes (
+        id,
+        status,
+        observacao,
+        cliente_id,
+        clientes (
+          id,
+          nome,
+          telefone,
+          agencia
+        )
+      )
+    `)
     .order('data', { ascending: true })
     .order('horario', { ascending: true })
 
@@ -17,6 +35,14 @@ export const listPresentations = async () => {
     time: item.horario,
     title: item.titulo,
     meetLink: item.meet_link,
-    participantsList: []
+    participantsList: (item.participacoes || []).map(part => ({
+      id: part.id,
+      clienteId: part.cliente_id,
+      nome: part.clientes?.nome || '',
+      telefone: part.clientes?.telefone || '',
+      agencia: part.clientes?.agencia || '',
+      observacao: part.observacao || '',
+      statusAtivo: part.status === 'ativo'
+    }))
   }))
 }
