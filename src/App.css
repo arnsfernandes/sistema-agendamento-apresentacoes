@@ -1,3 +1,7 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root {
   --bg-primary: #0a0b0d;
   --bg-secondary: #121318;
@@ -54,7 +58,8 @@ body {
 
 .dashboard-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: var(--bg-primary);
   transition: background-color 0.2s ease;
 }
@@ -155,19 +160,12 @@ body {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
-.content-header {
-  height: 70px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 2rem;
-  transition: border-color 0.2s ease;
-}
+
 
 .badge {
   background: var(--accent-glow);
@@ -186,6 +184,7 @@ body {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .view-container {
@@ -199,6 +198,7 @@ body {
   flex-direction: column;
   gap: 2rem;
   flex-grow: 1;
+  overflow-y: auto;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -413,6 +413,8 @@ body {
 @media (max-width: 768px) {
   .dashboard-layout {
     flex-direction: column;
+    height: 100dvh !important;
+    overflow: hidden !important;
   }
 
   .sidebar {
@@ -446,20 +448,25 @@ body {
     height: 18px;
   }
 
-  .content-header {
-    display: none;
+  .main-content {
+    flex-grow: 1 !important;
+    height: auto !important;
+    overflow: hidden !important;
   }
 
   .content-body {
-    padding: 1.5rem;
+    padding: 1rem !important;
+    flex-grow: 1 !important;
+    overflow: hidden !important;
   }
 
   .view-container {
-    padding: 1.5rem;
+    padding: 1rem !important;
     gap: 1.5rem;
     border-radius: 0;
     border-left: none;
     border-right: none;
+    overflow-y: auto !important;
   }
 
   .view-title {
