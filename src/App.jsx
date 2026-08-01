@@ -3,6 +3,7 @@ import './App.css'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
 import AddParticipantModal from './components/AddParticipantModal'
 import RescheduleParticipantModal from './components/RescheduleParticipantModal'
+import meetLogo from './assets/meet-logo.png'
 
 const navigationItems = [
   {
@@ -436,7 +437,7 @@ function App() {
         }
 
         return (
-          <div className="view-container">
+          <div className="view-container calendar-view-container">
             <div className="action-bar">
               <button className="btn btn-secondary" type="button">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
@@ -728,11 +729,9 @@ function App() {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div className="brand-logo">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <img src={meetLogo} alt="Google Meet Logo" className="brand-logo-img" />
           </div>
-          <span className="brand-name">Scheduling</span>
+          <span className="brand-name">Agendamento</span>
         </div>
 
         <nav className="sidebar-menu">
@@ -757,7 +756,7 @@ function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="main-content">
+      <main className={`main-content ${activeTab === 'calendario' ? 'calendar-tab-active' : ''}`}>
         <section className="content-body">
           {renderContent()}
         </section>
