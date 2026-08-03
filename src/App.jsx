@@ -94,6 +94,7 @@ function App() {
   const [meetingsError, setMeetingsError] = useState(null)
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false)
   const [googleConnectError, setGoogleConnectError] = useState(null)
+  const [googleSuccessMessage, setGoogleSuccessMessage] = useState(null)
 
   // Derive selectedMeeting reactively
   const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
@@ -124,6 +125,19 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('google') === 'connected') {
+      setActiveTab('configuracoes')
+      setGoogleSuccessMessage('Conta Google conectada com sucesso.')
+      
+      params.delete('google')
+      const newQuery = params.toString()
+      const newUrl = window.location.pathname + (newQuery ? `?${newQuery}` : '')
+      window.history.replaceState({}, document.title, newUrl)
+    }
+  }, [])
 
   // Login form states & handlers
   const [email, setEmail] = useState('')
@@ -725,6 +739,11 @@ function App() {
                 {googleConnectError && (
                   <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                     {googleConnectError}
+                  </p>
+                )}
+                {googleSuccessMessage && (
+                  <p className="success-message" style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    {googleSuccessMessage}
                   </p>
                 )}
               </div>
