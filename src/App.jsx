@@ -63,15 +63,23 @@ function App() {
 
   useEffect(() => {
     if (user) {
+      setMeetingsLoading(true)
+      setMeetingsError(null)
       listPresentations()
         .then(data => {
           setMeetings(data)
+          setMeetingsLoading(false)
+          setMeetingsError(null)
         })
         .catch(err => {
           console.error('Erro ao carregar apresentações:', err.message)
+          setMeetingsLoading(false)
+          setMeetingsError('Não foi possível carregar as apresentações. Tente novamente mais tarde.')
         })
     } else {
       setMeetings([])
+      setMeetingsLoading(false)
+      setMeetingsError(null)
     }
   }, [user])
 
@@ -81,6 +89,8 @@ function App() {
   // Reactive list of meetings
   const [meetings, setMeetings] = useState([])
   const [selectedMeetingId, setSelectedMeetingId] = useState(null)
+  const [meetingsLoading, setMeetingsLoading] = useState(false)
+  const [meetingsError, setMeetingsError] = useState(null)
 
   // Derive selectedMeeting reactively
   const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
@@ -413,128 +423,140 @@ function App() {
             </div>
             
             <div className="calendar-area">
-              <div className="calendar-card">
-                {/* Calendar Navigation Header */}
-                <div className="calendar-header-nav">
-                  <button className="btn-nav" onClick={handlePrevMonth} type="button" aria-label="Mês anterior">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                    </svg>
-                  </button>
-                  <h2 className="calendar-month-title">{capitalizedMonthName} {year}</h2>
-                  <button className="btn-nav" onClick={handleNextMonth} type="button" aria-label="Próximo mês">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                    </svg>
-                  </button>
+              {meetingsLoading ? (
+                <div className="loading-state">
+                  Carregando apresentações...
                 </div>
-
-                {/* Weekdays Labels */}
-                <div className="calendar-weekdays-grid">
-                  {weekDays.map((wd) => (
-                    <div key={wd} className="weekday-label">
-                      {wd}
-                    </div>
-                  ))}
+              ) : meetingsError ? (
+                <div className="error-state">
+                  Não foi possível carregar as apresentações. Tente novamente mais tarde.
                 </div>
-
-                {/* Days Grid */}
-                <div className="calendar-days-grid">
-                  {days.map((day) => {
-                    if (day.type === 'empty') {
-                      return <div key={day.id} className="calendar-day-cell empty" />
-                    }
-                    const isSelected = day.dateKey === selectedDateKey
-                    return (
-                      <div
-                        key={day.id}
-                        className={`calendar-day-cell ${day.isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
-                        onClick={() => setSelectedDateKey(day.dateKey)}
-                      >
-                        <span className="day-number">{day.dayNumber}</span>
-                        {(() => {
-                          const dayMeetings = meetings.filter(m => m.date === day.dateKey)
-                          const hasMeetings = dayMeetings.length > 0
-                          const hasParticipants = dayMeetings.some(m => m.participantsList && m.participantsList.length > 0)
-                          
-                          if (!hasMeetings) return null
-                          
-                          return (
-                            <>
-                              <span className="meetings-count-badge">
-                                {dayMeetings.length} {dayMeetings.length === 1 ? 'reunião' : 'reuniões'}
-                              </span>
-                              <span className={`meetings-dot-indicator ${hasParticipants ? 'purple-dot' : 'grey-dot'}`} />
-                            </>
-                          )
-                        })()}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {selectedDateKey && (
-                <div className="meetings-panel-overlay" onClick={() => {
-                  setSelectedDateKey(null)
-                  setSelectedMeetingId(null)
-                  setShowMeetLink(false)
-                  setMeetCopied(false)
-                  resetMessageStates()
-                }}>
-                  <aside className="meetings-panel" onClick={(e) => e.stopPropagation()}>
-                    <div className="panel-header">
-                      <h3 className="panel-title">{formattedSelectedDate}</h3>
-                      <button
-                        className="btn-close"
-                        onClick={() => {
-                          setSelectedDateKey(null)
-                          setSelectedMeetingId(null)
-                          setShowMeetLink(false)
-                          setMeetCopied(false)
-                          resetMessageStates()
-                        }}
-                        type="button"
-                        aria-label="Fechar painel"
-                      >
+              ) : (
+                <>
+                  <div className="calendar-card">
+                    {/* Calendar Navigation Header */}
+                    <div className="calendar-header-nav">
+                      <button className="btn-nav" onClick={handlePrevMonth} type="button" aria-label="Mês anterior">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                      </button>
+                      <h2 className="calendar-month-title">{capitalizedMonthName} {year}</h2>
+                      <button className="btn-nav" onClick={handleNextMonth} type="button" aria-label="Próximo mês">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                         </svg>
                       </button>
                     </div>
-                    <div className="panel-body">
-                      {dayMeetings.length > 0 ? (
-                        <div className="meetings-list">
-                          {dayMeetings.map((meeting) => (
-                            <div
-                              key={meeting.id}
-                              className={`meeting-item-card ${selectedMeetingId === meeting.id ? 'active' : ''}`}
-                              onClick={() => {
-                                setSelectedMeetingId(meeting.id)
-                                setShowMeetLink(false)
-                                setMeetCopied(false)
-                                resetMessageStates()
-                              }}
-                            >
-                              <span className="meeting-time-badge">{meeting.time}</span>
-                              <h4 className="meeting-item-title">{meeting.title}</h4>
-                              <div className="meeting-participants-info">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
-                                </svg>
-                                <span>
-                                  {meeting.participantsList.length} {meeting.participantsList.length === 1 ? 'participante' : 'participantes'}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
+
+                    {/* Weekdays Labels */}
+                    <div className="calendar-weekdays-grid">
+                      {weekDays.map((wd) => (
+                        <div key={wd} className="weekday-label">
+                          {wd}
                         </div>
-                      ) : (
-                        <p className="no-meetings-message">Nenhuma reunião encontrada para esta data</p>
-                      )}
+                      ))}
                     </div>
-                  </aside>
-                </div>
+
+                    {/* Days Grid */}
+                    <div className="calendar-days-grid">
+                      {days.map((day) => {
+                        if (day.type === 'empty') {
+                          return <div key={day.id} className="calendar-day-cell empty" />
+                        }
+                        const isSelected = day.dateKey === selectedDateKey
+                        return (
+                          <div
+                            key={day.id}
+                            className={`calendar-day-cell ${day.isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setSelectedDateKey(day.dateKey)}
+                          >
+                            <span className="day-number">{day.dayNumber}</span>
+                            {(() => {
+                              const dayMeetings = meetings.filter(m => m.date === day.dateKey)
+                              const hasMeetings = dayMeetings.length > 0
+                              const hasParticipants = dayMeetings.some(m => m.participantsList && m.participantsList.length > 0)
+                              
+                              if (!hasMeetings) return null
+                              
+                              return (
+                                <>
+                                  <span className="meetings-count-badge">
+                                    {dayMeetings.length} {dayMeetings.length === 1 ? 'reunião' : 'reuniões'}
+                                  </span>
+                                  <span className={`meetings-dot-indicator ${hasParticipants ? 'purple-dot' : 'grey-dot'}`} />
+                                </>
+                              )
+                            })()}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {selectedDateKey && (
+                    <div className="meetings-panel-overlay" onClick={() => {
+                      setSelectedDateKey(null)
+                      setSelectedMeetingId(null)
+                      setShowMeetLink(false)
+                      setMeetCopied(false)
+                      resetMessageStates()
+                    }}>
+                      <aside className="meetings-panel" onClick={(e) => e.stopPropagation()}>
+                        <div className="panel-header">
+                          <h3 className="panel-title">{formattedSelectedDate}</h3>
+                          <button
+                            className="btn-close"
+                            onClick={() => {
+                              setSelectedDateKey(null)
+                              setSelectedMeetingId(null)
+                              setShowMeetLink(false)
+                              setMeetCopied(false)
+                              resetMessageStates()
+                            }}
+                            type="button"
+                            aria-label="Fechar painel"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="panel-body">
+                          {dayMeetings.length > 0 ? (
+                            <div className="meetings-list">
+                              {dayMeetings.map((meeting) => (
+                                <div
+                                  key={meeting.id}
+                                  className={`meeting-item-card ${selectedMeetingId === meeting.id ? 'active' : ''}`}
+                                  onClick={() => {
+                                    setSelectedMeetingId(meeting.id)
+                                    setShowMeetLink(false)
+                                    setMeetCopied(false)
+                                    resetMessageStates()
+                                  }}
+                                >
+                                  <span className="meeting-time-badge">{meeting.time}</span>
+                                  <h4 className="meeting-item-title">{meeting.title}</h4>
+                                  <div className="meeting-participants-info">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
+                                    </svg>
+                                    <span>
+                                      {meeting.participantsList.length} {meeting.participantsList.length === 1 ? 'participante' : 'participantes'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="no-meetings-message">Nenhuma reunião encontrada para esta data</p>
+                          )}
+                        </div>
+                      </aside>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
