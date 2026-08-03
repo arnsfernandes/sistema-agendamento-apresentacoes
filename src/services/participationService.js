@@ -67,3 +67,18 @@ export const updateParticipationStatus = async (participacaoId, status) => {
 
   return data
 }
+
+export const updateParticipationPresentation = async (participacaoId, apresentacaoId) => {
+  const { data, error } = await supabase
+    .from('participacoes')
+    .update({ apresentacao_id: apresentacaoId })
+    .eq('id', participacaoId)
+    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .single()
+
+  if (error) {
+    throw new Error(`Falha ao atualizar a apresentação da participação: ${error.message}`)
+  }
+
+  return data
+}

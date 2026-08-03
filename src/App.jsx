@@ -7,7 +7,7 @@ import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
-import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus } from './services/participationService'
+import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
 
 const navigationItems = [
   {
@@ -365,28 +365,38 @@ function App() {
     }
   }
 
-  const handleRescheduleParticipant = (participantId, fromMeetingId, toMeetingId) => {
-    setMeetings(prevMeetings => {
-      const fromMeeting = prevMeetings.find(m => m.id === fromMeetingId)
-      const participantToMove = fromMeeting?.participantsList.find(p => p.id === participantId)
-      if (!participantToMove) return prevMeetings
+  const handleRescheduleParticipant = async (participantId, fromMeetingId, toMeetingId) => {
+    const fromMeeting = meetings.find(m => m.id === fromMeetingId)
+    const participantToMove = fromMeeting?.participantsList.find(p => p.id === participantId)
+    if (!participantToMove) return
 
-      return prevMeetings.map(m => {
-        if (m.id === fromMeetingId) {
-          return {
-            ...m,
-            participantsList: m.participantsList.filter(p => p.id !== participantId)
-          }
+    const clienteId = participantToMove.clienteId
+
+    try {
+      const destinationPart = await findParticipation(clienteId, toMeetingId)
+      if (destinationPart) {
+        if (destinationPart.status === 'ativo') {
+          const err = new Error('Este cliente já está ativo na reunião de destino.')
+          err.isValidationError = true
+          throw err
+        } else {
+          const err = new Error('Já existe uma participação cancelada no destino.')
+          err.isValidationError = true
+          throw err
         }
-        if (m.id === toMeetingId) {
-          return {
-            ...m,
-            participantsList: [...m.participantsList, { ...participantToMove }]
-          }
-        }
-        return m
-      })
-    })
+      }
+
+      await updateParticipationPresentation(participantId, toMeetingId)
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+    } catch (err) {
+      alert(err.message)
+      if (!err.isValidationError) {
+        const refreshed = await listPresentations()
+        setMeetings(refreshed)
+      }
+      throw err
+    }
   }
 
   const findClientByPhone = (phone) => {
@@ -1003,9 +1013,13 @@ function App() {
         participant={reschedulingParticipant}
         futureMeetings={futureMeetings}
         onClose={() => setReschedulingParticipant(null)}
-        onReschedule={(targetMeetingId) => {
-          handleRescheduleParticipant(reschedulingParticipant.id, selectedMeeting.id, targetMeetingId)
-          setReschedulingParticipant(null)
+        onReschedule={async (targetMeetingId) => {
+          try {
+            await handleRescheduleParticipant(reschedulingParticipant.id, selectedMeeting.id, targetMeetingId)
+            setReschedulingParticipant(null)
+          } catch (err) {
+            // Keep the modal open
+          }
         }}
       />
     </div>
