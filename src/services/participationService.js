@@ -33,3 +33,18 @@ export const createParticipation = async ({ clienteId, apresentacaoId, observaca
 
   return data
 }
+
+export const updateParticipationObservation = async (participacaoId, observacao) => {
+  const { data, error } = await supabase
+    .from('participacoes')
+    .update({ observacao })
+    .eq('id', participacaoId)
+    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .single()
+
+  if (error) {
+    throw new Error(`Falha ao atualizar observação da participação: ${error.message}`)
+  }
+
+  return data
+}

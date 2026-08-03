@@ -6,8 +6,8 @@ import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
-import { findClientByPhone, createClient } from './services/clientService'
-import { findParticipation, createParticipation } from './services/participationService'
+import { findClientByPhone, createClient, updateClient } from './services/clientService'
+import { findParticipation, createParticipation, updateParticipationObservation } from './services/participationService'
 
 const navigationItems = [
   {
@@ -285,42 +285,36 @@ function App() {
     setMeetings(updatedData)
   }
 
-  const handleUpdateParticipant = (meetingId, participantId, updatedData) => {
+  const handleUpdateParticipant = async (meetingId, participantId, updatedData) => {
     const currentMeeting = meetings.find(m => m.id === meetingId)
     const oldParticipant = currentMeeting?.participantsList.find(p => p.id === participantId)
     if (!oldParticipant) return
 
-    const oldPhone = oldParticipant.telefone
+    const clienteId = oldParticipant.clienteId
 
-    setMeetings(prevMeetings => prevMeetings.map(m => {
-      const updatedList = m.participantsList.map(p => {
-        // 1. If it's the exact participant being edited in the current meeting:
-        if (m.id === meetingId && p.id === participantId) {
-          return {
-            ...p,
-            nome: updatedData.nome,
-            telefone: updatedData.telefone,
-            agencia: updatedData.agencia,
-            observacao: updatedData.observacao // update observation only for this participation
-          }
+    try {
+      if (updatedData.telefone !== oldParticipant.telefone) {
+        const existingClient = await findClientByPhone(updatedData.telefone)
+        if (existingClient && existingClient.id !== clienteId) {
+          throw new Error('Este telefone já está vinculado a outro cliente.')
         }
-        // 2. If it's a participant in another meeting that has the same phone number:
-        if (p.telefone === oldPhone) {
-          return {
-            ...p,
-            nome: updatedData.nome,
-            telefone: updatedData.telefone,
-            agencia: updatedData.agencia
-          }
-        }
-        return p
+      }
+
+      await updateClient(clienteId, {
+        nome: updatedData.nome,
+        telefone: updatedData.telefone,
+        agencia: updatedData.agencia
       })
 
-      return {
-        ...m,
-        participantsList: updatedList
-      }
-    }))
+      await updateParticipationObservation(participantId, updatedData.observacao)
+
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+    } catch (err) {
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+      throw err
+    }
   }
 
   const handleCancelParticipant = (meetingId, participantId) => {
@@ -1008,7 +1002,7 @@ function App() {
         }}
         onAdd={async (participantData) => {
           if (editingParticipant) {
-            handleUpdateParticipant(selectedMeeting.id, editingParticipant.id, participantData)
+            await handleUpdateParticipant(selectedMeeting.id, editingParticipant.id, participantData)
             setShowAddParticipantModal(false)
             setEditingParticipant(null)
           } else {

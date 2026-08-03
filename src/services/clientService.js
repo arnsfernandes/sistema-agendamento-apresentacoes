@@ -27,3 +27,18 @@ export const createClient = async ({ nome, telefone, agencia }) => {
 
   return data
 }
+
+export const updateClient = async (clienteId, { nome, telefone, agencia }) => {
+  const { data, error } = await supabase
+    .from('clientes')
+    .update({ nome, telefone, agencia })
+    .eq('id', clienteId)
+    .select('id, nome, telefone, agencia')
+    .single()
+
+  if (error) {
+    throw new Error(`Falha ao atualizar o cliente: ${error.message}`)
+  }
+
+  return data
+}
