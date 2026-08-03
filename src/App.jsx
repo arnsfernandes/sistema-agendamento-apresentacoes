@@ -40,97 +40,7 @@ const navigationItems = [
   }
 ]
 
-// Initial mock list of meetings with detail lists of participants
-const INITIAL_MEETINGS = [
-  {
-    id: 1,
-    date: '2026-07-15',
-    time: '10:00',
-    title: 'Apresentação Comercial A',
-    meetLink: 'https://meet.google.com/abc-defg-hij',
-    participantsList: [
-      { id: '1-p1', nome: 'Carlos Souza', telefone: '11999998888', agencia: 'Santander', observacao: 'Tomador de decisão', statusAtivo: true },
-      { id: '1-p2', nome: 'Mariana Lima', telefone: '11988887777', agencia: 'Santander', observacao: '', statusAtivo: true },
-      { id: '1-p3', nome: 'Rafael Santos', telefone: '11977776666', agencia: '', observacao: 'Parceiro técnico', statusAtivo: true }
-    ]
-  },
-  {
-    id: 2,
-    date: '2026-07-28',
-    time: '09:00',
-    title: 'Alinhamento de Vendas',
-    meetLink: 'https://meet.google.com/xyz-pdqr-wst',
-    participantsList: [
-      { id: '2-p1', nome: 'Ana Clara', telefone: '21999991111', agencia: 'Itaú', observacao: '', statusAtivo: true },
-      { id: '2-p2', nome: 'Bruno Alves', telefone: '21999992222', agencia: 'Itaú', observacao: '', statusAtivo: true },
-      { id: '2-p3', nome: 'Camila Costa', telefone: '21999993333', agencia: '', observacao: '', statusAtivo: true },
-      { id: '2-p4', nome: 'Daniel Silva', telefone: '21999994444', agencia: '', observacao: 'Gerente geral', statusAtivo: true }
-    ]
-  },
-  {
-    id: 3,
-    date: '2026-07-28',
-    time: '14:30',
-    title: 'Apresentação Produto X',
-    meetLink: null,
-    participantsList: [
-      { id: '3-p1', nome: 'Eduardo Rocha', telefone: '31988882222', agencia: 'Bradesco', observacao: '', statusAtivo: true },
-      { id: '3-p2', nome: 'Fernanda Souza', telefone: '31988883333', agencia: '', observacao: '', statusAtivo: true }
-    ]
-  },
-  {
-    id: 4,
-    date: '2026-07-28',
-    time: '16:00',
-    title: 'Feedback de Proposta',
-    meetLink: 'https://meet.google.com/mno-pqrs-tuv',
-    participantsList: [
-      { id: '4-p1', nome: 'Gabriel Nogueira', telefone: '11955551111', agencia: '', observacao: '', statusAtivo: true },
-      { id: '4-p2', nome: 'Helena Pinheiro', telefone: '11955552222', agencia: '', observacao: '', statusAtivo: true },
-      { id: '4-p3', nome: 'Igor Mendes', telefone: '11955553333', agencia: 'Safra', observacao: '', statusAtivo: true },
-      { id: '4-p4', nome: 'Julia Cardoso', telefone: '11955554444', agencia: 'Safra', observacao: '', statusAtivo: true },
-      { id: '4-p5', nome: 'Lucas Oliveira', telefone: '11955555555', agencia: '', observacao: '', statusAtivo: true }
-    ]
-  },
-  {
-    id: 5,
-    date: '2026-08-05',
-    time: '11:00',
-    title: 'Apresentação Comercial B',
-    meetLink: 'https://meet.google.com/cde-fghi-jkl',
-    participantsList: [
-      { id: '5-p1', nome: 'Mateus Lima', telefone: '11944445555', agencia: 'C6 Bank', observacao: '', statusAtivo: true },
-      { id: '5-p2', nome: 'Natalia Ribeiro', telefone: '11944446666', agencia: 'C6 Bank', observacao: '', statusAtivo: true },
-      { id: '5-p3', nome: 'Otávio Dias', telefone: '11944447777', agencia: '', observacao: '', statusAtivo: true }
-    ]
-  },
-  {
-    id: 6,
-    date: '2026-08-05',
-    time: '15:00',
-    title: 'Reunião de Fechamento',
-    meetLink: null,
-    participantsList: [
-      { id: '6-p1', nome: 'Patrícia Gomes', telefone: '51933337777', agencia: '', observacao: '', statusAtivo: true },
-      { id: '6-p2', nome: 'Roberto Cruz', telefone: '51933338888', agencia: 'Banrisul', observacao: '', statusAtivo: true }
-    ]
-  },
-  {
-    id: 7,
-    date: '2026-08-12',
-    time: '10:00',
-    title: 'Kickoff Projeto Y',
-    meetLink: 'https://meet.google.com/stu-vwxy-z12',
-    participantsList: [
-      { id: '7-p1', nome: 'Sandra Duarte', telefone: '11912345678', agencia: 'Banco do Brasil', observacao: '', statusAtivo: true },
-      { id: '7-p2', nome: 'Thiago Ramos', telefone: '11923456789', agencia: 'Banco do Brasil', observacao: '', statusAtivo: true },
-      { id: '7-p3', nome: 'Vanessa Lima', telefone: '11934567890', agencia: '', observacao: '', statusAtivo: true },
-      { id: '7-p4', nome: 'Wagner Reis', telefone: '11945678901', agencia: '', observacao: '', statusAtivo: true },
-      { id: '7-p5', nome: 'Yago Borges', telefone: '11956789012', agencia: '', observacao: '', statusAtivo: true },
-      { id: '7-p6', nome: 'Zara Martins', telefone: '11967890123', agencia: '', observacao: '', statusAtivo: true }
-    ]
-  }
-]
+
 
 function App() {
   const [user, setUser] = useState(null)
@@ -397,18 +307,6 @@ function App() {
       }
       throw err
     }
-  }
-
-  const findClientByPhone = (phone) => {
-    const cleanTel = phone.replace(/\D/g, '')
-    if (!cleanTel) return null
-    for (const meeting of meetings) {
-      const found = meeting.participantsList.find(p => p.telefone === cleanTel)
-      if (found) {
-        return { nome: found.nome, agencia: found.agencia }
-      }
-    }
-    return null
   }
 
   const getUniqueClients = () => {

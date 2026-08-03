@@ -44,7 +44,7 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
     onClose()
   }
 
-  const handlePhoneChange = (val) => {
+  const handlePhoneChange = async (val) => {
     setTelefone(val)
     const cleanTel = val.replace(/\D/g, '')
 
@@ -66,10 +66,17 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
       return
     }
 
-    // Find in other meetings
-    const found = onFindClient(cleanTel)
-    if (found) {
-      setFoundClient(found)
+    if (cleanTel.length === 10 || cleanTel.length === 11) {
+      try {
+        const found = await onFindClient(cleanTel)
+        if (found) {
+          setFoundClient(found)
+        } else {
+          setFoundClient(null)
+        }
+      } catch (err) {
+        setFoundClient(null)
+      }
     } else {
       setFoundClient(null)
     }
