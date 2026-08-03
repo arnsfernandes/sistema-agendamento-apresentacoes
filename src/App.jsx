@@ -174,8 +174,19 @@ function App() {
     setMeetCopied(false)
     resetMessageStates()
   }
+  const isPresentationPast = (meeting) => {
+    if (!meeting) return false
+    const now = new Date()
+    const meetingDate = new Date(`${meeting.date}T${meeting.time}:00`)
+    return meetingDate < now
+  }
 
   const handleAddParticipant = async (meetingId, participantData) => {
+    const meeting = meetings.find(m => m.id === meetingId)
+    if (isPresentationPast(meeting)) {
+      throw new Error('Não é possível alterar uma apresentação que já ocorreu.')
+    }
+
     let client = await findClientByPhone(participantData.telefone)
     
     if (!client) {
@@ -207,6 +218,9 @@ function App() {
 
   const handleUpdateParticipant = async (meetingId, participantId, updatedData) => {
     const currentMeeting = meetings.find(m => m.id === meetingId)
+    if (isPresentationPast(currentMeeting)) {
+      throw new Error('Não é possível alterar uma apresentação que já ocorreu.')
+    }
     const oldParticipant = currentMeeting?.participantsList.find(p => p.id === participantId)
     if (!oldParticipant) return
 
@@ -238,6 +252,11 @@ function App() {
   }
 
   const handleCancelParticipant = async (meetingId, participantId) => {
+    const meeting = meetings.find(m => m.id === meetingId)
+    if (isPresentationPast(meeting)) {
+      alert('Não é possível alterar uma apresentação que já ocorreu.')
+      return
+    }
     try {
       await updateParticipationStatus(participantId, 'cancelado')
       const refreshed = await listPresentations()
@@ -253,11 +272,8 @@ function App() {
     const meeting = meetings.find(m => m.id === meetingId)
     if (!meeting) return
 
-    // Check if the meeting is in the future
-    const now = new Date()
-    const meetingDate = new Date(`${meeting.date}T${meeting.time}:00`)
-    if (meetingDate < now) {
-      alert('Não é possível reativar participante de uma reunião que já ocorreu.')
+    if (isPresentationPast(meeting)) {
+      alert('Não é possível alterar uma apresentação que já ocorreu.')
       return
     }
 
@@ -287,12 +303,19 @@ function App() {
 
   const handleRescheduleParticipant = async (participantId, fromMeetingId, toMeetingId) => {
     const fromMeeting = meetings.find(m => m.id === fromMeetingId)
+    const toMeeting = meetings.find(m => m.id === toMeetingId)
     const participantToMove = fromMeeting?.participantsList.find(p => p.id === participantId)
     if (!participantToMove) return
 
     const clienteId = participantToMove.clienteId
 
     try {
+      if (isPresentationPast(fromMeeting) || isPresentationPast(toMeeting)) {
+        const err = new Error('Não é possível alterar uma apresentação que já ocorreu.')
+        err.isValidationError = true
+        throw err
+      }
+
       const destinationPart = await findParticipation(clienteId, toMeetingId)
       if (destinationPart) {
         if (destinationPart.status === 'ativo') {

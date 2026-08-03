@@ -16,6 +16,10 @@ export default function MeetingDetailsModal({
 }) {
   if (!selectedMeeting) return null
 
+  const now = new Date()
+  const meetingDate = new Date(`${selectedMeeting.date}T${selectedMeeting.time}:00`)
+  const isPast = meetingDate < now
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -72,16 +76,18 @@ export default function MeetingDetailsModal({
               </svg>
               Ver mensagem
             </button>
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={onAddParticipant}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 10.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
-              </svg>
-              Adicionar participante
-            </button>
+            {!isPast && (
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={onAddParticipant}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 10.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                </svg>
+                Adicionar participante
+              </button>
+            )}
           </div>
 
           {meetingErrorMsg && (
@@ -143,53 +149,52 @@ export default function MeetingDetailsModal({
                         )}
                       </div>
                       <div className="participant-item-actions">
-                        {participant.statusAtivo ? (
+                        {participant.agencia && (
+                          <span className="participant-item-agency">{participant.agencia}</span>
+                        )}
+                        {!isPast && (
                           <>
-                            {participant.agencia && (
-                              <span className="participant-item-agency">{participant.agencia}</span>
+                            {participant.statusAtivo ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn-edit-participant"
+                                  onClick={() => onEditParticipant(participant)}
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-reschedule-participant"
+                                  onClick={() => onRescheduleParticipant(participant)}
+                                >
+                                  Remarcar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-cancel-participant"
+                                  onClick={() => {
+                                    if (window.confirm('Deseja realmente cancelar este participante?')) {
+                                      onCancelParticipant(participant.id)
+                                    }
+                                  }}
+                                >
+                                  Cancelar
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn-reactivate-participant"
+                                onClick={() => {
+                                  if (window.confirm('Deseja realmente reativar este participante?')) {
+                                    onReactivateParticipant(participant.id)
+                                  }
+                                }}
+                              >
+                                Reativar
+                              </button>
                             )}
-                            <button
-                              type="button"
-                              className="btn-edit-participant"
-                              onClick={() => onEditParticipant(participant)}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-reschedule-participant"
-                              onClick={() => onRescheduleParticipant(participant)}
-                            >
-                              Remarcar
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-cancel-participant"
-                              onClick={() => {
-                                if (window.confirm('Deseja realmente cancelar este participante?')) {
-                                  onCancelParticipant(participant.id)
-                                }
-                              }}
-                            >
-                              Cancelar
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {participant.agencia && (
-                              <span className="participant-item-agency">{participant.agencia}</span>
-                            )}
-                            <button
-                              type="button"
-                              className="btn-reactivate-participant"
-                              onClick={() => {
-                                if (window.confirm('Deseja realmente reativar este participante?')) {
-                                  onReactivateParticipant(participant.id)
-                                }
-                              }}
-                            >
-                              Reativar
-                            </button>
                           </>
                         )}
                       </div>
