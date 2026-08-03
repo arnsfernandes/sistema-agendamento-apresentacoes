@@ -95,6 +95,10 @@ function App() {
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false)
   const [googleConnectError, setGoogleConnectError] = useState(null)
   const [googleSuccessMessage, setGoogleSuccessMessage] = useState(null)
+  const [googleCalendars, setGoogleCalendars] = useState([])
+  const [googleAccountEmail, setGoogleAccountEmail] = useState(null)
+  const [calendarsLoading, setCalendarsLoading] = useState(false)
+  const [calendarsError, setCalendarsError] = useState(null)
 
   // Derive selectedMeeting reactively
   const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
@@ -138,6 +142,12 @@ function App() {
       window.history.replaceState({}, document.title, newUrl)
     }
   }, [])
+
+  useEffect(() => {
+    if (activeTab === 'configuracoes' && user) {
+      fetchGoogleCalendars()
+    }
+  }, [activeTab, user])
 
   // Login form states & handlers
   const [email, setEmail] = useState('')
@@ -368,6 +378,24 @@ function App() {
       console.error('Erro ao conectar Google:', err)
       setGoogleConnectError('Não foi possível iniciar a conexão com o Google. Tente novamente.')
       setIsConnectingGoogle(false)
+    }
+  }
+
+  const fetchGoogleCalendars = async () => {
+    setCalendarsLoading(true)
+    setCalendarsError(null)
+    try {
+      const { data, error } = await supabase.functions.invoke('google-calendar-list')
+      if (error) throw error
+      if (data) {
+        setGoogleAccountEmail(data.googleEmail)
+        setGoogleCalendars(data.calendars || [])
+      }
+    } catch (err) {
+      console.error('Erro ao listar agendas:', err)
+      setCalendarsError('Não foi possível obter a lista de agendas do Google.')
+    } finally {
+      setCalendarsLoading(false)
     }
   }
 
@@ -728,23 +756,79 @@ function App() {
               <p className="settings-section-subtitle">Vincule sua conta Google para sincronizar e gerenciar as apresentações comerciais diretamente na sua agenda.</p>
 
               <div style={{ marginTop: '1.5rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleConnectGoogle}
-                  disabled={isConnectingGoogle}
-                >
-                  {isConnectingGoogle ? 'Conectando...' : 'Conectar Google'}
-                </button>
-                {googleConnectError && (
-                  <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                    {googleConnectError}
+                {calendarsLoading ? (
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    Carregando agendas do Google...
                   </p>
-                )}
-                {googleSuccessMessage && (
-                  <p className="success-message" style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                    {googleSuccessMessage}
-                  </p>
+                ) : calendarsError ? (
+                  <div>
+                    <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                      {calendarsError}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={fetchGoogleCalendars}
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                ) : googleAccountEmail ? (
+                  <div>
+                    <p style={{ fontSize: '0.95rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                      Conectado como: <span style={{ color: 'var(--accent-color)' }}>{googleAccountEmail}</span>
+                    </p>
+                    
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+                      Suas Agendas Google:
+                    </h4>
+                    
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {googleCalendars.map((cal) => (
+                        <li
+                          key={cal.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.75rem 1rem',
+                            background: 'var(--input-bg)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '8px',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          <span>{cal.name}</span>
+                          {cal.primary && (
+                            <span style={{ fontSize: '0.75rem', background: 'var(--accent-glow)', color: 'var(--text-accent)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '500' }}>
+                              Principal
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleConnectGoogle}
+                      disabled={isConnectingGoogle}
+                    >
+                      {isConnectingGoogle ? 'Conectando...' : 'Conectar Google'}
+                    </button>
+                    {googleConnectError && (
+                      <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                        {googleConnectError}
+                      </p>
+                    )}
+                    {googleSuccessMessage && (
+                      <p className="success-message" style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                        {googleSuccessMessage}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
