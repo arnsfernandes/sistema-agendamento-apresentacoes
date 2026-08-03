@@ -7,6 +7,7 @@ export const listPresentations = async () => {
       id,
       data,
       horario,
+      horario_fim,
       titulo,
       meet_link,
       participacoes (
@@ -33,6 +34,7 @@ export const listPresentations = async () => {
     id: item.id,
     date: item.data,
     time: item.horario,
+    timeEnd: item.horario_fim,
     title: item.titulo,
     meetLink: item.meet_link,
     participantsList: (item.participacoes || []).map(part => ({

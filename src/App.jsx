@@ -8,6 +8,7 @@ import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
 import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
+import { isPresentationPast } from './utils/dateUtils'
 
 const navigationItems = [
   {
@@ -91,6 +92,8 @@ function App() {
   const [selectedMeetingId, setSelectedMeetingId] = useState(null)
   const [meetingsLoading, setMeetingsLoading] = useState(false)
   const [meetingsError, setMeetingsError] = useState(null)
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false)
+  const [googleConnectError, setGoogleConnectError] = useState(null)
 
   // Derive selectedMeeting reactively
   const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
@@ -173,12 +176,6 @@ function App() {
     setShowMeetLink(false)
     setMeetCopied(false)
     resetMessageStates()
-  }
-  const isPresentationPast = (meeting) => {
-    if (!meeting) return false
-    const now = new Date()
-    const meetingDate = new Date(`${meeting.date}T${meeting.time}:00`)
-    return meetingDate < now
   }
 
   const handleAddParticipant = async (meetingId, participantData) => {
@@ -339,6 +336,24 @@ function App() {
         setMeetings(refreshed)
       }
       throw err
+    }
+  }
+
+  const handleConnectGoogle = async () => {
+    setIsConnectingGoogle(true)
+    setGoogleConnectError(null)
+    try {
+      const { data, error } = await supabase.functions.invoke('google-oauth-start')
+      if (error) throw error
+      if (data && data.authorizationUrl) {
+        window.location.href = data.authorizationUrl
+      } else {
+        throw new Error('URL de autorização não recebida do servidor.')
+      }
+    } catch (err) {
+      console.error('Erro ao conectar Google:', err)
+      setGoogleConnectError('Não foi possível iniciar a conexão com o Google. Tente novamente.')
+      setIsConnectingGoogle(false)
     }
   }
 
@@ -559,7 +574,7 @@ function App() {
                                     resetMessageStates()
                                   }}
                                 >
-                                  <span className="meeting-time-badge">{meeting.time}</span>
+                                  <span className="meeting-time-badge">{meeting.time}{meeting.timeEnd ? ` - ${meeting.timeEnd}` : ''}</span>
                                   <h4 className="meeting-item-title">{meeting.title}</h4>
                                   <div className="meeting-participants-info">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -691,6 +706,27 @@ function App() {
                   </svg>
                   <span>Claro</span>
                 </button>
+              </div>
+            </div>
+
+            <div className="settings-section-card">
+              <h3 className="settings-section-title">Integração Google Agenda</h3>
+              <p className="settings-section-subtitle">Vincule sua conta Google para sincronizar e gerenciar as apresentações comerciais diretamente na sua agenda.</p>
+
+              <div style={{ marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleConnectGoogle}
+                  disabled={isConnectingGoogle}
+                >
+                  {isConnectingGoogle ? 'Conectando...' : 'Conectar Google'}
+                </button>
+                {googleConnectError && (
+                  <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    {googleConnectError}
+                  </p>
+                )}
               </div>
             </div>
           </div>
