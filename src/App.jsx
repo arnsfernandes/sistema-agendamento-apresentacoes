@@ -7,7 +7,7 @@ import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
-import { findParticipation, createParticipation, updateParticipationObservation } from './services/participationService'
+import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus } from './services/participationService'
 
 const navigationItems = [
   {
@@ -317,27 +317,19 @@ function App() {
     }
   }
 
-  const handleCancelParticipant = (meetingId, participantId) => {
-    setMeetings(prevMeetings => prevMeetings.map(m => {
-      if (m.id === meetingId) {
-        return {
-          ...m,
-          participantsList: m.participantsList.map(p => {
-            if (p.id === participantId) {
-              return {
-                ...p,
-                statusAtivo: false
-              }
-            }
-            return p
-          })
-        }
-      }
-      return m
-    }))
+  const handleCancelParticipant = async (meetingId, participantId) => {
+    try {
+      await updateParticipationStatus(participantId, 'cancelado')
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+    } catch (err) {
+      alert(err.message)
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+    }
   }
 
-  const handleReactivateParticipant = (meetingId, participantId) => {
+  const handleReactivateParticipant = async (meetingId, participantId) => {
     const meeting = meetings.find(m => m.id === meetingId)
     if (!meeting) return
 
@@ -362,23 +354,15 @@ function App() {
       return
     }
 
-    setMeetings(prevMeetings => prevMeetings.map(m => {
-      if (m.id === meetingId) {
-        return {
-          ...m,
-          participantsList: m.participantsList.map(p => {
-            if (p.id === participantId) {
-              return {
-                ...p,
-                statusAtivo: true
-              }
-            }
-            return p
-          })
-        }
-      }
-      return m
-    }))
+    try {
+      await updateParticipationStatus(participantId, 'ativo')
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+    } catch (err) {
+      alert(err.message)
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+    }
   }
 
   const handleRescheduleParticipant = (participantId, fromMeetingId, toMeetingId) => {

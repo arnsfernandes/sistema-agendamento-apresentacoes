@@ -48,3 +48,22 @@ export const updateParticipationObservation = async (participacaoId, observacao)
 
   return data
 }
+
+export const updateParticipationStatus = async (participacaoId, status) => {
+  if (status !== 'ativo' && status !== 'cancelado') {
+    throw new Error('Status inválido. Deve ser "ativo" ou "cancelado".')
+  }
+
+  const { data, error } = await supabase
+    .from('participacoes')
+    .update({ status })
+    .eq('id', participacaoId)
+    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .single()
+
+  if (error) {
+    throw new Error(`Falha ao atualizar status da participação: ${error.message}`)
+  }
+
+  return data
+}
