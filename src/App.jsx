@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import './App.css'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
 import AddParticipantModal from './components/AddParticipantModal'
@@ -425,7 +426,18 @@ function App() {
       setActiveCalendarId(selectedCalendar.id)
     } catch (err) {
       console.error('Erro ao salvar agenda:', err)
-      setSavingCalendarError('Não foi possível salvar a agenda selecionada. Tente novamente.')
+      let errorMsg = 'Não foi possível salvar a agenda selecionada. Tente novamente.'
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const body = await err.context.json()
+          if (body && body.error) {
+            errorMsg = body.error
+          }
+        } catch (_) {}
+      } else if (err && err.message) {
+        errorMsg = err.message
+      }
+      setSavingCalendarError(errorMsg)
     } finally {
       setIsSavingCalendar(false)
     }
