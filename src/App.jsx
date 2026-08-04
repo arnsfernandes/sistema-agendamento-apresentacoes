@@ -99,6 +99,11 @@ function App() {
   const [googleAccountEmail, setGoogleAccountEmail] = useState(null)
   const [calendarsLoading, setCalendarsLoading] = useState(false)
   const [calendarsError, setCalendarsError] = useState(null)
+  const [selectedCalendar, setSelectedCalendar] = useState(null)
+  const [isSavingCalendar, setIsSavingCalendar] = useState(false)
+  const [savingCalendarError, setSavingCalendarError] = useState(null)
+  const [savingCalendarSuccess, setSavingCalendarSuccess] = useState(false)
+  const [activeCalendarId, setActiveCalendarId] = useState(null)
 
   // Derive selectedMeeting reactively
   const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
@@ -390,12 +395,39 @@ function App() {
       if (data) {
         setGoogleAccountEmail(data.googleEmail)
         setGoogleCalendars(data.calendars || [])
+        if (data.selectedCalendarId) {
+          setActiveCalendarId(data.selectedCalendarId)
+          const activeCal = (data.calendars || []).find(c => c.id === data.selectedCalendarId)
+          if (activeCal) {
+            setSelectedCalendar(activeCal)
+          }
+        }
       }
     } catch (err) {
       console.error('Erro ao listar agendas:', err)
       setCalendarsError('Não foi possível obter a lista de agendas do Google.')
     } finally {
       setCalendarsLoading(false)
+    }
+  }
+
+  const handleSaveCalendar = async () => {
+    if (!selectedCalendar) return
+    setIsSavingCalendar(true)
+    setSavingCalendarError(null)
+    setSavingCalendarSuccess(false)
+    try {
+      const { data, error } = await supabase.functions.invoke('google-calendar-select', {
+        body: { calendarId: selectedCalendar.id }
+      })
+      if (error) throw error
+      setSavingCalendarSuccess(true)
+      setActiveCalendarId(selectedCalendar.id)
+    } catch (err) {
+      console.error('Erro ao salvar agenda:', err)
+      setSavingCalendarError('Não foi possível salvar a agenda selecionada. Tente novamente.')
+    } finally {
+      setIsSavingCalendar(false)
     }
   }
 
@@ -784,29 +816,89 @@ function App() {
                     </h4>
                     
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {googleCalendars.map((cal) => (
-                        <li
-                          key={cal.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '0.75rem 1rem',
-                            background: 'var(--input-bg)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '8px',
-                            fontSize: '0.9rem'
-                          }}
-                        >
-                          <span>{cal.name}</span>
-                          {cal.primary && (
-                            <span style={{ fontSize: '0.75rem', background: 'var(--accent-glow)', color: 'var(--text-accent)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '500' }}>
-                              Principal
-                            </span>
-                          )}
-                        </li>
-                      ))}
+                      {googleCalendars.map((cal) => {
+                        const isSelectable = cal.accessRole === 'owner' || cal.accessRole === 'writer'
+                        const isSelected = selectedCalendar?.id === cal.id
+                        const isActive = activeCalendarId === cal.id
+                        
+                        return (
+                          <li
+                            key={cal.id}
+                            onClick={() => {
+                              if (isSelectable) {
+                                setSelectedCalendar(cal)
+                                setSavingCalendarError(null)
+                                setSavingCalendarSuccess(false)
+                              }
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '0.75rem 1rem',
+                              background: 'var(--input-bg)',
+                              border: isSelected ? '2px solid var(--accent-color)' : '1px solid var(--border-color)',
+                              borderRadius: '8px',
+                              fontSize: '0.9rem',
+                              cursor: isSelectable ? 'pointer' : 'not-allowed',
+                              opacity: isSelectable ? 1 : 0.6,
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                              <span style={{ fontWeight: isSelected ? '600' : '400' }}>{cal.name}</span>
+                              {!isSelectable && (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  Apenas leitura ({cal.accessRole})
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              {cal.primary && (
+                                <span style={{ fontSize: '0.75rem', background: 'var(--accent-glow)', color: 'var(--text-accent)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '500' }}>
+                                  Principal
+                                </span>
+                              )}
+                              {isActive && (
+                                <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '600' }}>
+                                  Em uso
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        )
+                      })}
                     </ul>
+
+                    {activeCalendarId && (
+                      <p style={{ fontSize: '0.875rem', color: '#10b981', marginTop: '1rem', fontWeight: '500' }}>
+                        Agenda selecionada: <strong style={{ color: 'var(--text-primary)' }}>{googleCalendars.find(c => c.id === activeCalendarId)?.name || selectedCalendar?.name || ''}</strong>
+                      </p>
+                    )}
+
+                    {selectedCalendar && selectedCalendar.id !== activeCalendarId && (
+                      <div style={{ marginTop: '1.5rem' }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={handleSaveCalendar}
+                          disabled={isSavingCalendar}
+                        >
+                          {isSavingCalendar ? 'Salvando...' : 'Usar esta agenda'}
+                        </button>
+                        
+                        {savingCalendarError && (
+                          <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                            {savingCalendarError}
+                          </p>
+                        )}
+                        {savingCalendarSuccess && (
+                          <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                            Agenda salva com sucesso!
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
