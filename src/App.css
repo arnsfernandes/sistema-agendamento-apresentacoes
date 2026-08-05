@@ -821,6 +821,16 @@ body {
   margin: 2rem 0;
 }
 
+.day-create-action {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.day-create-action .btn {
+  width: 100%;
+}
+
 /* Responsive adjustment for media queries */
 @media (max-width: 768px) {
   .calendar-area {

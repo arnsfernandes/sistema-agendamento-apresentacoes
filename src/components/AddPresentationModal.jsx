@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-export default function AddPresentationModal({ isOpen, onClose, onCreate }) {
+export default function AddPresentationModal({ isOpen, onClose, onCreate, initialDate }) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
   const [startTime, setStartTime] = useState('')
@@ -8,18 +8,21 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate }) {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  // Evita resetar campos se initialDate mudar com o modal já aberto
+  const prevOpenRef = useRef(false)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevOpenRef.current) {
       setTitle('')
-      setDate('')
+      setDate(initialDate || '')
       setStartTime('')
       setEndTime('')
       setErrors({})
       setIsSubmitting(false)
       setSubmitError(null)
     }
-  }, [isOpen])
+    prevOpenRef.current = isOpen
+  }, [isOpen, initialDate])
 
   const handleClose = () => {
     setTitle('')

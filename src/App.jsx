@@ -125,6 +125,7 @@ function App() {
   // Participant form state
   const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
   const [showAddPresentationModal, setShowAddPresentationModal] = useState(false)
+  const [presentationModalInitialDate, setPresentationModalInitialDate] = useState('')
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
 
@@ -526,6 +527,16 @@ function App() {
     }
   }
 
+  const openPresentationModal = (initialDate = '') => {
+    setPresentationModalInitialDate(initialDate)
+    setShowAddPresentationModal(true)
+  }
+
+  const closePresentationModal = () => {
+    setShowAddPresentationModal(false)
+    setPresentationModalInitialDate('')
+  }
+
   const getUniqueClients = () => {
     const clientsMap = {}
     meetings.forEach(meeting => {
@@ -618,7 +629,7 @@ function App() {
               <button 
                 className="btn btn-primary" 
                 type="button"
-                onClick={() => setShowAddPresentationModal(true)}
+                onClick={() => openPresentationModal()}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -767,8 +778,18 @@ function App() {
                               ))}
                             </div>
                           ) : (
-                            <p className="no-meetings-message">Nenhuma reunião encontrada para esta data</p>
+                            <p className="no-meetings-message">Nenhuma apresentação agendada para esta data.</p>
                           )}
+
+                          <div className="day-create-action">
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => openPresentationModal(selectedDateKey)}
+                            >
+                              Criar apresentação neste dia
+                            </button>
+                          </div>
                         </div>
                       </aside>
                     </div>
@@ -1339,8 +1360,9 @@ function App() {
 
       <AddPresentationModal
         isOpen={showAddPresentationModal}
-        onClose={() => setShowAddPresentationModal(false)}
+        onClose={closePresentationModal}
         onCreate={handleCreatePresentation}
+        initialDate={presentationModalInitialDate}
       />
     </div>
   )
