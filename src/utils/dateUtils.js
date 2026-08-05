@@ -35,3 +35,25 @@ export const hasPresentationStarted = (presentation) => {
   const nowDateTimeStr = getSaoPauloDateTime()
   return nowDateTimeStr >= meetingDateTimeStr
 }
+
+export const isPresentationFuture = (presentation) => {
+  if (!presentation) return false
+  const timeToCheck = presentation.time || '00:00'
+  const parts = timeToCheck.split(':')
+  const normalizedTime = parts.length === 2 ? `${timeToCheck}:00` : timeToCheck
+
+  const meetingDateTimeStr = `${presentation.date}T${normalizedTime}`
+  const nowDateTimeStr = getSaoPauloDateTime()
+  return meetingDateTimeStr > nowDateTimeStr
+}
+
+export const formatMeetingDate = (dateStr) => {
+  if (!dateStr) return ''
+  const [sYear, sMonth, sDay] = dateStr.split('-').map(Number)
+  const sDate = new Date(sYear, sMonth - 1, sDay)
+  return sDate.toLocaleDateString('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
+}

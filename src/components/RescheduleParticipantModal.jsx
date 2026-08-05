@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatMeetingDate } from '../utils/dateUtils'
 
 export default function RescheduleParticipantModal({
   isOpen,
@@ -15,16 +16,6 @@ export default function RescheduleParticipantModal({
     if (!selectedTargetMeetingId) return
     onReschedule(selectedTargetMeetingId)
     setSelectedTargetMeetingId(null)
-  }
-
-  const formatMeetingDate = (dateStr) => {
-    const [sYear, sMonth, sDay] = dateStr.split('-').map(Number)
-    const sDate = new Date(sYear, sMonth - 1, sDay)
-    return sDate.toLocaleDateString('pt-BR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    })
   }
 
   return (

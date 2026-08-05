@@ -12,7 +12,7 @@ import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
 import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
-import { isPresentationPast, getSaoPauloDateTime } from './utils/dateUtils'
+import { isPresentationPast, isPresentationFuture } from './utils/dateUtils'
 
 const navigationItems = [
   {
@@ -1254,14 +1254,8 @@ function App() {
   }
 
   // Filter future meetings, sorted by date and time
-  const nowDateTimeStr = getSaoPauloDateTime()
   const futureMeetings = meetings
-    .filter(m => {
-      const parts = m.time.split(':')
-      const normalizedTime = parts.length === 2 ? `${m.time}:00` : m.time
-      const meetingDateTimeStr = `${m.date}T${normalizedTime}`
-      return meetingDateTimeStr > nowDateTimeStr
-    })
+    .filter(isPresentationFuture)
     .sort((a, b) => {
       const dateDiff = a.date.localeCompare(b.date)
       if (dateDiff !== 0) return dateDiff
