@@ -6,12 +6,13 @@ import AddParticipantModal from './components/AddParticipantModal'
 import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 import AddPresentationModal from './components/AddPresentationModal'
 import EditPresentationModal from './components/EditPresentationModal'
+import MoveParticipantsModal from './components/MoveParticipantsModal'
 import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
 import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
-import { isPresentationPast } from './utils/dateUtils'
+import { isPresentationPast, getSaoPauloDateTime } from './utils/dateUtils'
 
 const navigationItems = [
   {
@@ -128,6 +129,9 @@ function App() {
   const [showAddPresentationModal, setShowAddPresentationModal] = useState(false)
   const [showEditPresentationModal, setShowEditPresentationModal] = useState(false)
   const [isDeletingPresentation, setIsDeletingPresentation] = useState(false)
+  const [showMoveParticipantsModal, setShowMoveParticipantsModal] = useState(false)
+  const [movingPresentation, setMovingPresentation] = useState(null)
+  const [isMovingAndDeleteProcessing, setIsMovingAndDeleteProcessing] = useState(false)
   const [presentationModalInitialDate, setPresentationModalInitialDate] = useState('')
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
@@ -580,7 +584,7 @@ function App() {
     }
   }
 
-  const handleDeletePresentation = async (presentationId) => {
+  const handleDeletePresentation = async (presentationId, forceDeleteParticipants = false) => {
     setMeetingErrorMsg(null)
 
     const presentation = meetings.find(m => m.id === presentationId)
@@ -589,11 +593,13 @@ function App() {
     const hasParticipants = presentation.participantsList && presentation.participantsList.length > 0
     let deleteParticipants = false
 
-    if (hasParticipants) {
-      const confirmDeleteWithParticipants = window.confirm(
-        'Esta apresentação possui participantes cadastrados. Deseja excluir a apresentação e também cancelar/remover todas as participações vinculadas? (Os clientes cadastrados não serão excluídos)'
-      )
-      if (!confirmDeleteWithParticipants) return
+    if (hasParticipants && !forceDeleteParticipants) {
+      setMovingPresentation(presentation)
+      setShowMoveParticipantsModal(true)
+      return
+    }
+
+    if (hasParticipants && forceDeleteParticipants) {
       deleteParticipants = true
     } else {
       const confirmDelete = window.confirm('Deseja realmente excluir esta apresentação e removê-la do Google Agenda?')
@@ -630,6 +636,48 @@ function App() {
       setMeetingErrorMsg(errorMsg)
     } finally {
       setIsDeletingPresentation(false)
+    }
+  }
+
+  const handleMoveAndDeletePresentation = async (targetMeetingId) => {
+    if (!movingPresentation) return
+    setMeetingErrorMsg(null)
+    setIsMovingAndDeleteProcessing(true)
+
+    try {
+      const { error } = await supabase.functions.invoke('google-presentation-move-and-delete', {
+        body: {
+          sourcePresentationId: movingPresentation.id,
+          targetPresentationId: targetMeetingId
+        }
+      })
+      if (error) throw error
+
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+
+      setShowMoveParticipantsModal(false)
+      setMovingPresentation(null)
+      setSelectedMeetingId(null)
+      setShowMeetLink(false)
+      setMeetCopied(false)
+      resetMessageStates()
+    } catch (err) {
+      console.error('Erro ao mover participantes e excluir apresentação:', err)
+      let errorMsg = 'Não foi possível mover os participantes e excluir a apresentação. Tente novamente.'
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const body = await err.context.json()
+          if (body && body.error) {
+            errorMsg = body.error
+          }
+        } catch (_) {}
+      } else if (err && err.message) {
+        errorMsg = err.message
+      }
+      alert(errorMsg)
+    } finally {
+      setIsMovingAndDeleteProcessing(false)
     }
   }
 
@@ -1206,9 +1254,14 @@ function App() {
   }
 
   // Filter future meetings, sorted by date and time
-  const now = new Date()
+  const nowDateTimeStr = getSaoPauloDateTime()
   const futureMeetings = meetings
-    .filter(m => new Date(`${m.date}T${m.time}:00`) > now)
+    .filter(m => {
+      const parts = m.time.split(':')
+      const normalizedTime = parts.length === 2 ? `${m.time}:00` : m.time
+      const meetingDateTimeStr = `${m.date}T${normalizedTime}`
+      return meetingDateTimeStr > nowDateTimeStr
+    })
     .sort((a, b) => {
       const dateDiff = a.date.localeCompare(b.date)
       if (dateDiff !== 0) return dateDiff
@@ -1469,6 +1522,28 @@ function App() {
         onClose={closeEditPresentationModal}
         onSave={handleUpdatePresentation}
         presentation={selectedMeeting}
+      />
+
+      <MoveParticipantsModal
+        isOpen={showMoveParticipantsModal}
+        sourceMeeting={movingPresentation}
+        futureMeetings={futureMeetings}
+        onClose={() => {
+          setShowMoveParticipantsModal(false)
+          setMovingPresentation(null)
+        }}
+        onMove={handleMoveAndDeletePresentation}
+        onDeleteAll={async () => {
+          const confirmDelete = window.confirm(
+            'Deseja realmente EXCLUIR permanentemente esta apresentação e todas as suas participações vinculadas? (Os clientes cadastrados não serão excluídos)'
+          )
+          if (!confirmDelete) return
+
+          setShowMoveParticipantsModal(false)
+          setMovingPresentation(null)
+          await handleDeletePresentation(movingPresentation.id, true)
+        }}
+        isProcessing={isMovingAndDeleteProcessing}
       />
     </div>
   )
