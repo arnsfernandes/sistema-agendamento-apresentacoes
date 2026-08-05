@@ -4,6 +4,7 @@ import './App.css'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
 import AddParticipantModal from './components/AddParticipantModal'
 import RescheduleParticipantModal from './components/RescheduleParticipantModal'
+import AddPresentationModal from './components/AddPresentationModal'
 import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
@@ -123,6 +124,7 @@ function App() {
 
   // Participant form state
   const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
+  const [showAddPresentationModal, setShowAddPresentationModal] = useState(false)
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
 
@@ -482,6 +484,48 @@ function App() {
     }
   }
 
+  const handleCreatePresentation = async (presentationData) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('google-presentation-create', {
+        body: {
+          title: presentationData.title,
+          date: presentationData.date,
+          startTime: presentationData.startTime,
+          endTime: presentationData.endTime
+        }
+      })
+      if (error) throw error
+      if (data && data.presentation) {
+        const newMeeting = {
+          id: data.presentation.id,
+          date: data.presentation.date,
+          time: data.presentation.time,
+          timeEnd: data.presentation.timeEnd,
+          title: data.presentation.title,
+          meetLink: data.presentation.meetLink,
+          participantsList: data.presentation.participantsList || []
+        }
+        setMeetings(prev => [...prev, newMeeting])
+      } else {
+        throw new Error('Retorno da função inválido.')
+      }
+    } catch (err) {
+      console.error('Erro ao criar apresentação:', err)
+      let errorMsg = 'Não foi possível criar a apresentação comercial. Tente novamente.'
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const body = await err.context.json()
+          if (body && body.error) {
+            errorMsg = body.error
+          }
+        } catch (_) {}
+      } else if (err && err.message) {
+        errorMsg = err.message
+      }
+      throw new Error(errorMsg)
+    }
+  }
+
   const getUniqueClients = () => {
     const clientsMap = {}
     meetings.forEach(meeting => {
@@ -571,6 +615,16 @@ function App() {
         return (
           <div className="view-container calendar-view-container">
             <div className="action-bar">
+              <button 
+                className="btn btn-primary" 
+                type="button"
+                onClick={() => setShowAddPresentationModal(true)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Criar apresentação
+              </button>
               <button className="btn btn-secondary" type="button">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
@@ -1281,6 +1335,12 @@ function App() {
             // Keep the modal open
           }
         }}
+      />
+
+      <AddPresentationModal
+        isOpen={showAddPresentationModal}
+        onClose={() => setShowAddPresentationModal(false)}
+        onCreate={handleCreatePresentation}
       />
     </div>
   )
