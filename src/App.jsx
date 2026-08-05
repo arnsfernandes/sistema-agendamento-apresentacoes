@@ -106,6 +106,8 @@ function App() {
   const [savingCalendarSuccess, setSavingCalendarSuccess] = useState(false)
   const [activeCalendarId, setActiveCalendarId] = useState(null)
   const [isResponsible, setIsResponsible] = useState(false)
+  const [isDisconnectingGoogle, setIsDisconnectingGoogle] = useState(false)
+  const [googleDisconnectError, setGoogleDisconnectError] = useState(null)
 
   // Derive selectedMeeting reactively
   const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
@@ -442,6 +444,41 @@ function App() {
       setSavingCalendarError(errorMsg)
     } finally {
       setIsSavingCalendar(false)
+    }
+  }
+
+  const handleDisconnectGoogle = async () => {
+    if (!window.confirm('Tem certeza de que deseja desconectar a sua conta Google?')) return
+    setIsDisconnectingGoogle(true)
+    setGoogleDisconnectError(null)
+    setGoogleSuccessMessage(null)
+    try {
+      const { error } = await supabase.functions.invoke('google-disconnect')
+      if (error) throw error
+      
+      // Clear states
+      setGoogleAccountEmail(null)
+      setGoogleCalendars([])
+      setSelectedCalendar(null)
+      setActiveCalendarId(null)
+      setIsResponsible(false)
+      setGoogleSuccessMessage('Conta Google desconectada com sucesso.')
+    } catch (err) {
+      console.error('Erro ao desconectar Google:', err)
+      let errorMsg = 'Não foi possível desconectar a conta Google. Tente novamente.'
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const body = await err.context.json()
+          if (body && body.error) {
+            errorMsg = body.error
+          }
+        } catch (_) {}
+      } else if (err && err.message) {
+        errorMsg = err.message
+      }
+      setGoogleDisconnectError(errorMsg)
+    } finally {
+      setIsDisconnectingGoogle(false)
     }
   }
 
@@ -826,18 +863,35 @@ function App() {
                     </p>
 
                     {isResponsible && (
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={handleConnectGoogle}
-                          disabled={isConnectingGoogle}
-                        >
-                          {isConnectingGoogle ? 'Redirecionando...' : 'Reconectar Google'}
-                        </button>
+                      <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={handleConnectGoogle}
+                            disabled={isConnectingGoogle || isDisconnectingGoogle}
+                          >
+                            {isConnectingGoogle ? 'Redirecionando...' : 'Reconectar Google'}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ color: 'var(--text-error)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                            onClick={handleDisconnectGoogle}
+                            disabled={isConnectingGoogle || isDisconnectingGoogle}
+                          >
+                            {isDisconnectingGoogle ? 'Desconectando...' : 'Desconectar Google'}
+                          </button>
+                        </div>
                         {googleConnectError && (
-                          <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                          <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
                             {googleConnectError}
+                          </p>
+                        )}
+                        {googleDisconnectError && (
+                          <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                            {googleDisconnectError}
                           </p>
                         )}
                       </div>
