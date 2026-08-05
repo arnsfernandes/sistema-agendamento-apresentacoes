@@ -5,6 +5,7 @@ import MeetingDetailsModal from './components/MeetingDetailsModal'
 import AddParticipantModal from './components/AddParticipantModal'
 import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 import AddPresentationModal from './components/AddPresentationModal'
+import EditPresentationModal from './components/EditPresentationModal'
 import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
 import { listPresentations } from './services/presentationService'
@@ -122,9 +123,10 @@ function App() {
   const [messageCopied, setMessageCopied] = useState(false)
   const [meetingErrorMsg, setMeetingErrorMsg] = useState(null)
 
-  // Participant form state
+  // Modal and form states
   const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
   const [showAddPresentationModal, setShowAddPresentationModal] = useState(false)
+  const [showEditPresentationModal, setShowEditPresentationModal] = useState(false)
   const [presentationModalInitialDate, setPresentationModalInitialDate] = useState('')
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
@@ -535,6 +537,46 @@ function App() {
   const closePresentationModal = () => {
     setShowAddPresentationModal(false)
     setPresentationModalInitialDate('')
+  }
+
+  const openEditPresentationModal = () => {
+    setShowEditPresentationModal(true)
+  }
+
+  const closeEditPresentationModal = () => {
+    setShowEditPresentationModal(false)
+  }
+
+  const handleUpdatePresentation = async (presentationData) => {
+    try {
+      const { error } = await supabase.functions.invoke('google-presentation-update', {
+        body: {
+          presentationId: presentationData.presentationId,
+          title: presentationData.title,
+          date: presentationData.date,
+          startTime: presentationData.startTime,
+          endTime: presentationData.endTime
+        }
+      })
+      if (error) throw error
+
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+    } catch (err) {
+      console.error('Erro ao atualizar apresentação comercial:', err)
+      let errorMsg = 'Não foi possível atualizar a apresentação comercial. Tente novamente.'
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const body = await err.context.json()
+          if (body && body.error) {
+            errorMsg = body.error
+          }
+        } catch (_) {}
+      } else if (err && err.message) {
+        errorMsg = err.message
+      }
+      throw new Error(errorMsg)
+    }
   }
 
   const getUniqueClients = () => {
@@ -1250,6 +1292,7 @@ function App() {
             setShowMessageModal(true)
           }
         }}
+        onEditPresentation={openEditPresentationModal}
         onAddParticipant={() => setShowAddParticipantModal(true)}
         onEditParticipant={(participant) => {
           setEditingParticipant(participant)
@@ -1363,6 +1406,13 @@ function App() {
         onClose={closePresentationModal}
         onCreate={handleCreatePresentation}
         initialDate={presentationModalInitialDate}
+      />
+
+      <EditPresentationModal
+        isOpen={showEditPresentationModal}
+        onClose={closeEditPresentationModal}
+        onSave={handleUpdatePresentation}
+        presentation={selectedMeeting}
       />
     </div>
   )

@@ -24,3 +24,14 @@ export const isPresentationPast = (meeting) => {
   const nowDateTimeStr = getSaoPauloDateTime()
   return meetingDateTimeStr < nowDateTimeStr
 }
+
+export const hasPresentationStarted = (presentation) => {
+  if (!presentation) return false
+  const timeToCheck = presentation.time || '00:00'
+  const parts = timeToCheck.split(':')
+  const normalizedTime = parts.length === 2 ? `${timeToCheck}:00` : timeToCheck
+
+  const meetingDateTimeStr = `${presentation.date}T${normalizedTime}`
+  const nowDateTimeStr = getSaoPauloDateTime()
+  return nowDateTimeStr >= meetingDateTimeStr
+}

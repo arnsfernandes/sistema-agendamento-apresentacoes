@@ -10,11 +10,15 @@ export const listPresentations = async () => {
       horario_fim,
       titulo,
       meet_link,
+      google_event_id,
+      google_calendar_id,
+      google_event_updated_at,
       participacoes (
         id,
         status,
         observacao,
         cliente_id,
+        link_enviado,
         clientes (
           id,
           nome,
@@ -37,6 +41,9 @@ export const listPresentations = async () => {
     timeEnd: item.horario_fim,
     title: item.titulo,
     meetLink: item.meet_link,
+    googleEventId: item.google_event_id,
+    googleCalendarId: item.google_calendar_id,
+    googleEventUpdatedAt: item.google_event_updated_at,
     participantsList: (item.participacoes || []).map(part => ({
       id: part.id,
       clienteId: part.cliente_id,
@@ -44,7 +51,8 @@ export const listPresentations = async () => {
       telefone: part.clientes?.telefone || '',
       agencia: part.clientes?.agencia || '',
       observacao: part.observacao || '',
-      statusAtivo: part.status === 'ativo'
+      statusAtivo: part.status === 'ativo',
+      linkEnviado: part.link_enviado
     }))
   }))
 }
