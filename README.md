@@ -1,16 +1,34 @@
-# React + Vite
+# Sistema de Agendamento de Apresentações Comerciais
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Este sistema gerencia e agenda apresentações comerciais, permitindo criar, editar e excluir apresentações integradas ao Google Agenda e o controle unificado de participantes.
 
-Currently, two official plugins are available:
+## Objetivo
+O objetivo do sistema é facilitar o controle de reuniões de demonstração e apresentações comerciais, vinculando clientes e permitindo ações como agendamento, remarcação, cancelamento e movimentação de participantes em lote de forma atômica e segura.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tecnologias Utilizadas
+* **Frontend:** React, Vite, JavaScript, CSS (Vanilla)
+* **Backend & Banco de Dados:** Supabase, PostgreSQL (RPC/Functions)
+* **Servidor Serverless:** Supabase Edge Functions (Deno)
+* **Integração Externa:** Google Calendar API
 
-## React Compiler
+## Instruções para Desenvolvimento
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Instalação das dependências
+```bash
+npm install
+```
 
-## Expanding the Oxlint configuration
+### Execução local em ambiente de desenvolvimento
+```bash
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### Geração da build de produção
+```bash
+npm run build
+```
+
+## Documentação Adicional
+Para detalhes aprofundados sobre o funcionamento e regras do projeto, consulte:
+* [Regras de Negócio](docs/business-rules.md)
+* [Integração com Google Agenda](docs/google-calendar-integration.md)
