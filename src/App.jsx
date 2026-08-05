@@ -105,6 +105,7 @@ function App() {
   const [savingCalendarError, setSavingCalendarError] = useState(null)
   const [savingCalendarSuccess, setSavingCalendarSuccess] = useState(false)
   const [activeCalendarId, setActiveCalendarId] = useState(null)
+  const [isResponsible, setIsResponsible] = useState(false)
 
   // Derive selectedMeeting reactively
   const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
@@ -396,6 +397,7 @@ function App() {
       if (data) {
         setGoogleAccountEmail(data.googleEmail)
         setGoogleCalendars(data.calendars || [])
+        setIsResponsible(!!data.isResponsible)
         if (data.selectedCalendarId) {
           setActiveCalendarId(data.selectedCalendarId)
           const activeCal = (data.calendars || []).find(c => c.id === data.selectedCalendarId)
@@ -822,6 +824,24 @@ function App() {
                     <p style={{ fontSize: '0.95rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-primary)' }}>
                       Conectado como: <span style={{ color: 'var(--accent-color)' }}>{googleAccountEmail}</span>
                     </p>
+
+                    {isResponsible && (
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={handleConnectGoogle}
+                          disabled={isConnectingGoogle}
+                        >
+                          {isConnectingGoogle ? 'Redirecionando...' : 'Reconectar Google'}
+                        </button>
+                        {googleConnectError && (
+                          <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                            {googleConnectError}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     
                     <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                       Suas Agendas Google:
