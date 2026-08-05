@@ -127,6 +127,7 @@ function App() {
   const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
   const [showAddPresentationModal, setShowAddPresentationModal] = useState(false)
   const [showEditPresentationModal, setShowEditPresentationModal] = useState(false)
+  const [isDeletingPresentation, setIsDeletingPresentation] = useState(false)
   const [presentationModalInitialDate, setPresentationModalInitialDate] = useState('')
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
@@ -576,6 +577,59 @@ function App() {
         errorMsg = err.message
       }
       throw new Error(errorMsg)
+    }
+  }
+
+  const handleDeletePresentation = async (presentationId) => {
+    setMeetingErrorMsg(null)
+
+    const presentation = meetings.find(m => m.id === presentationId)
+    if (!presentation) return
+
+    const hasParticipants = presentation.participantsList && presentation.participantsList.length > 0
+    let deleteParticipants = false
+
+    if (hasParticipants) {
+      const confirmDeleteWithParticipants = window.confirm(
+        'Esta apresentação possui participantes cadastrados. Deseja excluir a apresentação e também cancelar/remover todas as participações vinculadas? (Os clientes cadastrados não serão excluídos)'
+      )
+      if (!confirmDeleteWithParticipants) return
+      deleteParticipants = true
+    } else {
+      const confirmDelete = window.confirm('Deseja realmente excluir esta apresentação e removê-la do Google Agenda?')
+      if (!confirmDelete) return
+    }
+
+    setIsDeletingPresentation(true)
+    try {
+      const { error } = await supabase.functions.invoke('google-presentation-delete', {
+        body: { presentationId, deleteParticipants }
+      })
+      if (error) throw error
+
+      const refreshed = await listPresentations()
+      setMeetings(refreshed)
+
+      setSelectedMeetingId(null)
+      setShowMeetLink(false)
+      setMeetCopied(false)
+      resetMessageStates()
+    } catch (err) {
+      console.error('Erro ao excluir apresentação comercial:', err)
+      let errorMsg = 'Não foi possível excluir a apresentação comercial. Tente novamente.'
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const body = await err.context.json()
+          if (body && body.error) {
+            errorMsg = body.error
+          }
+        } catch (_) {}
+      } else if (err && err.message) {
+        errorMsg = err.message
+      }
+      setMeetingErrorMsg(errorMsg)
+    } finally {
+      setIsDeletingPresentation(false)
     }
   }
 
@@ -1293,6 +1347,8 @@ function App() {
           }
         }}
         onEditPresentation={openEditPresentationModal}
+        onDeletePresentation={handleDeletePresentation}
+        isDeletingPresentation={isDeletingPresentation}
         onAddParticipant={() => setShowAddParticipantModal(true)}
         onEditParticipant={(participant) => {
           setEditingParticipant(participant)
