@@ -9,6 +9,7 @@ import EditPresentationModal from './components/EditPresentationModal'
 import MoveParticipantsModal from './components/MoveParticipantsModal'
 import meetLogo from './assets/meet-logo.png'
 import { supabase } from './supabaseClient'
+import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
 import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
@@ -494,43 +495,20 @@ function App() {
 
   const handleCreatePresentation = async (presentationData) => {
     try {
-      const { data, error } = await supabase.functions.invoke('google-presentation-create', {
-        body: {
-          title: presentationData.title,
-          date: presentationData.date,
-          startTime: presentationData.startTime,
-          endTime: presentationData.endTime
-        }
-      })
-      if (error) throw error
-      if (data && data.presentation) {
-        const newMeeting = {
-          id: data.presentation.id,
-          date: data.presentation.date,
-          time: data.presentation.time,
-          timeEnd: data.presentation.timeEnd,
-          title: data.presentation.title,
-          meetLink: data.presentation.meetLink,
-          participantsList: data.presentation.participantsList || []
-        }
-        setMeetings(prev => [...prev, newMeeting])
-      } else {
-        throw new Error('Retorno da função inválido.')
+      const createdPresentation = await createGooglePresentation(presentationData)
+      const newMeeting = {
+        id: createdPresentation.id,
+        date: createdPresentation.date,
+        time: createdPresentation.time,
+        timeEnd: createdPresentation.timeEnd,
+        title: createdPresentation.title,
+        meetLink: createdPresentation.meetLink,
+        participantsList: createdPresentation.participantsList || []
       }
+      setMeetings(prev => [...prev, newMeeting])
     } catch (err) {
       console.error('Erro ao criar apresentação:', err)
-      let errorMsg = 'Não foi possível criar a apresentação comercial. Tente novamente.'
-      if (err instanceof FunctionsHttpError) {
-        try {
-          const body = await err.context.json()
-          if (body && body.error) {
-            errorMsg = body.error
-          }
-        } catch (_) {}
-      } else if (err && err.message) {
-        errorMsg = err.message
-      }
-      throw new Error(errorMsg)
+      throw err
     }
   }
 
@@ -554,33 +532,12 @@ function App() {
 
   const handleUpdatePresentation = async (presentationData) => {
     try {
-      const { error } = await supabase.functions.invoke('google-presentation-update', {
-        body: {
-          presentationId: presentationData.presentationId,
-          title: presentationData.title,
-          date: presentationData.date,
-          startTime: presentationData.startTime,
-          endTime: presentationData.endTime
-        }
-      })
-      if (error) throw error
-
+      await updateGooglePresentation(presentationData)
       const refreshed = await listPresentations()
       setMeetings(refreshed)
     } catch (err) {
       console.error('Erro ao atualizar apresentação comercial:', err)
-      let errorMsg = 'Não foi possível atualizar a apresentação comercial. Tente novamente.'
-      if (err instanceof FunctionsHttpError) {
-        try {
-          const body = await err.context.json()
-          if (body && body.error) {
-            errorMsg = body.error
-          }
-        } catch (_) {}
-      } else if (err && err.message) {
-        errorMsg = err.message
-      }
-      throw new Error(errorMsg)
+      throw err
     }
   }
 
@@ -608,10 +565,7 @@ function App() {
 
     setIsDeletingPresentation(true)
     try {
-      const { error } = await supabase.functions.invoke('google-presentation-delete', {
-        body: { presentationId, deleteParticipants }
-      })
-      if (error) throw error
+      await deleteGooglePresentation(presentationId, deleteParticipants)
 
       const refreshed = await listPresentations()
       setMeetings(refreshed)
@@ -622,18 +576,7 @@ function App() {
       resetMessageStates()
     } catch (err) {
       console.error('Erro ao excluir apresentação comercial:', err)
-      let errorMsg = 'Não foi possível excluir a apresentação comercial. Tente novamente.'
-      if (err instanceof FunctionsHttpError) {
-        try {
-          const body = await err.context.json()
-          if (body && body.error) {
-            errorMsg = body.error
-          }
-        } catch (_) {}
-      } else if (err && err.message) {
-        errorMsg = err.message
-      }
-      setMeetingErrorMsg(errorMsg)
+      setMeetingErrorMsg(err.message || 'Não foi possível excluir a apresentação comercial. Tente novamente.')
     } finally {
       setIsDeletingPresentation(false)
     }
@@ -645,13 +588,7 @@ function App() {
     setIsMovingAndDeleteProcessing(true)
 
     try {
-      const { error } = await supabase.functions.invoke('google-presentation-move-and-delete', {
-        body: {
-          sourcePresentationId: movingPresentation.id,
-          targetPresentationId: targetMeetingId
-        }
-      })
-      if (error) throw error
+      await moveParticipantsAndDeletePresentation(movingPresentation.id, targetMeetingId)
 
       const refreshed = await listPresentations()
       setMeetings(refreshed)
@@ -664,18 +601,7 @@ function App() {
       resetMessageStates()
     } catch (err) {
       console.error('Erro ao mover participantes e excluir apresentação:', err)
-      let errorMsg = 'Não foi possível mover os participantes e excluir a apresentação. Tente novamente.'
-      if (err instanceof FunctionsHttpError) {
-        try {
-          const body = await err.context.json()
-          if (body && body.error) {
-            errorMsg = body.error
-          }
-        } catch (_) {}
-      } else if (err && err.message) {
-        errorMsg = err.message
-      }
-      alert(errorMsg)
+      alert(err.message || 'Não foi possível mover os participantes e excluir a apresentação. Tente novamente.')
     } finally {
       setIsMovingAndDeleteProcessing(false)
     }
