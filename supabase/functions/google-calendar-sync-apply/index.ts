@@ -280,6 +280,7 @@ Deno.serve(async (req) => {
     }
 
     const equal: Record<string, unknown>[] = []
+    const changed: Record<string, unknown>[] = []
     const googleOnly: Record<string, unknown>[] = []
 
     const localMatchedIds = new Set<string>()
@@ -304,6 +305,7 @@ Deno.serve(async (req) => {
         const localEndStr = local.horario_fim.slice(0, 5)
         const remoteStartStr = remoteStart?.time || ''
         const remoteEndStr = remoteEnd?.time || ''
+        const remoteMeetLink = getMeetLink(remote) || ''
 
         const diffFields: string[] = []
 
@@ -319,18 +321,28 @@ Deno.serve(async (req) => {
         if (localEndStr !== remoteEndStr) {
           diffFields.push('timeEnd')
         }
-        if ((local.meet_link || '') !== (getMeetLink(remote) || '')) {
+        if ((local.meet_link || '') !== remoteMeetLink) {
           diffFields.push('meetLink')
         }
 
-        const dataPayload = {
+        const basePayload = {
           presentationId: local.id,
           googleEventId: local.google_event_id,
           remoteUpdated: remote.updated || null,
         }
 
         if (diffFields.length === 0) {
-          equal.push(dataPayload)
+          equal.push(basePayload)
+        } else {
+          changed.push({
+            ...basePayload,
+            diffFields,
+            remoteTitle: (remote.summary || '').trim(),
+            remoteDate: remoteStart?.date || '',
+            remoteTime: remoteStartStr,
+            remoteTimeEnd: remoteEndStr,
+            remoteMeetLink,
+          })
         }
       }
     }
@@ -355,6 +367,8 @@ Deno.serve(async (req) => {
 
     const nowIso = new Date().toISOString()
     let equalUpdatedCount = 0
+    let changedUpdatedCount = 0
+    let changedConflictCount = 0
     let googleOnlyCreatedCount = 0
     const operationErrors: Array<{ type: string; id: string | number; message: string }> = []
 
@@ -387,6 +401,93 @@ Deno.serve(async (req) => {
             sync_error: errorMsg.slice(0, 200),
           })
           .eq('id', item.presentationId)
+      }
+    }
+
+    // Aplicar sincronização para CHANGED
+    for (const item of changed) {
+      const newDate = item.remoteDate as string
+      const newTime = item.remoteTime as string
+      const newTimeEnd = item.remoteTimeEnd as string
+
+      // Verificar conflito de horário com outras apresentações no mesmo dia,
+      // ignorando a própria apresentação sendo atualizada.
+      const { data: conflicts } = await supabaseAdmin
+        .from('apresentacoes')
+        .select('id')
+        .eq('data', newDate)
+        .neq('id', item.presentationId)
+        .lt('horario', `${newTimeEnd}:00`)
+        .gt('horario_fim', `${newTime}:00`)
+
+      if (conflicts && conflicts.length > 0) {
+        // Conflito detectado — marcar como pendente sem alterar dados
+        changedConflictCount++
+        const conflictMsg = `Conflito de horário com outra apresentação em ${newDate}.`
+        operationErrors.push({
+          type: 'changed_conflict',
+          id: item.presentationId,
+          message: conflictMsg,
+        })
+
+        await supabaseAdmin
+          .from('apresentacoes')
+          .update({
+            sync_status: 'pending',
+            sync_error: conflictMsg,
+          })
+          .eq('id', item.presentationId)
+
+        continue
+      }
+
+      // Sem conflito — aplicar dados remotos
+      const { error: updateError } = await supabaseAdmin
+        .from('apresentacoes')
+        .update({
+          titulo: item.remoteTitle,
+          data: newDate,
+          horario: `${newTime}:00`,
+          horario_fim: `${newTimeEnd}:00`,
+          meet_link: item.remoteMeetLink || null,
+          google_event_updated_at: item.remoteUpdated,
+          sync_status: 'synced',
+          last_synced_at: nowIso,
+          sync_error: null,
+        })
+        .eq('id', item.presentationId)
+
+      if (updateError) {
+        const errorMsg = updateError.message || 'Erro ao atualizar apresentação'
+        operationErrors.push({
+          type: 'update_changed',
+          id: item.presentationId,
+          message: errorMsg,
+        })
+
+        await supabaseAdmin
+          .from('apresentacoes')
+          .update({
+            sync_status: 'error',
+            sync_error: errorMsg.slice(0, 200),
+          })
+          .eq('id', item.presentationId)
+
+        continue
+      }
+
+      changedUpdatedCount++
+
+      // Redefinir link_enviado nas participações se campos relevantes mudaram
+      const diffFields = item.diffFields as string[]
+      const linkRelevantFields = ['title', 'date', 'time', 'timeEnd', 'meetLink']
+      const shouldResetLink = diffFields.some((f) => linkRelevantFields.includes(f))
+
+      if (shouldResetLink) {
+        await supabaseAdmin
+          .from('participacoes')
+          .update({ link_enviado: false })
+          .eq('apresentacao_id', item.presentationId)
       }
     }
 
@@ -424,10 +525,13 @@ Deno.serve(async (req) => {
       success: operationErrors.length === 0,
       applied: {
         equalUpdated: equalUpdatedCount,
+        changedUpdated: changedUpdatedCount,
+        changedConflicts: changedConflictCount,
         googleOnlyCreated: googleOnlyCreatedCount,
       },
       summary: {
         totalEqual: equal.length,
+        totalChanged: changed.length,
         totalGoogleOnlyWithoutRecurrence: googleOnly.length,
       },
       operationErrors,
