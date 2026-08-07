@@ -854,7 +854,7 @@ function App() {
 
         return (
           <div className="view-container calendar-view-container">
-            <div className="action-bar">
+            <div className="action-bar mobile-only">
               <button 
                 className="btn btn-primary" 
                 type="button"
@@ -1481,7 +1481,54 @@ function App() {
         </div>
 
         <nav className="sidebar-menu">
-          {navigationItems.map((item) => (
+          {/* Calendário */}
+          {navigationItems.slice(0, 1).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab(item.id)
+                setSelectedMeetingId(null)
+                setShowMeetLink(false)
+                setMeetCopied(false)
+                resetMessageStates()
+              }}
+            >
+              <span className="menu-icon">{item.icon}</span>
+              <span className="menu-label">{item.label}</span>
+            </button>
+          ))}
+
+          {/* Botões de Ação Exclusivos do Desktop no Meio do Menu */}
+          <div className="desktop-only" style={{ flexDirection: 'column', gap: '0.5rem' }}>
+            <button
+              type="button"
+              className="menu-item"
+              onClick={() => openPresentationModal()}
+            >
+              <span className="menu-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </span>
+              <span className="menu-label">Criar apresentação</span>
+            </button>
+            <button
+              type="button"
+              className="menu-item"
+            >
+              <span className="menu-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+                </svg>
+              </span>
+              <span className="menu-label">Resumo da semana</span>
+            </button>
+          </div>
+
+          {/* Clientes e Configurações */}
+          {navigationItems.slice(1).map((item) => (
             <button
               key={item.id}
               type="button"

@@ -2017,3 +2017,20 @@ body {
   font-size: 1.1rem;
   color: var(--text-error);
 }
+
+.desktop-only {
+  display: flex !important;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: flex !important;
+  }
+}
