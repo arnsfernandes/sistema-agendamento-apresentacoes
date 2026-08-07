@@ -21,8 +21,8 @@ export default function EditPresentationModal({
     if (isOpen && !prevOpenRef.current) {
       setTitle(presentation?.title || '')
       setDate(presentation?.date || '')
-      setStartTime(presentation?.time || '')
-      setEndTime(presentation?.timeEnd || '')
+      setStartTime(presentation?.time ? presentation.time.slice(0, 5) : '')
+      setEndTime(presentation?.timeEnd ? presentation.timeEnd.slice(0, 5) : '')
       setErrors({})
       setIsSubmitting(false)
       setSubmitError(null)

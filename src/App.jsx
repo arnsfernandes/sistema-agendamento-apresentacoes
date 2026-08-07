@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import './App.css'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
@@ -154,6 +154,7 @@ function App() {
   const [presentationModalInitialDate, setPresentationModalInitialDate] = useState('')
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
+  const lastSyncedMonthRef = useRef(null)
 
   // Client search state
   const [clientSearchTerm, setClientSearchTerm] = useState('')
@@ -187,6 +188,35 @@ function App() {
     }
   }, [activeTab, user])
 
+  useEffect(() => {
+    if (activeTab === 'calendario' && user) {
+      const y = currentDate.getFullYear()
+      const m = currentDate.getMonth()
+      const monthKey = `${y}-${String(m + 1).padStart(2, '0')}`
+
+      if (lastSyncedMonthRef.current !== monthKey) {
+        lastSyncedMonthRef.current = monthKey
+
+        const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+        const next = new Date(y, m + 1, 1)
+        const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+
+        supabase.functions.invoke('google-calendar-sync-apply', {
+          body: { startDate, endDate }
+        }).then(({ data, error }) => {
+          if (error) throw error
+          listPresentations().then(refreshedData => {
+            setMeetings(refreshedData)
+          }).catch(err => {
+            console.error('Erro ao recarregar após sincronização automática:', err)
+          })
+        }).catch(err => {
+          console.error('Erro na sincronização automática:', err)
+        })
+      }
+    }
+  }, [activeTab, user, currentDate])
+
   // Login form states & handlers
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -209,6 +239,7 @@ function App() {
   }
 
   const handleLogout = async () => {
+    lastSyncedMonthRef.current = null
     await supabase.auth.signOut()
   }
 
@@ -524,6 +555,28 @@ function App() {
         participantsList: createdPresentation.participantsList || []
       }
       setMeetings(prev => [...prev, newMeeting])
+
+      if (createdPresentation.date) {
+        const presentationDateObj = new Date(createdPresentation.date + 'T00:00:00')
+        const y = presentationDateObj.getFullYear()
+        const m = presentationDateObj.getMonth()
+        const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+        const next = new Date(y, m + 1, 1)
+        const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+
+        supabase.functions.invoke('google-calendar-sync-apply', {
+          body: { startDate, endDate }
+        }).then(({ data, error }) => {
+          if (error) throw error
+          listPresentations().then(refreshedData => {
+            setMeetings(refreshedData)
+          }).catch(err => {
+            console.error('Erro ao recarregar após sincronização automática pós-criação:', err)
+          })
+        }).catch(err => {
+          console.error('Erro na sincronização automática pós-criação:', err)
+        })
+      }
     } catch (err) {
       console.error('Erro ao criar apresentação:', err)
       throw err
@@ -575,6 +628,28 @@ function App() {
       await updateGooglePresentation(presentationData)
       const refreshed = await listPresentations()
       setMeetings(refreshed)
+
+      if (presentationData.date) {
+        const presentationDateObj = new Date(presentationData.date + 'T00:00:00')
+        const y = presentationDateObj.getFullYear()
+        const m = presentationDateObj.getMonth()
+        const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+        const next = new Date(y, m + 1, 1)
+        const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+
+        supabase.functions.invoke('google-calendar-sync-apply', {
+          body: { startDate, endDate }
+        }).then(({ data, error }) => {
+          if (error) throw error
+          listPresentations().then(refreshedData => {
+            setMeetings(refreshedData)
+          }).catch(err => {
+            console.error('Erro ao recarregar após sincronização automática pós-edição:', err)
+          })
+        }).catch(err => {
+          console.error('Erro na sincronização automática pós-edição:', err)
+        })
+      }
     } catch (err) {
       console.error('Erro ao atualizar apresentação comercial:', err)
       throw err
@@ -610,6 +685,28 @@ function App() {
       const refreshed = await listPresentations()
       setMeetings(refreshed)
 
+      if (presentation.date) {
+        const presentationDateObj = new Date(presentation.date + 'T00:00:00')
+        const y = presentationDateObj.getFullYear()
+        const m = presentationDateObj.getMonth()
+        const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+        const next = new Date(y, m + 1, 1)
+        const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+
+        supabase.functions.invoke('google-calendar-sync-apply', {
+          body: { startDate, endDate }
+        }).then(({ data, error }) => {
+          if (error) throw error
+          listPresentations().then(refreshedData => {
+            setMeetings(refreshedData)
+          }).catch(err => {
+            console.error('Erro ao recarregar após sincronização automática pós-exclusão:', err)
+          })
+        }).catch(err => {
+          console.error('Erro na sincronização automática pós-exclusão:', err)
+        })
+      }
+
       setSelectedMeetingId(null)
       setShowMeetLink(false)
       setMeetCopied(false)
@@ -632,6 +729,28 @@ function App() {
 
       const refreshed = await listPresentations()
       setMeetings(refreshed)
+
+      if (movingPresentation.date) {
+        const presentationDateObj = new Date(movingPresentation.date + 'T00:00:00')
+        const y = presentationDateObj.getFullYear()
+        const m = presentationDateObj.getMonth()
+        const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+        const next = new Date(y, m + 1, 1)
+        const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+
+        supabase.functions.invoke('google-calendar-sync-apply', {
+          body: { startDate, endDate }
+        }).then(({ data, error }) => {
+          if (error) throw error
+          listPresentations().then(refreshedData => {
+            setMeetings(refreshedData)
+          }).catch(err => {
+            console.error('Erro ao recarregar após sincronização automática pós-movimentação:', err)
+          })
+        }).catch(err => {
+          console.error('Erro na sincronização automática pós-movimentação:', err)
+        })
+      }
 
       setShowMoveParticipantsModal(false)
       setMovingPresentation(null)
