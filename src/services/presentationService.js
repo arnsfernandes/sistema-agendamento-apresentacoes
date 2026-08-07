@@ -12,6 +12,8 @@ export const listPresentations = async () => {
       meet_link,
       google_event_id,
       google_calendar_id,
+      sync_status,
+      sync_error,
       google_event_updated_at,
       participacoes (
         id,
@@ -44,6 +46,8 @@ export const listPresentations = async () => {
     googleEventId: item.google_event_id,
     googleCalendarId: item.google_calendar_id,
     googleEventUpdatedAt: item.google_event_updated_at,
+    syncStatus: item.sync_status,
+    syncError: item.sync_error,
     participantsList: (item.participacoes || []).map(part => ({
       id: part.id,
       clienteId: part.cliente_id,

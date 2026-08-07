@@ -365,11 +365,56 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Identificar deletedOnGoogle: confirmar individualmente no Google antes de classificar
+    const deletedWithoutParticipants: Record<string, unknown>[] = []
+    const deletedPending: Record<string, unknown>[] = []
+
+    for (const local of localPresentations || []) {
+      if (!local.google_event_id) continue
+      if (localMatchedIds.has(local.google_event_id)) continue
+
+      // Consulta individual no Google Calendar para confirmar situação do evento
+      const eventUrl =
+        `https://www.googleapis.com/calendar/v3/calendars/` +
+        `${encodeURIComponent(calendarId)}/events/${encodeURIComponent(local.google_event_id)}`
+
+      const eventResponse = await fetch(eventUrl, {
+        headers: { Authorization: `Bearer ${googleAccessToken}` },
+      })
+
+      // 404 ou 410 = evento definitivamente não existe no Google
+      const isConfirmedDeleted =
+        eventResponse.status === 404 ||
+        eventResponse.status === 410 ||
+        (eventResponse.ok &&
+          ((await eventResponse.clone().json()) as { status?: string })?.status === 'cancelled')
+
+      if (!isConfirmedDeleted) {
+        // Evento existe mas está fora do período — tratar futuramente como movedOutsidePeriod
+        continue
+      }
+
+      // Confirmado como excluído — verificar se tem participações
+      const { data: participacoes } = await supabaseAdmin
+        .from('participacoes')
+        .select('id')
+        .eq('apresentacao_id', local.id)
+        .limit(1)
+
+      if (!participacoes || participacoes.length === 0) {
+        deletedWithoutParticipants.push({ presentationId: local.id, googleEventId: local.google_event_id })
+      } else {
+        deletedPending.push({ presentationId: local.id, googleEventId: local.google_event_id })
+      }
+    }
+
     const nowIso = new Date().toISOString()
     let equalUpdatedCount = 0
     let changedUpdatedCount = 0
     let changedConflictCount = 0
     let googleOnlyCreatedCount = 0
+    let deletedWithoutParticipantsCount = 0
+    let deletedPendingCount = 0
     const operationErrors: Array<{ type: string; id: string | number; message: string }> = []
 
     // Aplicar sincronização para EQUAL
@@ -521,6 +566,48 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Aplicar exclusão para DELETED_WITHOUT_PARTICIPANTS
+    for (const item of deletedWithoutParticipants) {
+      const { error: deleteError } = await supabaseAdmin
+        .from('apresentacoes')
+        .delete()
+        .eq('id', item.presentationId)
+
+      if (!deleteError) {
+        deletedWithoutParticipantsCount++
+      } else {
+        const errorMsg = deleteError.message || 'Erro ao excluir apresentação'
+        operationErrors.push({
+          type: 'delete_without_participants',
+          id: item.presentationId,
+          message: errorMsg,
+        })
+      }
+    }
+
+    // Marcar como excluído no Google para DELETED_PENDING
+    for (const item of deletedPending) {
+      const { error: updateError } = await supabaseAdmin
+        .from('apresentacoes')
+        .update({
+          sync_status: 'google_deleted',
+          last_synced_at: nowIso,
+          sync_error: 'Evento excluído no Google Agenda',
+        })
+        .eq('id', item.presentationId)
+
+      if (!updateError) {
+        deletedPendingCount++
+      } else {
+        const errorMsg = updateError.message || 'Erro ao marcar exclusão pendente'
+        operationErrors.push({
+          type: 'update_deleted_pending',
+          id: item.presentationId,
+          message: errorMsg,
+        })
+      }
+    }
+
     return jsonResponse({
       success: operationErrors.length === 0,
       applied: {
@@ -528,11 +615,15 @@ Deno.serve(async (req) => {
         changedUpdated: changedUpdatedCount,
         changedConflicts: changedConflictCount,
         googleOnlyCreated: googleOnlyCreatedCount,
+        deletedWithoutParticipants: deletedWithoutParticipantsCount,
+        deletedPending: deletedPendingCount,
       },
       summary: {
         totalEqual: equal.length,
         totalChanged: changed.length,
         totalGoogleOnlyWithoutRecurrence: googleOnly.length,
+        totalDeletedWithoutParticipants: deletedWithoutParticipants.length,
+        totalDeletedPending: deletedPending.length,
       },
       operationErrors,
     })

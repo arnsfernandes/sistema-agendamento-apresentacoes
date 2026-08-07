@@ -104,6 +104,8 @@ function App() {
 
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDateKey, setSelectedDateKey] = useState(null)
+  const [devSyncLoading, setDevSyncLoading] = useState(false)
+  const [devSyncResult, setDevSyncResult] = useState(null)
   
   // Reactive list of meetings
   const [meetings, setMeetings] = useState([])
@@ -734,6 +736,59 @@ function App() {
             </div>
             
             <div className="calendar-area">
+              {import.meta.env.DEV && (
+                <div style={{ marginBottom: '16px' }}>
+                  <button
+                    type="button"
+                    disabled={devSyncLoading}
+                    onClick={() => {
+                      const y = currentDate.getFullYear()
+                      const m = currentDate.getMonth()
+                      const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+                      const next = new Date(y, m + 1, 1)
+                      const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+                      setDevSyncLoading(true)
+                      setDevSyncResult(null)
+                      supabase.functions.invoke('google-calendar-sync-apply', {
+                        body: { startDate, endDate }
+                      }).then(({ data, error }) => {
+                        setDevSyncResult(error
+                          ? `Erro: ${error.message}`
+                          : JSON.stringify(data, null, 2))
+                      }).catch(err => {
+                        setDevSyncResult(`Exceção: ${err.message}`)
+                      }).finally(() => setDevSyncLoading(false))
+                    }}
+                    style={{
+                      padding: '5px 14px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      borderRadius: '6px',
+                      border: '1px solid #6366f1',
+                      background: devSyncLoading ? '#e0e7ff' : '#6366f1',
+                      color: devSyncLoading ? '#6366f1' : '#fff',
+                      cursor: devSyncLoading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {devSyncLoading ? 'Sincronizando...' : 'Testar sincronização'}
+                  </button>
+                  {devSyncResult && (
+                    <pre style={{
+                      marginTop: '8px',
+                      padding: '10px 14px',
+                      background: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      color: '#1e293b',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                      maxHeight: '180px',
+                      overflowY: 'auto',
+                    }}>{devSyncResult}</pre>
+                  )}
+                </div>
+              )}
               {meetingsLoading ? (
                 <div className="loading-state">
                   Carregando apresentações...
