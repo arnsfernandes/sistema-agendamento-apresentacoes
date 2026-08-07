@@ -152,6 +152,17 @@ body {
   color: var(--text-accent);
 }
 
+.menu-item.pending-menu-item {
+  color: #eab308;
+  border-color: rgba(234, 179, 8, 0.1);
+  background-color: rgba(234, 179, 8, 0.02);
+}
+
+.menu-item.pending-menu-item:hover {
+  background-color: rgba(234, 179, 8, 0.08);
+  color: #facc15;
+}
+
 .menu-icon svg {
   width: 20px;
   height: 20px;
@@ -812,6 +823,108 @@ body {
 .meeting-participants-info svg {
   width: 14px;
   height: 14px;
+}
+
+.meeting-item-card.google-deleted {
+  opacity: 0.45;
+  filter: saturate(0.2);
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.meeting-item-card.google-deleted:hover {
+  opacity: 0.6;
+}
+
+.meeting-cancelled-badge {
+  align-self: flex-start;
+  background-color: rgba(156, 163, 175, 0.12);
+  border: 1px solid rgba(156, 163, 175, 0.25);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.meeting-item-card.pending {
+  border-color: rgba(234, 179, 8, 0.4);
+  background-color: rgba(234, 179, 8, 0.02);
+}
+
+.meeting-item-card.pending:hover {
+  border-color: rgba(234, 179, 8, 0.6);
+  background-color: rgba(234, 179, 8, 0.04);
+}
+
+.meeting-pending-badge {
+  align-self: flex-start;
+  background-color: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  color: #eab308;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pending-meetings-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(234, 179, 8, 0.06);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.banner-icon {
+  width: 24px;
+  height: 24px;
+  color: #eab308;
+  flex-shrink: 0;
+}
+
+.banner-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.banner-subtitle {
+  margin: 0.1rem 0 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.btn-warning-light {
+  background-color: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  color: #eab308;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-warning-light:hover {
+  background-color: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.4);
 }
 
 .no-meetings-message {

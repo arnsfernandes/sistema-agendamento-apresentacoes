@@ -17,13 +17,16 @@ export default function MeetingDetailsModal({
   onCancelParticipant,
   onReactivateParticipant,
   onRescheduleParticipant,
-  meetingErrorMsg
+  meetingErrorMsg,
+  onFixSchedule,
+  isFixingSchedule,
 }) {
   if (!selectedMeeting) return null
 
   const isPast = isPresentationPast(selectedMeeting)
   const hasStarted = hasPresentationStarted(selectedMeeting)
   const isGoogleDeleted = selectedMeeting.syncStatus === 'google_deleted'
+  const isPending = selectedMeeting.syncStatus === 'pending'
 
   return (
     <div className="modal-overlay" onClick={() => { if (!isDeletingPresentation) onClose(); }}>
@@ -75,8 +78,37 @@ export default function MeetingDetailsModal({
             </div>
           )}
 
+          {isPending && (
+            <div className="meeting-error-badge warning" style={{ borderColor: 'var(--warning-border, #eab308)', backgroundColor: 'var(--warning-bg, rgba(234, 179, 8, 0.1))', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="error-icon" style={{ color: '#eab308' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <span style={{ color: '#eab308', fontWeight: 600 }}>Ação necessária</span>
+              </div>
+              {selectedMeeting.syncError && (
+                <span style={{ display: 'block', fontSize: '0.88em', opacity: 0.9, color: 'var(--text-primary)' }}>
+                  {selectedMeeting.syncError.includes('meia-noite')
+                    ? 'A reunião atravessa a meia-noite. Corrija o horário para continuar.'
+                    : selectedMeeting.syncError}
+                </span>
+              )}
+              {selectedMeeting.syncError?.includes('meia-noite') && (
+                <button
+                  type="button"
+                  className="btn btn-warning-light"
+                  style={{ marginTop: '0.25rem', padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                  onClick={() => onFixSchedule(selectedMeeting.id)}
+                  disabled={isFixingSchedule}
+                >
+                  {isFixingSchedule ? 'Carregando...' : 'Corrigir horário'}
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="modal-actions">
-            {!isGoogleDeleted && (
+            {!isGoogleDeleted && !isPending && (
               <button
                 className="btn btn-secondary"
                 type="button"
@@ -89,18 +121,20 @@ export default function MeetingDetailsModal({
                 Ver link do Meet
               </button>
             )}
-            <button
-              className="btn btn-secondary"
-              type="button"
-              onClick={onVerMensagem}
-              disabled={isDeletingPresentation}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-              </svg>
-              Ver mensagem
-            </button>
-            {!hasStarted && (
+            {!isPending && (
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={onVerMensagem}
+                disabled={isDeletingPresentation}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                </svg>
+                Ver mensagem
+              </button>
+            )}
+            {!isPending && !hasStarted && (
               <button
                 className="btn btn-secondary"
                 type="button"
@@ -127,7 +161,7 @@ export default function MeetingDetailsModal({
                 {isDeletingPresentation ? 'Excluindo...' : 'Excluir apresentação'}
               </button>
             )}
-            {!isPast && (
+            {!isPast && !isPending && (
               <button
                 className="btn btn-primary"
                 type="button"

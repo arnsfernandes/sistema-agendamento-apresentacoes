@@ -88,7 +88,8 @@ export default function EditPresentationModal({
         title: title.trim(),
         date,
         startTime,
-        endTime
+        endTime,
+        etag: presentation.etag || null
       })
       handleClose()
     } catch (err) {

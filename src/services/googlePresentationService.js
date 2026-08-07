@@ -47,7 +47,8 @@ export const updateGooglePresentation = async (presentationData) => {
         title: presentationData.title,
         date: presentationData.date,
         startTime: presentationData.startTime,
-        endTime: presentationData.endTime
+        endTime: presentationData.endTime,
+        etag: presentationData.etag
       }
     })
 

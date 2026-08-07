@@ -327,6 +327,11 @@ Deno.serve(async (req) => {
       body.endTime,
     )
 
+    const etag =
+      typeof body.etag === 'string'
+        ? body.etag
+        : null
+
     if (
       !Number.isInteger(presentationId) ||
       presentationId <= 0
@@ -621,12 +626,19 @@ Deno.serve(async (req) => {
       )
     }
 
-    if (
-      hasRelevantGoogleChanges(
+    let isConflict = false
+    if (etag) {
+      // Se etag foi enviado, o conflito ocorre se o etag do Google mudou
+      isConflict = currentEvent.etag !== etag
+    } else {
+      // Caso contrário, usa a verificação clássica de campos locais vs remotos
+      isConflict = hasRelevantGoogleChanges(
         presentation,
         currentEvent,
       )
-    ) {
+    }
+
+    if (isConflict) {
       return jsonResponse(
         {
           error:
@@ -870,6 +882,11 @@ Deno.serve(async (req) => {
           presentation.meet_link,
         google_event_updated_at:
           updatedEvent.updated || null,
+        ...(etag ? {
+          sync_status: 'synced',
+          sync_error: null,
+          last_synced_at: new Date().toISOString(),
+        } : {}),
       })
       .eq('id', presentationId)
       .select(`

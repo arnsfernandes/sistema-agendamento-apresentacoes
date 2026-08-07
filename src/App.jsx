@@ -133,6 +133,7 @@ function App() {
 
   const [showMeetLink, setShowMeetLink] = useState(false)
   const [meetCopied, setMeetCopied] = useState(false)
+  const [showPendingList, setShowPendingList] = useState(false)
 
   // Message states
   const [customMessages, setCustomMessages] = useState({})
@@ -148,6 +149,8 @@ function App() {
   const [showMoveParticipantsModal, setShowMoveParticipantsModal] = useState(false)
   const [movingPresentation, setMovingPresentation] = useState(null)
   const [isMovingAndDeleteProcessing, setIsMovingAndDeleteProcessing] = useState(false)
+  const [remotePresentationData, setRemotePresentationData] = useState(null)
+  const [isFixingSchedule, setIsFixingSchedule] = useState(false)
   const [presentationModalInitialDate, setPresentationModalInitialDate] = useState('')
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
@@ -543,6 +546,28 @@ function App() {
 
   const closeEditPresentationModal = () => {
     setShowEditPresentationModal(false)
+    setRemotePresentationData(null)
+  }
+
+  const handleFixSchedule = async (presentationId) => {
+    try {
+      setIsFixingSchedule(true)
+      const { data, error } = await supabase.functions.invoke('google-presentation-get-remote', {
+        body: { presentationId }
+      })
+      if (error) throw error
+      if (data && data.success && data.event) {
+        setRemotePresentationData(data.event)
+        setShowEditPresentationModal(true)
+      } else {
+        throw new Error(data?.error || 'Erro ao carregar evento remoto.')
+      }
+    } catch (err) {
+      console.error('Erro ao buscar dados remotos do Google Agenda:', err)
+      alert(err.message || 'Não foi possível carregar os dados atuais do Google Agenda.')
+    } finally {
+      setIsFixingSchedule(false)
+    }
   }
 
   const handleUpdatePresentation = async (presentationData) => {
@@ -840,16 +865,23 @@ function App() {
                             <span className="day-number">{day.dayNumber}</span>
                             {(() => {
                               const dayMeetings = meetings.filter(m => m.date === day.dateKey)
+                              const activeMeetings = dayMeetings.filter(m =>
+                                m.syncStatus !== 'google_deleted' &&
+                                m.participantsList &&
+                                m.participantsList.some(p => p.statusAtivo)
+                              )
                               const hasMeetings = dayMeetings.length > 0
                               const hasParticipants = dayMeetings.some(m => m.participantsList && m.participantsList.length > 0)
-                              
+
                               if (!hasMeetings) return null
-                              
+
                               return (
                                 <>
-                                  <span className="meetings-count-badge">
-                                    {dayMeetings.length} {dayMeetings.length === 1 ? 'reunião' : 'reuniões'}
-                                  </span>
+                                  {activeMeetings.length > 0 && (
+                                    <span className="meetings-count-badge">
+                                      {activeMeetings.length} {activeMeetings.length === 1 ? 'reunião' : 'reuniões'}
+                                    </span>
+                                  )}
                                   <span className={`meetings-dot-indicator ${hasParticipants ? 'purple-dot' : 'grey-dot'}`} />
                                 </>
                               )
@@ -891,29 +923,41 @@ function App() {
                         <div className="panel-body">
                           {dayMeetings.length > 0 ? (
                             <div className="meetings-list">
-                              {dayMeetings.map((meeting) => (
-                                <div
-                                  key={meeting.id}
-                                  className={`meeting-item-card ${selectedMeetingId === meeting.id ? 'active' : ''}`}
-                                  onClick={() => {
-                                    setSelectedMeetingId(meeting.id)
-                                    setShowMeetLink(false)
-                                    setMeetCopied(false)
-                                    resetMessageStates()
-                                  }}
-                                >
-                                  <span className="meeting-time-badge">{meeting.time}{meeting.timeEnd ? ` - ${meeting.timeEnd}` : ''}</span>
-                                  <h4 className="meeting-item-title">{meeting.title}</h4>
-                                  <div className="meeting-participants-info">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
-                                    </svg>
-                                    <span>
-                                      {meeting.participantsList.length} {meeting.participantsList.length === 1 ? 'participante' : 'participantes'}
-                                    </span>
+                              {[
+                                ...dayMeetings.filter(m => m.syncStatus !== 'google_deleted'),
+                                ...dayMeetings.filter(m => m.syncStatus === 'google_deleted'),
+                              ].map((meeting) => {
+                                const isGoogleDeleted = meeting.syncStatus === 'google_deleted'
+                                return (
+                                  <div
+                                    key={meeting.id}
+                                    className={`meeting-item-card ${selectedMeetingId === meeting.id ? 'active' : ''} ${isGoogleDeleted ? 'google-deleted' : ''} ${meeting.syncStatus === 'pending' ? 'pending' : ''}`}
+                                    onClick={() => {
+                                      setSelectedMeetingId(meeting.id)
+                                      setShowMeetLink(false)
+                                      setMeetCopied(false)
+                                      resetMessageStates()
+                                    }}
+                                  >
+                                    <span className="meeting-time-badge">{meeting.time}{meeting.timeEnd ? ` - ${meeting.timeEnd}` : ''}</span>
+                                    <h4 className="meeting-item-title">{meeting.title}</h4>
+                                    {isGoogleDeleted && (
+                                      <span className="meeting-cancelled-badge">Reunião cancelada</span>
+                                    )}
+                                    {meeting.syncStatus === 'pending' && (
+                                      <span className="meeting-pending-badge">Ação necessária</span>
+                                    )}
+                                    <div className="meeting-participants-info">
+                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
+                                      </svg>
+                                      <span>
+                                        {meeting.participantsList.length} {meeting.participantsList.length === 1 ? 'participante' : 'participantes'}
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           ) : (
                             <p className="no-meetings-message">Nenhuma apresentação agendada para esta data.</p>
@@ -1341,6 +1385,27 @@ function App() {
               <span className="menu-label">{item.label}</span>
             </button>
           ))}
+
+          {(() => {
+            const pendingCount = meetings.filter(m => m.syncStatus === 'pending').length
+            if (pendingCount === 0) return null
+            return (
+              <button
+                type="button"
+                className="menu-item pending-menu-item"
+                onClick={() => setShowPendingList(true)}
+              >
+                <span className="menu-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                </span>
+                <span className="menu-label">
+                  {pendingCount === 1 ? '1 ação necessária' : `${pendingCount} ações necessárias`}
+                </span>
+              </button>
+            )
+          })()}
           
           <button
             type="button"
@@ -1399,6 +1464,8 @@ function App() {
         onReactivateParticipant={(participantId) => handleReactivateParticipant(selectedMeeting.id, participantId)}
         onRescheduleParticipant={(participant) => setReschedulingParticipant(participant)}
         meetingErrorMsg={meetingErrorMsg}
+        onFixSchedule={handleFixSchedule}
+        isFixingSchedule={isFixingSchedule}
       />
 
       {/* Message Customization Sub-Modal */}
@@ -1509,7 +1576,7 @@ function App() {
         isOpen={showEditPresentationModal}
         onClose={closeEditPresentationModal}
         onSave={handleUpdatePresentation}
-        presentation={selectedMeeting}
+        presentation={remotePresentationData || selectedMeeting}
       />
 
       <MoveParticipantsModal
@@ -1533,6 +1600,74 @@ function App() {
         }}
         isProcessing={isMovingAndDeleteProcessing}
       />
+      {showPendingList && (
+        <div className="modal-overlay" onClick={() => setShowPendingList(false)}>
+          <div className="modal-card pending-list-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Reuniões com pendências</h3>
+              <button
+                className="btn-close"
+                onClick={() => setShowPendingList(false)}
+                type="button"
+                aria-label="Fechar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {meetings.filter(m => m.syncStatus === 'pending').length === 0 ? (
+                <p>Nenhuma pendência encontrada.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {meetings.filter(m => m.syncStatus === 'pending').map((meeting) => {
+                    const [y, mon, d] = meeting.date.split('-').map(Number)
+                    const formattedDate = new Date(y, mon - 1, d).toLocaleDateString('pt-BR', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    })
+                    return (
+                      <div key={meeting.id} className="pending-item-card-detail" style={{
+                        padding: '1rem',
+                        border: '1px solid rgba(234, 179, 8, 0.3)',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(234, 179, 8, 0.02)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{meeting.title}</h4>
+                          <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(234, 179, 8, 0.1)', color: '#eab308', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                            {formattedDate} às {meeting.time}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                          <strong>Erro:</strong> {meeting.syncError}
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ alignSelf: 'flex-end', marginTop: '0.25rem' }}
+                          onClick={() => {
+                            setSelectedMeetingId(meeting.id)
+                            // Opcionalmente fechamos para focar no modal principal de detalhes
+                            setShowPendingList(false)
+                          }}
+                        >
+                          Ver reunião
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

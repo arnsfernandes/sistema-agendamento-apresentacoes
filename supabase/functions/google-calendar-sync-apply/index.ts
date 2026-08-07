@@ -294,6 +294,8 @@ Deno.serve(async (req) => {
         (e) => e.id === local.google_event_id,
       )
 
+
+
       if (remote) {
         localMatchedIds.add(local.google_event_id)
         googleMatchedIds.add(remote.id as string)
@@ -368,6 +370,7 @@ Deno.serve(async (req) => {
     // Identificar deletedOnGoogle: confirmar individualmente no Google antes de classificar
     const deletedWithoutParticipants: Record<string, unknown>[] = []
     const deletedPending: Record<string, unknown>[] = []
+    const movedOutsidePeriod: Record<string, unknown>[] = []
 
     for (const local of localPresentations || []) {
       if (!local.google_event_id) continue
@@ -383,14 +386,67 @@ Deno.serve(async (req) => {
       })
 
       // 404 ou 410 = evento definitivamente não existe no Google
+      let remoteEventData: GoogleCalendarEvent | null = null
+      if (eventResponse.ok) {
+        remoteEventData = (await eventResponse.json()) as GoogleCalendarEvent
+      }
+
       const isConfirmedDeleted =
         eventResponse.status === 404 ||
         eventResponse.status === 410 ||
-        (eventResponse.ok &&
-          ((await eventResponse.clone().json()) as { status?: string })?.status === 'cancelled')
+        (remoteEventData?.status === 'cancelled')
+
+
 
       if (!isConfirmedDeleted) {
-        // Evento existe mas está fora do período — tratar futuramente como movedOutsidePeriod
+        // Evento existe mas está fora do período — movedOutsidePeriod
+        if (
+          remoteEventData &&
+          remoteEventData.start?.dateTime &&
+          remoteEventData.end?.dateTime
+        ) {
+          const remoteStart = getGoogleDateTimeParts(remoteEventData.start.dateTime)
+          const remoteEnd = getGoogleDateTimeParts(remoteEventData.end.dateTime)
+          const remoteMeetLink = getMeetLink(remoteEventData) || ''
+
+
+
+          // Evento atravessa a meia-noite — não atualizar, marcar como pendente
+          if (remoteStart?.date !== remoteEnd?.date) {
+            await supabaseAdmin
+              .from('apresentacoes')
+              .update({
+                sync_status: 'pending',
+                sync_error: 'A reunião atravessa a meia-noite. Ajuste o horário no Google Agenda.',
+              })
+              .eq('id', local.id)
+            continue
+          }
+
+          const localStartStr = local.horario.slice(0, 5)
+          const localEndStr = local.horario_fim.slice(0, 5)
+          const remoteStartStr = remoteStart?.time || ''
+          const remoteEndStr = remoteEnd?.time || ''
+
+          const diffFields: string[] = []
+          if (local.titulo.trim() !== (remoteEventData.summary || '').trim()) diffFields.push('title')
+          if (local.data !== remoteStart?.date) diffFields.push('date')
+          if (localStartStr !== remoteStartStr) diffFields.push('time')
+          if (localEndStr !== remoteEndStr) diffFields.push('timeEnd')
+          if ((local.meet_link || '') !== remoteMeetLink) diffFields.push('meetLink')
+
+          movedOutsidePeriod.push({
+            presentationId: local.id,
+            googleEventId: local.google_event_id,
+            remoteUpdated: remoteEventData.updated || null,
+            remoteTitle: (remoteEventData.summary || '').trim(),
+            remoteDate: remoteStart?.date || '',
+            remoteTime: remoteStartStr,
+            remoteTimeEnd: remoteEndStr,
+            remoteMeetLink,
+            diffFields,
+          })
+        }
         continue
       }
 
@@ -415,6 +471,8 @@ Deno.serve(async (req) => {
     let googleOnlyCreatedCount = 0
     let deletedWithoutParticipantsCount = 0
     let deletedPendingCount = 0
+    let movedOutsidePeriodUpdatedCount = 0
+    let movedOutsidePeriodConflictCount = 0
     const operationErrors: Array<{ type: string; id: string | number; message: string }> = []
 
     // Aplicar sincronização para EQUAL
@@ -608,6 +666,79 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Aplicar sincronização para MOVED_OUTSIDE_PERIOD
+    for (const item of movedOutsidePeriod) {
+      const newDate = item.remoteDate as string
+      const newTime = item.remoteTime as string
+      const newTimeEnd = item.remoteTimeEnd as string
+
+      // Verificar conflito de horário (mesma lógica de changed)
+      const { data: conflicts } = await supabaseAdmin
+        .from('apresentacoes')
+        .select('id')
+        .eq('data', newDate)
+        .neq('id', item.presentationId)
+        .lt('horario', `${newTimeEnd}:00`)
+        .gt('horario_fim', `${newTime}:00`)
+
+      if (conflicts && conflicts.length > 0) {
+        movedOutsidePeriodConflictCount++
+        const conflictMsg = `Conflito de horário com outra apresentação em ${newDate}.`
+        operationErrors.push({
+          type: 'moved_conflict',
+          id: item.presentationId as string,
+          message: conflictMsg,
+        })
+
+        await supabaseAdmin
+          .from('apresentacoes')
+          .update({
+            sync_status: 'pending',
+            sync_error: conflictMsg,
+          })
+          .eq('id', item.presentationId)
+
+        continue
+      }
+
+      // Sem conflito — aplicar dados remotos
+      const { error: updateError } = await supabaseAdmin
+        .from('apresentacoes')
+        .update({
+          titulo: item.remoteTitle,
+          data: newDate,
+          horario: `${newTime}:00`,
+          horario_fim: `${newTimeEnd}:00`,
+          meet_link: item.remoteMeetLink || null,
+          google_event_updated_at: item.remoteUpdated,
+          sync_status: 'synced',
+          last_synced_at: nowIso,
+          sync_error: null,
+        })
+        .eq('id', item.presentationId)
+
+      if (updateError) {
+        const errorMsg = updateError.message || 'Erro ao atualizar apresentação movida'
+        operationErrors.push({
+          type: 'update_moved',
+          id: item.presentationId as string,
+          message: errorMsg,
+        })
+
+        await supabaseAdmin
+          .from('apresentacoes')
+          .update({
+            sync_status: 'error',
+            sync_error: errorMsg.slice(0, 200),
+          })
+          .eq('id', item.presentationId)
+
+        continue
+      }
+
+      movedOutsidePeriodUpdatedCount++
+    }
+
     return jsonResponse({
       success: operationErrors.length === 0,
       applied: {
@@ -617,6 +748,8 @@ Deno.serve(async (req) => {
         googleOnlyCreated: googleOnlyCreatedCount,
         deletedWithoutParticipants: deletedWithoutParticipantsCount,
         deletedPending: deletedPendingCount,
+        movedOutsidePeriodUpdated: movedOutsidePeriodUpdatedCount,
+        movedOutsidePeriodConflicts: movedOutsidePeriodConflictCount,
       },
       summary: {
         totalEqual: equal.length,
@@ -624,6 +757,7 @@ Deno.serve(async (req) => {
         totalGoogleOnlyWithoutRecurrence: googleOnly.length,
         totalDeletedWithoutParticipants: deletedWithoutParticipants.length,
         totalDeletedPending: deletedPending.length,
+        totalMovedOutsidePeriod: movedOutsidePeriod.length,
       },
       operationErrors,
     })
