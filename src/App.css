@@ -2060,3 +2060,40 @@ body {
   margin: 0 !important;
   cursor: pointer;
 }
+
+.login-switch-text {
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  transition: color 0.2s ease;
+}
+
+.btn-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.login-success-msg {
+  display: block;
+  font-size: 0.85rem;
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  box-sizing: border-box;
+}

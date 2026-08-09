@@ -66,6 +66,7 @@ function App() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('calendario')
+  const [authMode, setAuthMode] = useState('login')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -73,7 +74,10 @@ function App() {
       setAuthLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setAuthMode('update_password')
+      }
       setUser(session?.user ?? null)
       setAuthLoading(false)
     })
@@ -226,11 +230,16 @@ function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState(null)
+  const [loginSuccess, setLoginSuccess] = useState(null)
   const [loginLoading, setLoginLoading] = useState(false)
+  const [name, setName] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
     setLoginError(null)
+    setLoginSuccess(null)
     setLoginLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
@@ -239,6 +248,74 @@ function App() {
       // Clear fields upon successful login
       setEmail('')
       setPassword('')
+    }
+    setLoginLoading(false)
+  }
+
+  const handleSignUpSubmit = async (e) => {
+    e.preventDefault()
+    setLoginError(null)
+    setLoginSuccess(null)
+    setLoginLoading(true)
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name
+        }
+      }
+    })
+    if (error) {
+      setLoginError(error.message)
+    } else {
+      setLoginSuccess('Cadastro realizado! Verifique seu e-mail para confirmar sua conta antes de entrar.')
+      setAuthMode('login')
+      setName('')
+      setEmail('')
+      setPassword('')
+    }
+    setLoginLoading(false)
+  }
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault()
+    setLoginError(null)
+    setLoginSuccess(null)
+    setLoginLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    })
+    if (error) {
+      setLoginError(error.message)
+    } else {
+      setLoginSuccess('E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada.')
+      setAuthMode('login')
+      setEmail('')
+    }
+    setLoginLoading(false)
+  }
+
+  const handleUpdatePasswordSubmit = async (e) => {
+    e.preventDefault()
+    setLoginError(null)
+    setLoginSuccess(null)
+
+    if (newPassword !== confirmPassword) {
+      setLoginError('As senhas não coincidem.')
+      return
+    }
+
+    setLoginLoading(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      setLoginError(error.message)
+    } else {
+      setLoginSuccess('Senha alterada com sucesso!')
+      setNewPassword('')
+      setConfirmPassword('')
+      setAuthMode('login')
+      await supabase.auth.signOut()
     }
     setLoginLoading(false)
   }
@@ -1477,48 +1554,202 @@ function App() {
     )
   }
 
-  if (!user) {
+  if (!user || authMode === 'update_password') {
+    const getFormTitle = () => {
+      switch (authMode) {
+        case 'signup': return 'Criar Conta'
+        case 'forgot_password': return 'Recuperar Senha'
+        case 'update_password': return 'Criar Nova Senha'
+        default: return 'Acesso ao Agendamento'
+      }
+    }
+
+    const getFormSubtitle = () => {
+      switch (authMode) {
+        case 'signup': return 'Cadastre-se para gerenciar as apresentações'
+        case 'forgot_password': return 'Digite seu e-mail para receber as instruções'
+        case 'update_password': return 'Digite e confirme sua nova senha'
+        default: return 'Entre na sua conta para organizar e gerenciar suas apresentações.'
+      }
+    }
+
+    const getSubmitHandler = () => {
+      switch (authMode) {
+        case 'signup': return handleSignUpSubmit
+        case 'forgot_password': return handleForgotPasswordSubmit
+        case 'update_password': return handleUpdatePasswordSubmit
+        default: return handleLoginSubmit
+      }
+    }
+
+    const getSubmitLabel = () => {
+      if (loginLoading) return 'Carregando...'
+      switch (authMode) {
+        case 'signup': return 'Cadastrar'
+        case 'forgot_password': return 'Enviar E-mail'
+        case 'update_password': return 'Alterar Senha'
+        default: return 'Entrar'
+      }
+    }
+
     return (
       <div className="login-screen-wrapper">
         <div className="login-card">
           <div className="login-header">
             <img src={meetLogo} alt="Google Meet Logo" className="login-logo-img" />
-            <h2 className="login-title">Acesso ao Agendamento</h2>
-            <p className="login-subtitle">Entre com sua conta para gerenciar as apresentações</p>
+            <h2 className="login-title">{getFormTitle()}</h2>
+            <p className="login-subtitle">{getFormSubtitle()}</p>
           </div>
-          <form className="login-form" onSubmit={handleLoginSubmit}>
-            <div className="form-group">
-              <label className="form-label">E-mail</label>
-              <input
-                type="email"
-                className="form-input"
-                placeholder="seu-email@dominio.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loginLoading}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Senha</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Sua senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loginLoading}
-              />
-            </div>
+          <form className="login-form" onSubmit={getSubmitHandler()}>
+            {authMode === 'signup' && (
+              <div className="form-group">
+                <label className="form-label">Nome</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Seu nome"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  disabled={loginLoading}
+                />
+              </div>
+            )}
+            
+            {authMode !== 'update_password' && (
+              <div className="form-group">
+                <label className="form-label">E-mail</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="seu-email@dominio.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loginLoading}
+                />
+              </div>
+            )}
+
+            {authMode !== 'forgot_password' && authMode !== 'update_password' && (
+              <div className="form-group">
+                <label className="form-label">Senha</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="Sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loginLoading}
+                />
+              </div>
+            )}
+
+            {authMode === 'update_password' && (
+              <>
+                <div className="form-group">
+                  <label className="form-label">Nova Senha</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="Sua nova senha"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    disabled={loginLoading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Confirmar Senha</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="Confirme a nova senha"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={loginLoading}
+                  />
+                </div>
+              </>
+            )}
+
             {loginError && <span className="login-error-msg">{loginError}</span>}
+            {loginSuccess && <span className="login-success-msg">{loginSuccess}</span>}
+            
             <button
               className="btn btn-primary btn-login"
               type="submit"
               disabled={loginLoading}
             >
-              {loginLoading ? 'Carregando...' : 'Entrar'}
+              {getSubmitLabel()}
             </button>
+
+            {authMode === 'login' && (
+              <>
+                <p className="login-switch-text">
+                  Não tem uma conta?{' '}
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      setAuthMode('signup')
+                      setLoginError(null)
+                      setLoginSuccess(null)
+                    }}
+                  >
+                    Criar conta
+                  </button>
+                </p>
+                <p className="login-switch-text" style={{ marginTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      setAuthMode('forgot_password')
+                      setLoginError(null)
+                      setLoginSuccess(null)
+                    }}
+                  >
+                    Esqueci minha senha
+                  </button>
+                </p>
+              </>
+            )}
+
+            {authMode === 'signup' && (
+              <p className="login-switch-text">
+                Já tem uma conta?{' '}
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    setAuthMode('login')
+                    setLoginError(null)
+                    setLoginSuccess(null)
+                  }}
+                >
+                  Entrar
+                </button>
+              </p>
+            )}
+
+            {authMode === 'forgot_password' && (
+              <p className="login-switch-text">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    setAuthMode('login')
+                    setLoginError(null)
+                    setLoginSuccess(null)
+                  }}
+                >
+                  Voltar para Entrar
+                </button>
+              </p>
+            )}
           </form>
         </div>
       </div>
