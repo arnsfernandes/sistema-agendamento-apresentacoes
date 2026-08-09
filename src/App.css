@@ -405,6 +405,7 @@ body {
 }
 
 .calendar-day-cell {
+  position: relative;
   background-color: rgba(255, 255, 255, 0.002);
   border: 1px solid var(--calendar-cell-border);
   border-radius: 12px;
@@ -2033,4 +2034,29 @@ body {
   .mobile-only {
     display: flex !important;
   }
+}
+
+.recurring-indicator-dot {
+  width: 5px;
+  height: 5px;
+  background-color: var(--text-accent);
+  border-radius: 50%;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.recurring-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.recurring-checkbox-container input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  cursor: pointer;
 }

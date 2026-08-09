@@ -330,6 +330,11 @@ Deno.serve(async (req) => {
       )
     }
 
+    const isRecurring = !!requestBody.isRecurring
+    const recurringDays = Array.isArray(requestBody.recurringDays) ? requestBody.recurringDays : []
+    const recurrenceEndOption = typeof requestBody.recurrenceEndOption === 'string' ? requestBody.recurrenceEndOption : 'never'
+    const recurrenceEndDate = typeof requestBody.recurrenceEndDate === 'string' ? requestBody.recurrenceEndDate.trim() : ''
+
     if (endTime <= startTime) {
       return jsonResponse(
         {
@@ -338,6 +343,35 @@ Deno.serve(async (req) => {
         },
         400,
       )
+    }
+
+    if (isRecurring) {
+      if (recurringDays.length === 0) {
+        return jsonResponse(
+          {
+            error: 'Selecione pelo menos um dia da semana para a recorrência.',
+          },
+          400,
+        )
+      }
+      if (recurrenceEndOption === 'date') {
+        if (!recurrenceEndDate || !isValidDate(recurrenceEndDate)) {
+          return jsonResponse(
+            {
+              error: 'Informe uma data de término de recorrência válida.',
+            },
+            400,
+          )
+        }
+        if (recurrenceEndDate <= date) {
+          return jsonResponse(
+            {
+              error: 'A data de término da recorrência deve ser posterior à data inicial.',
+            },
+            400,
+          )
+        }
+      }
     }
 
     const now = getSaoPauloNow()
@@ -649,6 +683,54 @@ Deno.serve(async (req) => {
       '1',
     )
 
+    const rfcToJsDayMap: Record<string, number> = {
+      SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6
+    }
+
+    let effectiveDate = date
+    if (isRecurring && recurringDays.length > 0) {
+      const [year, month, day] = date.split('-').map(Number)
+      const startJsDate = new Date(Date.UTC(year, month - 1, day))
+      const startDayIndex = startJsDate.getUTCDay()
+      const targetIndices = recurringDays.map(d => rfcToJsDayMap[d]).filter(v => v !== undefined)
+      
+      let minDiff = 7
+      for (const targetIdx of targetIndices) {
+        let diff = targetIdx - startDayIndex
+        if (diff < 0) {
+          diff += 7
+        }
+        if (diff < minDiff) {
+          minDiff = diff
+        }
+      }
+      if (minDiff > 0 && minDiff < 7) {
+        startJsDate.setUTCDate(startJsDate.getUTCDate() + minDiff)
+        const y = startJsDate.getUTCFullYear()
+        const m = String(startJsDate.getUTCMonth() + 1).padStart(2, '0')
+        const d = String(startJsDate.getUTCDate()).padStart(2, '0')
+        effectiveDate = `${y}-${m}-${d}`
+      }
+    }
+
+    const rruleParts = [`FREQ=WEEKLY`]
+    if (recurringDays && recurringDays.length > 0) {
+      rruleParts.push(`BYDAY=${recurringDays.join(',')}`)
+    }
+    if (recurrenceEndOption === 'date' && recurrenceEndDate) {
+      const endLocalStr = `${recurrenceEndDate}T23:59:59`
+      const dummy = new Date(endLocalStr + 'Z')
+      const spStr = dummy.toLocaleString('sv', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T')
+      const spDummy = new Date(spStr + 'Z')
+      const spOffsetMs = dummy.getTime() - spDummy.getTime()
+      const localDate = new Date(dummy.getTime() + spOffsetMs)
+      if (!Number.isNaN(localDate.getTime())) {
+        const untilFormatted = localDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+        rruleParts.push(`UNTIL=${untilFormatted}`)
+      }
+    }
+    const recurrenceRule = `RRULE:${rruleParts.join(';')}`
+
     const createEventResponse =
       await fetch(createEventUrl, {
         method: 'POST',
@@ -662,12 +744,12 @@ Deno.serve(async (req) => {
           summary: title,
           start: {
             dateTime:
-              `${date}T${startTime}:00`,
+              `${effectiveDate}T${startTime}:00`,
             timeZone: TIME_ZONE,
           },
           end: {
             dateTime:
-              `${date}T${endTime}:00`,
+              `${effectiveDate}T${endTime}:00`,
             timeZone: TIME_ZONE,
           },
           conferenceData: {
@@ -679,6 +761,7 @@ Deno.serve(async (req) => {
               },
             },
           },
+          ...(isRecurring ? { recurrence: [recurrenceRule] } : {}),
         }),
       })
 
@@ -762,6 +845,29 @@ Deno.serve(async (req) => {
             'O Google não gerou o link do Meet. A apresentação não foi criada.',
         },
         400,
+      )
+    }
+
+    if (isRecurring) {
+      createdGoogleEventId = null
+
+      return jsonResponse(
+        {
+          success: true,
+          presentation: {
+            id: null,
+            title: title,
+            date: date,
+            time: startTime,
+            timeEnd: endTime,
+            meetLink: meetLink,
+            googleEventId: createdEvent.id,
+            googleCalendarId: activeCalendarId,
+            googleEventUpdatedAt: createdEvent.updated || null,
+            participantsList: [],
+          },
+        },
+        201,
       )
     }
 

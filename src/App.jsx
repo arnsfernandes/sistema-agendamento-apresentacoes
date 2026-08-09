@@ -7,10 +7,11 @@ import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 import AddPresentationModal from './components/AddPresentationModal'
 import EditPresentationModal from './components/EditPresentationModal'
 import MoveParticipantsModal from './components/MoveParticipantsModal'
+import DeletePresentationModal from './components/DeletePresentationModal'
 import meetLogo from './assets/meet-logo.png'
 import clientesIcon from './assets/clientes-icon.png'
 import { supabase } from './supabaseClient'
-import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation } from './services/googlePresentationService'
+import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation, generateMeetLink } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
 import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
@@ -149,8 +150,12 @@ function App() {
   const [showMoveParticipantsModal, setShowMoveParticipantsModal] = useState(false)
   const [movingPresentation, setMovingPresentation] = useState(null)
   const [isMovingAndDeleteProcessing, setIsMovingAndDeleteProcessing] = useState(false)
+  const [showDeletePresentationModal, setShowDeletePresentationModal] = useState(false)
+  const [deleteTargetId, setDeleteTargetId] = useState(null)
+  const [deleteTargetParticipants, setDeleteTargetParticipants] = useState(false)
   const [remotePresentationData, setRemotePresentationData] = useState(null)
   const [isFixingSchedule, setIsFixingSchedule] = useState(false)
+  const [isGeneratingMeet, setIsGeneratingMeet] = useState(false)
   const [presentationModalInitialDate, setPresentationModalInitialDate] = useState('')
   const [editingParticipant, setEditingParticipant] = useState(null)
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
@@ -545,16 +550,18 @@ function App() {
   const handleCreatePresentation = async (presentationData) => {
     try {
       const createdPresentation = await createGooglePresentation(presentationData)
-      const newMeeting = {
-        id: createdPresentation.id,
-        date: createdPresentation.date,
-        time: createdPresentation.time,
-        timeEnd: createdPresentation.timeEnd,
-        title: createdPresentation.title,
-        meetLink: createdPresentation.meetLink,
-        participantsList: createdPresentation.participantsList || []
+      if (createdPresentation.id) {
+        const newMeeting = {
+          id: createdPresentation.id,
+          date: createdPresentation.date,
+          time: createdPresentation.time,
+          timeEnd: createdPresentation.timeEnd,
+          title: createdPresentation.title,
+          meetLink: createdPresentation.meetLink,
+          participantsList: createdPresentation.participantsList || []
+        }
+        setMeetings(prev => [...prev, newMeeting])
       }
-      setMeetings(prev => [...prev, newMeeting])
 
       if (createdPresentation.date) {
         const presentationDateObj = new Date(createdPresentation.date + 'T00:00:00')
@@ -626,29 +633,46 @@ function App() {
   const handleUpdatePresentation = async (presentationData) => {
     try {
       await updateGooglePresentation(presentationData)
-      const refreshed = await listPresentations()
-      setMeetings(refreshed)
 
-      if (presentationData.date) {
-        const presentationDateObj = new Date(presentationData.date + 'T00:00:00')
-        const y = presentationDateObj.getFullYear()
-        const m = presentationDateObj.getMonth()
+      if (presentationData.editScope === 'series') {
+        const y = currentDate.getFullYear()
+        const m = currentDate.getMonth()
         const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
         const next = new Date(y, m + 1, 1)
         const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
 
-        supabase.functions.invoke('google-calendar-sync-apply', {
+        const { error } = await supabase.functions.invoke('google-calendar-sync-apply', {
           body: { startDate, endDate }
-        }).then(({ data, error }) => {
-          if (error) throw error
-          listPresentations().then(refreshedData => {
-            setMeetings(refreshedData)
-          }).catch(err => {
-            console.error('Erro ao recarregar após sincronização automática pós-edição:', err)
-          })
-        }).catch(err => {
-          console.error('Erro na sincronização automática pós-edição:', err)
         })
+        if (error) throw error
+
+        const refreshedData = await listPresentations()
+        setMeetings(refreshedData)
+      } else {
+        const refreshed = await listPresentations()
+        setMeetings(refreshed)
+
+        if (presentationData.date) {
+          const presentationDateObj = new Date(presentationData.date + 'T00:00:00')
+          const y = presentationDateObj.getFullYear()
+          const m = presentationDateObj.getMonth()
+          const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+          const next = new Date(y, m + 1, 1)
+          const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+
+          supabase.functions.invoke('google-calendar-sync-apply', {
+            body: { startDate, endDate }
+          }).then(({ data, error }) => {
+            if (error) throw error
+            listPresentations().then(refreshedData => {
+              setMeetings(refreshedData)
+            }).catch(err => {
+              console.error('Erro ao recarregar após sincronização automática pós-edição:', err)
+            })
+          }).catch(err => {
+            console.error('Erro na sincronização automática pós-edição:', err)
+          })
+        }
       }
     } catch (err) {
       console.error('Erro ao atualizar apresentação comercial:', err)
@@ -656,7 +680,7 @@ function App() {
     }
   }
 
-  const handleDeletePresentation = async (presentationId, forceDeleteParticipants = false) => {
+  const handleDeletePresentation = async (presentationId, forceDeleteParticipants = false, editScope = null) => {
     setMeetingErrorMsg(null)
 
     const presentation = meetings.find(m => m.id === presentationId)
@@ -673,14 +697,25 @@ function App() {
 
     if (hasParticipants && forceDeleteParticipants) {
       deleteParticipants = true
-    } else {
-      const confirmDelete = window.confirm('Deseja realmente excluir esta apresentação e removê-la do Google Agenda?')
-      if (!confirmDelete) return
+    }
+
+    if (presentation.googleRecurringEventId && !editScope) {
+      setDeleteTargetId(presentationId)
+      setDeleteTargetParticipants(deleteParticipants)
+      setShowDeletePresentationModal(true)
+      return
+    }
+
+    if (!presentation.googleRecurringEventId) {
+      if (!deleteParticipants) {
+        const confirmDelete = window.confirm('Deseja realmente excluir esta apresentação e removê-la do Google Agenda?')
+        if (!confirmDelete) return
+      }
     }
 
     setIsDeletingPresentation(true)
     try {
-      await deleteGooglePresentation(presentationId, deleteParticipants)
+      await deleteGooglePresentation(presentationId, deleteParticipants, editScope || 'occurrence')
 
       const refreshed = await listPresentations()
       setMeetings(refreshed)
@@ -763,6 +798,22 @@ function App() {
       alert(err.message || 'Não foi possível mover os participantes e excluir a apresentação. Tente novamente.')
     } finally {
       setIsMovingAndDeleteProcessing(false)
+    }
+  }
+
+  const handleGenerateMeetLink = async (presentationId) => {
+    setMeetingErrorMsg(null)
+    setIsGeneratingMeet(true)
+    try {
+      const newMeetLink = await generateMeetLink(presentationId)
+      if (newMeetLink) {
+        setMeetings(prev => prev.map(m => m.id === presentationId ? { ...m, meetLink: newMeetLink } : m))
+      }
+    } catch (err) {
+      console.error('Erro ao gerar link do Meet:', err)
+      setMeetingErrorMsg(err.message || 'Não foi possível gerar a reunião. Tente novamente.')
+    } finally {
+      setIsGeneratingMeet(false)
     }
   }
 
@@ -975,6 +1026,11 @@ function App() {
                             className={`calendar-day-cell ${day.isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
                             onClick={() => setSelectedDateKey(day.dateKey)}
                           >
+                            {(() => {
+                              const dayMeetings = meetings.filter(m => m.date === day.dateKey)
+                              const hasRecurringEmpty = dayMeetings.some(m => m.googleRecurringEventId && m.syncStatus !== 'google_deleted' && (!m.participantsList || !m.participantsList.some(p => p.statusAtivo)))
+                              return hasRecurringEmpty ? <span className="recurring-indicator-dot" title="Recorrência sem participantes" /> : null
+                            })()}
                             <span className="day-number">{day.dayNumber}</span>
                             {(() => {
                               const dayMeetings = meetings.filter(m => m.date === day.dateKey)
@@ -984,7 +1040,7 @@ function App() {
                                 m.participantsList.some(p => p.statusAtivo)
                               )
                               const hasMeetings = dayMeetings.length > 0
-                              const hasParticipants = dayMeetings.some(m => m.participantsList && m.participantsList.length > 0)
+                              const hasParticipants = dayMeetings.some(m => m.participantsList && m.participantsList.some(p => p.statusAtivo))
 
                               if (!hasMeetings) return null
 
@@ -1626,6 +1682,8 @@ function App() {
         meetingErrorMsg={meetingErrorMsg}
         onFixSchedule={handleFixSchedule}
         isFixingSchedule={isFixingSchedule}
+        onGenerateMeetLink={() => handleGenerateMeetLink(selectedMeeting.id)}
+        isGeneratingMeet={isGeneratingMeet}
       />
 
       {/* Message Customization Sub-Modal */}
@@ -1759,6 +1817,24 @@ function App() {
           await handleDeletePresentation(movingPresentation.id, true)
         }}
         isProcessing={isMovingAndDeleteProcessing}
+      />
+
+      <DeletePresentationModal
+        isOpen={showDeletePresentationModal}
+        onClose={() => {
+          setShowDeletePresentationModal(false)
+          setDeleteTargetId(null)
+          setDeleteTargetParticipants(false)
+        }}
+        onDelete={async (scope) => {
+          setShowDeletePresentationModal(false)
+          const targetId = deleteTargetId
+          const targetParticipants = deleteTargetParticipants
+          setDeleteTargetId(null)
+          setDeleteTargetParticipants(false)
+          await handleDeletePresentation(targetId, targetParticipants, scope)
+        }}
+        isDeleting={isDeletingPresentation}
       />
       {showPendingList && (
         <div className="modal-overlay" onClick={() => setShowPendingList(false)}>

@@ -30,6 +30,10 @@ type GoogleCalendarEvent = {
   summary?: string
   updated?: string
   recurringEventId?: string
+  originalStartTime?: {
+    dateTime?: string
+    date?: string
+  }
   hangoutLink?: string
   start?: {
     dateTime?: string
@@ -220,7 +224,7 @@ Deno.serve(async (req) => {
         maxResults: '2500',
         timeZone: 'America/Sao_Paulo',
         fields:
-          'items(id,status,summary,updated,recurringEventId,hangoutLink,start,end,conferenceData),nextPageToken',
+          'items(id,status,summary,updated,recurringEventId,originalStartTime,hangoutLink,start,end,conferenceData),nextPageToken',
       })
 
       if (pageToken) {
@@ -275,7 +279,8 @@ Deno.serve(async (req) => {
       })
       .map((event) => ({
         googleEventId: event.id as string,
-        recurringEventId: event.recurringEventId ?? null,
+        googleRecurringEventId: event.recurringEventId ?? null,
+        googleOriginalStartAt: event.originalStartTime?.dateTime ?? null,
         title: event.summary?.trim() || 'Apresentação sem título',
         startDateTime: event.start?.dateTime as string,
         endDateTime: event.end?.dateTime as string,

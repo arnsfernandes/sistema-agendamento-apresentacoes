@@ -32,6 +32,10 @@ type GoogleCalendarEvent = {
   summary?: string
   updated?: string
   recurringEventId?: string
+  originalStartTime?: {
+    dateTime?: string
+    date?: string
+  }
   hangoutLink?: string
   start?: {
     dateTime?: string
@@ -224,7 +228,7 @@ Deno.serve(async (req) => {
         maxResults: '2500',
         timeZone: 'America/Sao_Paulo',
         fields:
-          'items(id,status,summary,updated,recurringEventId,hangoutLink,start,end,conferenceData),nextPageToken',
+          'items(id,status,summary,updated,recurringEventId,originalStartTime,hangoutLink,start,end,conferenceData),nextPageToken',
       })
 
       if (pageToken) {
@@ -279,9 +283,39 @@ Deno.serve(async (req) => {
       throw localError
     }
 
-    const equal: Record<string, unknown>[] = []
-    const changed: Record<string, unknown>[] = []
-    const googleOnly: Record<string, unknown>[] = []
+    const equal: Array<{
+      presentationId: number
+      googleEventId: string
+      remoteUpdated: string | null
+      googleRecurringEventId: string | null
+      googleOriginalStartAt: string | null
+    }> = []
+
+    const changed: Array<{
+      presentationId: number
+      googleEventId: string
+      remoteUpdated: string | null
+      googleRecurringEventId: string | null
+      googleOriginalStartAt: string | null
+      diffFields: string[]
+      remoteTitle: string
+      remoteDate: string
+      remoteTime: string
+      remoteTimeEnd: string
+      remoteMeetLink: string
+    }> = []
+
+    const googleOnly: Array<{
+      googleEventId: string
+      title: string
+      date: string
+      time: string
+      timeEnd: string
+      meetLink: string | null
+      googleUpdatedAt: string | null
+      googleRecurringEventId: string | null
+      googleOriginalStartAt: string | null
+    }> = []
 
     const localMatchedIds = new Set<string>()
     const googleMatchedIds = new Set<string>()
@@ -331,6 +365,8 @@ Deno.serve(async (req) => {
           presentationId: local.id,
           googleEventId: local.google_event_id,
           remoteUpdated: remote.updated || null,
+          googleRecurringEventId: remote.recurringEventId || null,
+          googleOriginalStartAt: remote.originalStartTime?.dateTime || null,
         }
 
         if (diffFields.length === 0) {
@@ -349,28 +385,62 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Identificar googleOnly sem recorrência
+    // Identificar googleOnly (incluindo ocorrências recorrentes)
     for (const remote of activeGoogleEvents) {
-      if (!googleMatchedIds.has(remote.id as string) && !remote.recurringEventId) {
+      if (!googleMatchedIds.has(remote.id as string)) {
         const remoteStart = getGoogleDateTimeParts(remote.start?.dateTime)
         const remoteEnd = getGoogleDateTimeParts(remote.end?.dateTime)
 
+        let googleRecurringEventId = remote.recurringEventId || null
+        if (!googleRecurringEventId && remote.id && remote.originalStartTime) {
+          const parts = remote.id.split('_')
+          if (parts.length > 1) {
+            const suffix = parts[parts.length - 1]
+            const isTimestampSuffix = /^\d{8}$/.test(suffix) || /^\d{8}T\d{6}Z$/.test(suffix)
+            if (isTimestampSuffix) {
+              googleRecurringEventId = parts.slice(0, -1).join('_')
+            }
+          }
+        }
+
         googleOnly.push({
-          googleEventId: remote.id,
+          googleEventId: remote.id || '',
           title: remote.summary || 'Apresentação sem título',
           date: remoteStart?.date || '',
           time: remoteStart?.time || '',
           timeEnd: remoteEnd?.time || '',
           meetLink: getMeetLink(remote),
           googleUpdatedAt: remote.updated || null,
+          googleRecurringEventId,
+          googleOriginalStartAt: remote.originalStartTime?.dateTime || null,
         })
       }
     }
 
     // Identificar deletedOnGoogle: confirmar individualmente no Google antes de classificar
-    const deletedWithoutParticipants: Record<string, unknown>[] = []
-    const deletedPending: Record<string, unknown>[] = []
-    const movedOutsidePeriod: Record<string, unknown>[] = []
+    const deletedWithoutParticipants: Array<{
+      presentationId: number
+      googleEventId: string
+    }> = []
+
+    const deletedPending: Array<{
+      presentationId: number
+      googleEventId: string
+    }> = []
+
+    const movedOutsidePeriod: Array<{
+      presentationId: number
+      googleEventId: string
+      remoteUpdated: string | null
+      remoteTitle: string
+      remoteDate: string
+      remoteTime: string
+      remoteTimeEnd: string
+      remoteMeetLink: string
+      googleRecurringEventId: string | null
+      googleOriginalStartAt: string | null
+      diffFields?: string[]
+    }> = []
 
     for (const local of localPresentations || []) {
       if (!local.google_event_id) continue
@@ -445,6 +515,8 @@ Deno.serve(async (req) => {
             remoteTimeEnd: remoteEndStr,
             remoteMeetLink,
             diffFields,
+            googleRecurringEventId: remoteEventData.recurringEventId || null,
+            googleOriginalStartAt: remoteEventData.originalStartTime?.dateTime || null,
           })
         }
         continue
@@ -484,6 +556,8 @@ Deno.serve(async (req) => {
           last_synced_at: nowIso,
           sync_error: null,
           google_event_updated_at: item.remoteUpdated,
+          google_recurring_event_id: item.googleRecurringEventId,
+          google_original_start_at: item.googleOriginalStartAt,
         })
         .eq('id', item.presentationId)
 
@@ -554,6 +628,8 @@ Deno.serve(async (req) => {
           horario_fim: `${newTimeEnd}:00`,
           meet_link: item.remoteMeetLink || null,
           google_event_updated_at: item.remoteUpdated,
+          google_recurring_event_id: item.googleRecurringEventId,
+          google_original_start_at: item.googleOriginalStartAt,
           sync_status: 'synced',
           last_synced_at: nowIso,
           sync_error: null,
@@ -607,6 +683,8 @@ Deno.serve(async (req) => {
           google_event_id: item.googleEventId,
           google_calendar_id: calendarId,
           google_event_updated_at: item.googleUpdatedAt,
+          google_recurring_event_id: item.googleRecurringEventId,
+          google_original_start_at: item.googleOriginalStartAt,
           sync_status: 'synced',
           last_synced_at: nowIso,
           sync_error: null,
@@ -686,7 +764,7 @@ Deno.serve(async (req) => {
         const conflictMsg = `Conflito de horário com outra apresentação em ${newDate}.`
         operationErrors.push({
           type: 'moved_conflict',
-          id: item.presentationId as string,
+          id: item.presentationId,
           message: conflictMsg,
         })
 
@@ -711,6 +789,8 @@ Deno.serve(async (req) => {
           horario_fim: `${newTimeEnd}:00`,
           meet_link: item.remoteMeetLink || null,
           google_event_updated_at: item.remoteUpdated,
+          google_recurring_event_id: item.googleRecurringEventId,
+          google_original_start_at: item.googleOriginalStartAt,
           sync_status: 'synced',
           last_synced_at: nowIso,
           sync_error: null,
@@ -721,7 +801,7 @@ Deno.serve(async (req) => {
         const errorMsg = updateError.message || 'Erro ao atualizar apresentação movida'
         operationErrors.push({
           type: 'update_moved',
-          id: item.presentationId as string,
+          id: item.presentationId,
           message: errorMsg,
         })
 

@@ -1,10 +1,24 @@
 import { useState, useEffect, useRef } from 'react'
 
+const DAYS_OF_WEEK = [
+  { value: 'MO', label: 'S' },
+  { value: 'TU', label: 'T' },
+  { value: 'WE', label: 'Q' },
+  { value: 'TH', label: 'Q' },
+  { value: 'FR', label: 'S' },
+  { value: 'SA', label: 'S' },
+  { value: 'SU', label: 'D' }
+]
+
 export default function AddPresentationModal({ isOpen, onClose, onCreate, initialDate }) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurringDays, setRecurringDays] = useState([])
+  const [recurrenceEndOption, setRecurrenceEndOption] = useState('never')
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('')
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
@@ -17,6 +31,10 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
       setDate(initialDate || '')
       setStartTime('')
       setEndTime('')
+      setIsRecurring(false)
+      setRecurringDays([])
+      setRecurrenceEndOption('never')
+      setRecurrenceEndDate('')
       setErrors({})
       setIsSubmitting(false)
       setSubmitError(null)
@@ -29,6 +47,10 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
     setDate('')
     setStartTime('')
     setEndTime('')
+    setIsRecurring(false)
+    setRecurringDays([])
+    setRecurrenceEndOption('never')
+    setRecurrenceEndDate('')
     setErrors({})
     setIsSubmitting(false)
     setSubmitError(null)
@@ -63,6 +85,19 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
       newErrors.endTime = 'O horário final deve ser posterior ao horário inicial.'
     }
 
+    if (isRecurring) {
+      if (recurringDays.length === 0) {
+        newErrors.recurringDays = 'Selecione pelo menos um dia da semana.'
+      }
+      if (recurrenceEndOption === 'date') {
+        if (!recurrenceEndDate) {
+          newErrors.recurrenceEndDate = 'A data de término é obrigatória.'
+        } else if (date && recurrenceEndDate <= date) {
+          newErrors.recurrenceEndDate = 'A data de término deve ser posterior à data inicial.'
+        }
+      }
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -76,7 +111,11 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
         title: title.trim(),
         date,
         startTime,
-        endTime
+        endTime,
+        isRecurring,
+        recurringDays,
+        recurrenceEndOption,
+        recurrenceEndDate: recurrenceEndOption === 'date' ? recurrenceEndDate : null
       })
       handleClose()
     } catch (err) {
@@ -182,6 +221,111 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
               {errors.endTime && <span className="form-error-msg">{errors.endTime}</span>}
             </div>
           </div>
+
+          <div className="recurring-checkbox-container">
+            <input
+              type="checkbox"
+              id="isRecurring"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              disabled={isSubmitting}
+            />
+            <label htmlFor="isRecurring" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 500 }}>
+              Reunião recorrente
+            </label>
+          </div>
+
+          {isRecurring && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '12px', background: 'rgba(255,255,255,0.02)' }}>
+              <div className="form-group">
+                <label className="form-label">Repetir nos dias da semana *</label>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  {DAYS_OF_WEEK.map(day => {
+                    const isSelected = recurringDays.includes(day.value)
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => {
+                          setRecurringDays(prev => 
+                            prev.includes(day.value) 
+                              ? prev.filter(d => d !== day.value)
+                              : [...prev, day.value]
+                          )
+                          setErrors(prev => ({ ...prev, recurringDays: null }))
+                        }}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          border: '1px solid ' + (isSelected ? 'var(--text-accent)' : 'var(--border-color)'),
+                          background: isSelected ? 'var(--accent-glow)' : 'transparent',
+                          color: isSelected ? 'var(--text-accent)' : 'var(--text-secondary)',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease'
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        {day.label}
+                      </button>
+                    )
+                  })}
+                </div>
+                {errors.recurringDays && <span className="form-error-msg">{errors.recurringDays}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Término da recorrência</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="radio"
+                      name="recurrenceEndOption"
+                      value="never"
+                      checked={recurrenceEndOption === 'never'}
+                      onChange={() => setRecurrenceEndOption('never')}
+                      disabled={isSubmitting}
+                      style={{ width: 'auto' }}
+                    />
+                    Sem data para terminar
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="radio"
+                      name="recurrenceEndOption"
+                      value="date"
+                      checked={recurrenceEndOption === 'date'}
+                      onChange={() => setRecurrenceEndOption('date')}
+                      disabled={isSubmitting}
+                      style={{ width: 'auto' }}
+                    />
+                    Termina em uma data
+                  </label>
+                </div>
+              </div>
+
+              {recurrenceEndOption === 'date' && (
+                <div className="form-group">
+                  <label className="form-label">Data de Término *</label>
+                  <input
+                    type="date"
+                    className={`form-input ${errors.recurrenceEndDate ? 'error' : ''}`}
+                    value={recurrenceEndDate}
+                    onChange={(e) => {
+                      setRecurrenceEndDate(e.target.value)
+                      setErrors(prev => ({ ...prev, recurrenceEndDate: null }))
+                    }}
+                    disabled={isSubmitting}
+                  />
+                  {errors.recurrenceEndDate && <span className="form-error-msg">{errors.recurrenceEndDate}</span>}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
             <button

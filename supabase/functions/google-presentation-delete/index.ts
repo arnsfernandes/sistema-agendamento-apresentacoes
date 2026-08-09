@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // Obtém o parâmetro presentationId e valida
-    const { presentationId, deleteParticipants } = await req.json()
+    const { presentationId, deleteParticipants, deleteScope } = await req.json()
     const numericId = Number(presentationId)
     if (!Number.isInteger(numericId) || numericId <= 0) {
       return new Response(
@@ -68,6 +68,14 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    if (deleteScope && deleteScope !== 'occurrence' && deleteScope !== 'series') {
+      return new Response(
+        JSON.stringify({ error: 'O parâmetro deleteScope deve ser "occurrence" ou "series".' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
 
     // Inicializa o cliente Supabase Admin (bypassa RLS para as verificações necessárias)
     const supabaseAdmin = createClient(
@@ -87,6 +95,56 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Apresentação não encontrada.' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    if (deleteScope === 'series') {
+      const recurringId = presentation.google_recurring_event_id
+      if (!recurringId) {
+        return new Response(
+          JSON.stringify({ error: 'Esta apresentação não faz parte de uma série recorrente.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Busca todas as apresentações locais da série
+      const { data: seriesPresentations, error: seriesError } = await supabaseAdmin
+        .from('apresentacoes')
+        .select('id')
+        .eq('google_recurring_event_id', recurringId)
+
+      if (seriesError || !seriesPresentations) {
+        console.error('Erro ao buscar apresentações da série:', seriesError)
+        return new Response(
+          JSON.stringify({ error: 'Falha ao verificar as ocorrências da série.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const seriesIds = seriesPresentations.map((p) => p.id)
+
+      if (seriesIds.length > 0) {
+        // Verifica se há participações vinculadas a essas apresentações
+        const { count: participantCount, error: participationsError } = await supabaseAdmin
+          .from('participacoes')
+          .select('*', { count: 'exact', head: true })
+          .in('apresentacao_id', seriesIds)
+
+        if (participationsError) {
+          console.error('Erro ao buscar participações da série:', participationsError)
+          return new Response(
+            JSON.stringify({ error: 'Erro ao verificar vínculos de participantes para a série.' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        if (participantCount && participantCount > 0) {
+          return new Response(
+            JSON.stringify({ error: 'Esta série possui participantes vinculados em suas ocorrências. É necessário mover ou excluir as participações de todas as ocorrências antes de excluir toda a série.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+
     }
 
     // 2. Valida se a apresentação já começou (fuso America/Sao_Paulo)
@@ -137,7 +195,9 @@ Deno.serve(async (req) => {
     }
 
     // 4. Valida se os campos do evento Google estão preenchidos
-    const googleEventId = presentation.google_event_id
+    const googleEventId = deleteScope === 'series'
+      ? presentation.google_recurring_event_id
+      : presentation.google_event_id
     const googleCalendarId = presentation.google_calendar_id
     if (!googleEventId || !googleCalendarId) {
       return new Response(
@@ -221,6 +281,26 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Não foi possível excluir o evento correspondente no Google Agenda.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (deleteScope === 'series') {
+      const { error: dbDeleteError } = await supabaseAdmin
+        .from('apresentacoes')
+        .delete()
+        .eq('google_recurring_event_id', googleEventId)
+
+      if (dbDeleteError) {
+        console.error('Erro ao excluir apresentações da série no Supabase:', dbDeleteError)
+        return new Response(
+          JSON.stringify({ error: 'Falha crítica: A série foi excluída do Google Agenda, mas a remoção local no banco de dados falhou (pendente de reconciliação).' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'A série foi removida com sucesso do Google Agenda e do banco de dados local.' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

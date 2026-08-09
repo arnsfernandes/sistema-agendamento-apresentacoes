@@ -15,6 +15,7 @@ export const listPresentations = async () => {
       sync_status,
       sync_error,
       google_event_updated_at,
+      google_recurring_event_id,
       participacoes (
         id,
         status,
@@ -46,6 +47,7 @@ export const listPresentations = async () => {
     googleEventId: item.google_event_id,
     googleCalendarId: item.google_calendar_id,
     googleEventUpdatedAt: item.google_event_updated_at,
+    googleRecurringEventId: item.google_recurring_event_id,
     syncStatus: item.sync_status,
     syncError: item.sync_error,
     participantsList: (item.participacoes || []).map(part => ({

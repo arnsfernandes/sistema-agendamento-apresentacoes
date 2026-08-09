@@ -20,6 +20,8 @@ export default function MeetingDetailsModal({
   meetingErrorMsg,
   onFixSchedule,
   isFixingSchedule,
+  onGenerateMeetLink,
+  isGeneratingMeet,
 }) {
   if (!selectedMeeting) return null
 
@@ -209,11 +211,24 @@ export default function MeetingDetailsModal({
                   </button>
                 </div>
               ) : (
-                <div className="meet-link-not-found">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="error-icon">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                  </svg>
-                  <span>Link do Meet não encontrado</span>
+                <div className="meet-link-not-found" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="error-icon">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <span>Link do Meet não encontrado</span>
+                  </div>
+                  {!isGoogleDeleted && !isPending && (
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      onClick={onGenerateMeetLink}
+                      disabled={isGeneratingMeet}
+                      style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
+                    >
+                      {isGeneratingMeet ? 'Gerando...' : 'Gerar reunião'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

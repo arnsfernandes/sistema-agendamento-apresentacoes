@@ -23,7 +23,11 @@ export const createGooglePresentation = async (presentationData) => {
         title: presentationData.title,
         date: presentationData.date,
         startTime: presentationData.startTime,
-        endTime: presentationData.endTime
+        endTime: presentationData.endTime,
+        isRecurring: presentationData.isRecurring,
+        recurringDays: presentationData.recurringDays,
+        recurrenceEndOption: presentationData.recurrenceEndOption,
+        recurrenceEndDate: presentationData.recurrenceEndDate
       }
     })
 
@@ -48,7 +52,8 @@ export const updateGooglePresentation = async (presentationData) => {
         date: presentationData.date,
         startTime: presentationData.startTime,
         endTime: presentationData.endTime,
-        etag: presentationData.etag
+        etag: presentationData.etag,
+        editScope: presentationData.editScope
       }
     })
 
@@ -59,10 +64,10 @@ export const updateGooglePresentation = async (presentationData) => {
   }
 }
 
-export const deleteGooglePresentation = async (presentationId, deleteParticipants) => {
+export const deleteGooglePresentation = async (presentationId, deleteParticipants, deleteScope = 'occurrence') => {
   try {
     const { error } = await supabase.functions.invoke('google-presentation-delete', {
-      body: { presentationId, deleteParticipants }
+      body: { presentationId, deleteParticipants, deleteScope }
     })
 
     if (error) throw error
@@ -85,5 +90,19 @@ export const moveParticipantsAndDeletePresentation = async (sourcePresentationId
   } catch (err) {
     console.error('Erro ao mover participantes e excluir apresentação:', err)
     await handleFunctionError(err, 'Não foi possível mover os participantes e excluir a apresentação. Tente novamente.')
+  }
+}
+
+export const generateMeetLink = async (presentationId) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('google-presentation-generate-meet', {
+      body: { presentationId }
+    })
+
+    if (error) throw error
+    return data.meetLink
+  } catch (err) {
+    console.error('Erro ao gerar link do Google Meet:', err)
+    await handleFunctionError(err, 'Não foi possível gerar a conferência Google Meet. Tente novamente.')
   }
 }

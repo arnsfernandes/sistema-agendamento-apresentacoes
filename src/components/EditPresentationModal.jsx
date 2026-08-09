@@ -10,6 +10,8 @@ export default function EditPresentationModal({
   const [date, setDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [editScope, setEditScope] = useState('occurrence')
+
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
@@ -23,6 +25,8 @@ export default function EditPresentationModal({
       setDate(presentation?.date || '')
       setStartTime(presentation?.time ? presentation.time.slice(0, 5) : '')
       setEndTime(presentation?.timeEnd ? presentation.timeEnd.slice(0, 5) : '')
+      setEditScope('occurrence')
+
       setErrors({})
       setIsSubmitting(false)
       setSubmitError(null)
@@ -35,6 +39,8 @@ export default function EditPresentationModal({
     setDate('')
     setStartTime('')
     setEndTime('')
+    setEditScope('occurrence')
+
     setErrors({})
     setIsSubmitting(false)
     setSubmitError(null)
@@ -89,7 +95,8 @@ export default function EditPresentationModal({
         date,
         startTime,
         endTime,
-        etag: presentation.etag || null
+        etag: presentation.etag || null,
+        editScope: presentation.googleRecurringEventId ? editScope : 'occurrence'
       })
       handleClose()
     } catch (err) {
@@ -122,17 +129,53 @@ export default function EditPresentationModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {submitError && (
-            <div className="meeting-error-badge" style={{ marginTop: 0 }}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="error-icon">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <span>{submitError}</span>
-            </div>
-          )}
+         <form onSubmit={handleSubmit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+           {submitError && (
+             <div className="meeting-error-badge" style={{ marginTop: 0 }}>
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="error-icon">
+                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+               </svg>
+               <span>{submitError}</span>
+             </div>
+           )}
 
-          <div className="form-group">
+           {presentation?.googleRecurringEventId && (
+             <div className="form-group" style={{ marginBottom: '0.25rem' }}>
+               <label className="form-label" style={{ fontWeight: 600 }}>Esta apresentação faz parte de uma série. O que deseja alterar?</label>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
+                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                   <input
+                     type="radio"
+                     name="editScope"
+                     value="occurrence"
+                     checked={editScope === 'occurrence'}
+                     onChange={() => {
+                       setEditScope('occurrence')
+                     }}
+                     disabled={isSubmitting}
+                     style={{ width: 'auto' }}
+                   />
+                   Somente esta ocorrência
+                 </label>
+                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                   <input
+                     type="radio"
+                     name="editScope"
+                     value="series"
+                     checked={editScope === 'series'}
+                     onChange={() => {
+                       setEditScope('series')
+                     }}
+                     disabled={isSubmitting}
+                     style={{ width: 'auto' }}
+                   />
+                   Toda a série
+                 </label>
+               </div>
+             </div>
+           )}
+
+           <div className="form-group">
             <label className="form-label">Título da Apresentação *</label>
             <input
               type="text"
@@ -205,11 +248,11 @@ export default function EditPresentationModal({
             >
               Cancelar
             </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isSubmitting}
-            >
+             <button
+               type="submit"
+               className="btn btn-primary"
+               disabled={isSubmitting}
+             >
               {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
             </button>
           </div>
