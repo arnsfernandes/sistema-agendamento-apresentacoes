@@ -430,6 +430,33 @@ Deno.serve(async (req) => {
     )
 
     const {
+      data: integrationData,
+      error: integrationError,
+    } = await supabaseAdmin.rpc(
+      'obter_google_refresh_token',
+      { p_user_id: user.id }
+    )
+
+    if (integrationError) {
+      console.error(integrationError)
+      throw new Error(
+        'Não foi possível consultar a integração com o Google.',
+      )
+    }
+
+    const integration = integrationData?.[0]
+
+    if (!integration?.refresh_token) {
+      return jsonResponse(
+        {
+          error:
+            'Nenhuma conta Google está conectada.',
+        },
+        400,
+      )
+    }
+
+    const {
       data: presentation,
       error: presentationError,
     } = await supabaseAdmin
@@ -448,6 +475,8 @@ Deno.serve(async (req) => {
         google_event_updated_at
       `)
       .eq('id', presentationId)
+      .eq('user_id', user.id)
+      .eq('google_integracao_id', integration.google_integracao_id)
       .single()
 
     if (
@@ -514,32 +543,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    const {
-      data: integrationData,
-      error: integrationError,
-    } = await supabaseAdmin.rpc(
-      'obter_google_refresh_token',
-    )
-
-    if (integrationError) {
-      console.error(integrationError)
-
-      throw new Error(
-        'Não foi possível consultar a integração com o Google.',
-      )
-    }
-
-    const integration = integrationData?.[0]
-
-    if (!integration?.refresh_token) {
-      return jsonResponse(
-        {
-          error:
-            'Nenhuma conta Google está conectada.',
-        },
-        400,
-      )
-    }
 
     if (!integration.calendar_id) {
       return jsonResponse(
@@ -728,6 +731,8 @@ Deno.serve(async (req) => {
           )
         `)
         .eq('google_recurring_event_id', presentation.google_recurring_event_id)
+        .eq('user_id', user.id)
+        .eq('google_integracao_id', integration.google_integracao_id)
         .gte('data', referenceDate)
 
       const relevantLocalOccurrences = (localMatches || []).filter((loc: any) => {
@@ -867,6 +872,8 @@ Deno.serve(async (req) => {
         .select('id, data, horario, horario_fim, google_event_id, google_recurring_event_id')
         .gte('data', windowStartDate)
         .lte('data', windowEndDate)
+        .eq('user_id', user.id)
+        .eq('google_integracao_id', integration.google_integracao_id)
         .neq('sync_status', 'google_deleted')
 
       if (dbConflictsError) {
@@ -1493,6 +1500,8 @@ Deno.serve(async (req) => {
       `)
       .eq('data', date)
       .neq('id', presentationId)
+      .eq('user_id', user.id)
+      .eq('google_integracao_id', integration.google_integracao_id)
       .lt('horario', endTime)
       .gt('horario_fim', startTime)
 
@@ -1720,6 +1729,8 @@ Deno.serve(async (req) => {
         } : {}),
       })
       .eq('id', presentationId)
+      .eq('user_id', user.id)
+      .eq('google_integracao_id', integration.google_integracao_id)
       .select(`
         id,
         titulo,

@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
     const {
       data: integrationData,
       error: integrationError,
-    } = await supabaseAdmin.rpc('obter_google_refresh_token')
+    } = await supabaseAdmin.rpc('obter_google_refresh_token', { p_user_id: user.id })
 
     const integration = integrationData?.[0]
 
@@ -276,6 +276,8 @@ Deno.serve(async (req) => {
         .from('apresentacoes')
         .select('*')
         .eq('google_calendar_id', calendarId)
+        .eq('user_id', user.id)
+        .eq('google_integracao_id', integration.google_integracao_id)
         .gte('data', startDate)
         .lt('data', endDate)
 
@@ -688,6 +690,8 @@ Deno.serve(async (req) => {
           sync_status: 'synced',
           last_synced_at: nowIso,
           sync_error: null,
+          user_id: user.id,
+          google_integracao_id: integration.google_integracao_id,
         })
 
       if (!insertError) {

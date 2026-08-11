@@ -129,11 +129,24 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
-    // Buscar dados locais da apresentação
+    // 1. Obter refresh token do Google
+    const { data: integrationData, error: integrationError } = await supabaseAdmin.rpc(
+      'obter_google_refresh_token',
+      { p_user_id: user.id }
+    )
+
+    const integration = integrationData?.[0]
+    if (integrationError || !integration?.refresh_token) {
+      return jsonResponse({ error: 'A integração com o Google Agenda não está disponível.' }, 409)
+    }
+
+    // 2. Buscar dados locais da apresentação filtrando pelo contexto ativo
     const { data: presentation, error: presentationError } = await supabaseAdmin
       .from('apresentacoes')
       .select('id, titulo, google_event_id, google_calendar_id')
       .eq('id', presentationId)
+      .eq('user_id', user.id)
+      .eq('google_integracao_id', integration.google_integracao_id)
       .single()
 
     if (presentationError || !presentation) {
@@ -144,15 +157,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'A apresentação não possui vínculo com o Google Agenda.' }, 409)
     }
 
-    // Obter refresh token do Google
-    const { data: integrationData, error: integrationError } = await supabaseAdmin.rpc(
-      'obter_google_refresh_token',
-    )
 
-    const integration = integrationData?.[0]
-    if (integrationError || !integration?.refresh_token) {
-      return jsonResponse({ error: 'A integração com o Google Agenda não está disponível.' }, 409)
-    }
 
     // Gerar token de acesso
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {

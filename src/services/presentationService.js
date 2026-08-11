@@ -1,6 +1,33 @@
 import { supabase } from '../supabaseClient'
 
+const getActiveIntegration = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Usuário não autenticado.')
+  console.log('DIAGNOSTIC - user.id:', user.id)
+
+  const { data, error } = await supabase
+    .from('google_integracao')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('ativo', true)
+    .maybeSingle()
+
+  console.log('DIAGNOSTIC - google_integracao data:', data, 'error:', error)
+
+  if (error) {
+    throw new Error(`Falha ao obter integração ativa: ${error.message}`)
+  }
+
+  return { userId: user.id, googleIntegracaoId: data?.id || null }
+}
+
 export const listPresentations = async () => {
+  const { userId, googleIntegracaoId } = await getActiveIntegration()
+  console.log('DIAGNOSTIC - google_integracao_id:', googleIntegracaoId)
+  if (!googleIntegracaoId) {
+    return []
+  }
+
   const { data, error } = await supabase
     .from('apresentacoes')
     .select(`
@@ -30,8 +57,12 @@ export const listPresentations = async () => {
         )
       )
     `)
+    .eq('user_id', userId)
+    .eq('google_integracao_id', googleIntegracaoId)
     .order('data', { ascending: true })
     .order('horario', { ascending: true })
+
+  console.log('DIAGNOSTIC - apresentacoes query result:', data, 'error:', error)
 
   if (error) {
     throw new Error(`Falha ao carregar as apresentações: ${error.message}`)

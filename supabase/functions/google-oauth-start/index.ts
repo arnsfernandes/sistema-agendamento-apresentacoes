@@ -81,41 +81,6 @@ Deno.serve(async (req) => {
       serviceRoleKey,
     )
 
-    const {
-      data: integration,
-      error: integrationError,
-    } = await supabaseAdmin
-      .from('google_integracao')
-      .select('responsavel_user_id')
-      .limit(1)
-      .maybeSingle()
-
-    if (integrationError) {
-      console.error(
-        'Erro ao consultar responsável:',
-        integrationError,
-      )
-
-      throw new Error(
-        'Não foi possível consultar a integração.',
-      )
-    }
-
-    if (
-      integration?.responsavel_user_id &&
-      integration.responsavel_user_id !== user.id
-    ) {
-      return Response.json(
-        {
-          error:
-            'Somente o responsável pode reconectar a conta Google.',
-        },
-        {
-          status: 403,
-          headers: corsHeaders,
-        },
-      )
-    }
 
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
     const redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI')
@@ -127,10 +92,13 @@ Deno.serve(async (req) => {
       throw new Error('Configuração OAuth incompleta.')
     }
 
+    const { origin } = await req.json().catch(() => ({}))
+
     const stateData = {
       userId: user.id,
       expiresAt: Date.now() + 10 * 60 * 1000,
       nonce: crypto.randomUUID(),
+      origin: origin || null,
     }
 
     const encodedPayload = encodeBase64Url(

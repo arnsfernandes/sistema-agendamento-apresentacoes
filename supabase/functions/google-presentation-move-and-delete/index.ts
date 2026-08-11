@@ -84,11 +84,31 @@ Deno.serve(async (req) => {
       supabaseServiceRoleKey
     )
 
-    // 1. Busca apresentações de origem e destino
+    // 1. Obtém a integração Google por RPC para validação do contexto
+    const {
+      data: integrationData,
+      error: integrationError,
+    } = await supabaseAdmin.rpc(
+      'obter_google_refresh_token',
+      { p_user_id: user.id }
+    )
+
+    const integration = integrationData?.[0]
+
+    if (integrationError || !integration || !integration.refresh_token || !integration.calendar_id) {
+      return new Response(
+        JSON.stringify({ error: 'Integração ou agenda do Google não configurada.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 2. Busca apresentações de origem e destino filtrando pelo contexto ativo
     const { data: sourcePresentation, error: sourceError } = await supabaseAdmin
       .from('apresentacoes')
       .select('*')
       .eq('id', sourceId)
+      .eq('user_id', user.id)
+      .eq('google_integracao_id', integration.google_integracao_id)
       .single()
 
     if (sourceError || !sourcePresentation) {
@@ -102,6 +122,8 @@ Deno.serve(async (req) => {
       .from('apresentacoes')
       .select('*')
       .eq('id', targetId)
+      .eq('user_id', user.id)
+      .eq('google_integracao_id', integration.google_integracao_id)
       .single()
 
     if (targetError || !targetPresentation) {
@@ -225,22 +247,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 6. Obtém a integração Google por RPC
-    const {
-      data: integrationData,
-      error: integrationError,
-    } = await supabaseAdmin.rpc(
-      'obter_google_refresh_token',
-    )
 
-    const integration = integrationData?.[0]
-
-    if (integrationError || !integration || !integration.refresh_token || !integration.calendar_id) {
-      return new Response(
-        JSON.stringify({ error: 'Integração ou agenda do Google não configurada.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     // Confirma que origem, destino e integração ativa possuem o mesmo google_calendar_id
     if (integration.calendar_id !== googleCalendarId || integration.calendar_id !== targetCalendarId) {

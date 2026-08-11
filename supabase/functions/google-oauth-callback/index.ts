@@ -142,6 +142,8 @@ Deno.serve(async (req) => {
     )
 
     const tokenData = await tokenResponse.json()
+    console.log('[DIAGNOSTIC] Token exchange response keys:', Object.keys(tokenData))
+    console.log('[DIAGNOSTIC] Token exchange response scope:', tokenData.scope)
 
     if (!tokenResponse.ok) {
       console.error('Erro ao trocar código:', tokenData)
@@ -188,6 +190,7 @@ Deno.serve(async (req) => {
         p_user_id: stateData.userId,
         p_google_email: userInfo.email,
         p_refresh_token: tokenData.refresh_token,
+        p_google_account_sub: userInfo.sub,
       },
     )
 
@@ -200,16 +203,21 @@ Deno.serve(async (req) => {
       )
     }
 
- const appUrl = Deno.env.get('APP_URL')
+    const appUrl = Deno.env.get('APP_URL')
 
-if (!appUrl) {
-  throw new Error('URL do sistema não configurada.')
-}
+    if (!appUrl) {
+      throw new Error('URL do sistema não configurada.')
+    }
 
-return Response.redirect(
-  `${appUrl}/?google=connected`,
-  302,
-)
+    let targetUrl = appUrl
+    if (stateData.origin === 'http://localhost:5173' || stateData.origin === appUrl) {
+      targetUrl = stateData.origin
+    }
+
+    return Response.redirect(
+      `${targetUrl}/?google=connected`,
+      302,
+    )
   } catch (error) {
     console.error(error)
 

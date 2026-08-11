@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
     const {
       data: integrationData,
       error: integrationError,
-    } = await supabaseAdmin.rpc('obter_google_refresh_token')
+    } = await supabaseAdmin.rpc('obter_google_refresh_token', { p_user_id: user.id })
 
     const integration = integrationData?.[0]
 

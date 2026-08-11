@@ -8,8 +8,13 @@ import AddPresentationModal from './components/AddPresentationModal'
 import EditPresentationModal from './components/EditPresentationModal'
 import MoveParticipantsModal from './components/MoveParticipantsModal'
 import DeletePresentationModal from './components/DeletePresentationModal'
-import meetLogo from './assets/meet-logo.png'
-import clientesIcon from './assets/clientes-icon.png'
+import meetyLogo from './assets/meety-logo.png'
+import iconCalendario from './assets/icon-calendario.png'
+import iconClientes from './assets/icon-clientes.png'
+import iconConfig from './assets/icon-config.png'
+import iconCriarApresentacao from './assets/icon-criar-apresentacao.png'
+import iconResumo from './assets/icon-resumo.png'
+import iconSair from './assets/icon-sair.png'
 import { supabase } from './supabaseClient'
 import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation, generateMeetLink } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
@@ -22,8 +27,20 @@ const navigationItems = [
     id: 'calendario',
     label: 'Calendário',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <foreignObject width="24" height="24">
+          <div style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'currentColor',
+            WebkitMaskImage: `url(${iconCalendario})`,
+            maskImage: `url(${iconCalendario})`,
+            WebkitMaskSize: 'contain',
+            maskSize: 'contain',
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat'
+          }} />
+        </foreignObject>
       </svg>
     )
   },
@@ -37,8 +54,8 @@ const navigationItems = [
             width: '100%',
             height: '100%',
             backgroundColor: 'currentColor',
-            WebkitMaskImage: `url(${clientesIcon})`,
-            maskImage: `url(${clientesIcon})`,
+            WebkitMaskImage: `url(${iconClientes})`,
+            maskImage: `url(${iconClientes})`,
             WebkitMaskSize: 'contain',
             maskSize: 'contain',
             WebkitMaskRepeat: 'no-repeat',
@@ -52,9 +69,20 @@ const navigationItems = [
     id: 'configuracoes',
     label: 'Configurações',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.936 6.936 0 010-.255c.007-.38-.138-.751-.43.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <foreignObject width="24" height="24">
+          <div style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'currentColor',
+            WebkitMaskImage: `url(${iconConfig})`,
+            maskImage: `url(${iconConfig})`,
+            WebkitMaskSize: 'contain',
+            maskSize: 'contain',
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat'
+          }} />
+        </foreignObject>
       </svg>
     )
   }
@@ -85,12 +113,44 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  const checkGoogleIntegration = async () => {
+    if (!user) {
+      setHasActiveGoogleIntegration(false)
+      return
+    }
+    try {
+      const { data, error } = await supabase
+        .from('google_integracao')
+        .select('id, google_email, calendar_id')
+        .eq('user_id', user.id)
+        .eq('ativo', true)
+        .maybeSingle()
+      
+      if (data) {
+        setHasActiveGoogleIntegration(true)
+        if (data.google_email) {
+          setGoogleAccountEmail(data.google_email)
+        }
+        if (data.calendar_id) {
+          setActiveCalendarId(data.calendar_id)
+        }
+      } else {
+        setHasActiveGoogleIntegration(false)
+      }
+    } catch (e) {
+      console.error('Erro ao checar integração:', e)
+    }
+  }
+
   useEffect(() => {
     if (user) {
+      checkGoogleIntegration()
       setMeetingsLoading(true)
       setMeetingsError(null)
       listPresentations()
         .then(data => {
+          console.log('DIAGNOSTIC - listPresentations resolved data:', data)
+          console.log('DIAGNOSTIC - calling setMeetings with:', data)
           setMeetings(data)
           setMeetingsLoading(false)
           setMeetingsError(null)
@@ -101,6 +161,7 @@ function App() {
           setMeetingsError('Não foi possível carregar as apresentações. Tente novamente mais tarde.')
         })
     } else {
+      setHasActiveGoogleIntegration(false)
       setMeetings([])
       setMeetingsLoading(false)
       setMeetingsError(null)
@@ -122,6 +183,7 @@ function App() {
   const [googleSuccessMessage, setGoogleSuccessMessage] = useState(null)
   const [googleCalendars, setGoogleCalendars] = useState([])
   const [googleAccountEmail, setGoogleAccountEmail] = useState(null)
+  const [hasActiveGoogleIntegration, setHasActiveGoogleIntegration] = useState(false)
   const [calendarsLoading, setCalendarsLoading] = useState(false)
   const [calendarsError, setCalendarsError] = useState(null)
   const [selectedCalendar, setSelectedCalendar] = useState(null)
@@ -193,6 +255,7 @@ function App() {
 
   useEffect(() => {
     if (activeTab === 'configuracoes' && user) {
+      checkGoogleIntegration()
       fetchGoogleCalendars()
     }
   }, [activeTab, user])
@@ -284,7 +347,7 @@ function App() {
     setLoginSuccess(null)
     setLoginLoading(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: import.meta.env.VITE_APP_URL,
     })
     if (error) {
       setLoginError(error.message)
@@ -518,7 +581,9 @@ function App() {
     setIsConnectingGoogle(true)
     setGoogleConnectError(null)
     try {
-      const { data, error } = await supabase.functions.invoke('google-oauth-start')
+      const { data, error } = await supabase.functions.invoke('google-oauth-start', {
+        body: { origin: window.location.origin }
+      })
       if (error) throw error
       if (data && data.authorizationUrl) {
         window.location.href = data.authorizationUrl
@@ -570,6 +635,21 @@ function App() {
       if (error) throw error
       setSavingCalendarSuccess(true)
       setActiveCalendarId(selectedCalendar.id)
+      
+      // Refresh meetings list automatically for the new calendar
+      setMeetings([])
+      setMeetingsLoading(true)
+      try {
+        await checkGoogleIntegration()
+        const presentations = await listPresentations()
+        setMeetings(presentations)
+      } catch (listErr) {
+        console.error('Erro ao atualizar apresentações após trocar agenda:', listErr)
+        setMeetings([])
+        setMeetingsError('Não foi possível carregar as apresentações da nova agenda.')
+      } finally {
+        setMeetingsLoading(false)
+      }
     } catch (err) {
       console.error('Erro ao salvar agenda:', err)
       let errorMsg = 'Não foi possível salvar a agenda selecionada. Tente novamente.'
@@ -1101,7 +1181,16 @@ function App() {
                           <div
                             key={day.id}
                             className={`calendar-day-cell ${day.isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
-                            onClick={() => setSelectedDateKey(day.dateKey)}
+                            onClick={() => {
+                              setSelectedDateKey(day.dateKey)
+                              if (day.dateKey === '2026-07-28') {
+                                const currentDayMeetings = meetings.filter(m => m.date === day.dateKey)
+                                const sortedDayMeetings = [...currentDayMeetings].sort((a, b) => a.time.localeCompare(b.time))
+                                console.log('DIAGNOSTIC - dayMeetings:', currentDayMeetings)
+                                console.log('DIAGNOSTIC - IDs:', currentDayMeetings.map(m => m.id))
+                                console.log('DIAGNOSTIC - selectedDayMeetings (sorted):', sortedDayMeetings)
+                              }
+                            }}
                           >
                             {(() => {
                               const dayMeetings = meetings.filter(m => m.date === day.dateKey)
@@ -1300,7 +1389,15 @@ function App() {
           </div>
         )
       }
-      case 'configuracoes':
+      case 'configuracoes': {
+        const getCalName = (cal) => {
+          if (!cal) return ''
+          const isEmail = cal.name && (cal.name.includes('@') || cal.name === googleAccountEmail)
+          if (isEmail) {
+            return cal.primary ? 'Agenda principal' : 'Agenda Google'
+          }
+          return cal.name
+        }
         return (
           <div className="view-container">
             <div className="view-header">
@@ -1342,155 +1439,160 @@ function App() {
               <p className="settings-section-subtitle">Vincule sua conta Google para sincronizar e gerenciar as apresentações comerciais diretamente na sua agenda.</p>
 
               <div style={{ marginTop: '1.5rem' }}>
-                {calendarsLoading ? (
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    Carregando agendas do Google...
-                  </p>
-                ) : calendarsError ? (
-                  <div>
-                    <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
-                      {calendarsError}
-                    </p>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={fetchGoogleCalendars}
-                    >
-                      Tentar novamente
-                    </button>
-                  </div>
-                ) : googleAccountEmail ? (
+                {hasActiveGoogleIntegration ? (
                   <div>
                     <p style={{ fontSize: '0.95rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                      Conectado como: <span style={{ color: 'var(--accent-color)' }}>{googleAccountEmail}</span>
+                      Conectado como: <span style={{ color: 'var(--accent-color)' }}>{googleAccountEmail || 'Carregando...'}</span>
                     </p>
 
-                    {isResponsible && (
-                      <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={handleConnectGoogle}
-                            disabled={isConnectingGoogle || isDisconnectingGoogle}
-                          >
-                            {isConnectingGoogle ? 'Redirecionando...' : 'Reconectar Google'}
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{ color: 'var(--text-error)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-                            onClick={handleDisconnectGoogle}
-                            disabled={isConnectingGoogle || isDisconnectingGoogle}
-                          >
-                            {isDisconnectingGoogle ? 'Desconectando...' : 'Desconectar Google'}
-                          </button>
-                        </div>
-                        {googleConnectError && (
-                          <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                            {googleConnectError}
-                          </p>
-                        )}
-                        {googleDisconnectError && (
-                          <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                            {googleDisconnectError}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                      Suas Agendas Google:
-                    </h4>
-                    
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {googleCalendars.map((cal) => {
-                        const isSelectable = cal.accessRole === 'owner' || cal.accessRole === 'writer'
-                        const isSelected = selectedCalendar?.id === cal.id
-                        const isActive = activeCalendarId === cal.id
-                        
-                        return (
-                          <li
-                            key={cal.id}
-                            onClick={() => {
-                              if (isSelectable) {
-                                setSelectedCalendar(cal)
-                                setSavingCalendarError(null)
-                                setSavingCalendarSuccess(false)
-                              }
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '0.75rem 1rem',
-                              background: 'var(--input-bg)',
-                              border: isSelected ? '2px solid var(--accent-color)' : '1px solid var(--border-color)',
-                              borderRadius: '8px',
-                              fontSize: '0.9rem',
-                              cursor: isSelectable ? 'pointer' : 'not-allowed',
-                              opacity: isSelectable ? 1 : 0.6,
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                              <span style={{ fontWeight: isSelected ? '600' : '400' }}>{cal.name}</span>
-                              {!isSelectable && (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                  Apenas leitura ({cal.accessRole})
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              {cal.primary && (
-                                <span style={{ fontSize: '0.75rem', background: 'var(--accent-glow)', color: 'var(--text-accent)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '500' }}>
-                                  Principal
-                                </span>
-                              )}
-                              {isActive && (
-                                <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '600' }}>
-                                  Em uso
-                                </span>
-                              )}
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
-
-                    {activeCalendarId && (
-                      <p style={{ fontSize: '0.875rem', color: '#10b981', marginTop: '1rem', fontWeight: '500' }}>
-                        Agenda selecionada: <strong style={{ color: 'var(--text-primary)' }}>{googleCalendars.find(c => c.id === activeCalendarId)?.name || selectedCalendar?.name || ''}</strong>
-                      </p>
-                    )}
-
-                    {selectedCalendar && selectedCalendar.id !== activeCalendarId && (
-                      <div style={{ marginTop: '1.5rem' }}>
+                    <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem' }}>
                         <button
                           type="button"
-                          className="btn btn-primary"
-                          onClick={handleSaveCalendar}
-                          disabled={isSavingCalendar}
+                          className="btn btn-secondary"
+                          onClick={handleConnectGoogle}
+                          disabled={isConnectingGoogle || isDisconnectingGoogle}
                         >
-                          {isSavingCalendar ? 'Salvando...' : 'Usar esta agenda'}
+                          {isConnectingGoogle ? 'Redirecionando...' : 'Trocar conta Google'}
                         </button>
-                        
-                        {savingCalendarError && (
-                          <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                            {savingCalendarError}
-                          </p>
-                        )}
-                        {savingCalendarSuccess && (
-                          <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                            Agenda salva com sucesso!
-                          </p>
-                        )}
+
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ color: 'var(--text-error)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                          onClick={handleDisconnectGoogle}
+                          disabled={isConnectingGoogle || isDisconnectingGoogle}
+                        >
+                          {isDisconnectingGoogle ? 'Desconectando...' : 'Desconectar'}
+                        </button>
                       </div>
+                      {googleConnectError && (
+                        <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                          {googleConnectError}
+                        </p>
+                      )}
+                      {googleDisconnectError && (
+                        <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                          {googleDisconnectError}
+                        </p>
+                      )}
+                    </div>
+
+                    {calendarsLoading ? (
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        Carregando agendas do Google...
+                      </p>
+                    ) : calendarsError ? (
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                          {calendarsError}
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={fetchGoogleCalendars}
+                        >
+                          Tentar carregar agendas novamente
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+                          Suas Agendas Google:
+                        </h4>
+                        
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {googleCalendars.map((cal) => {
+                            const isSelectable = cal.accessRole === 'owner' || cal.accessRole === 'writer'
+                            const isSelected = selectedCalendar?.id === cal.id
+                            const isActive = activeCalendarId === cal.id
+                            
+                            return (
+                              <li
+                                key={cal.id}
+                                onClick={() => {
+                                  if (isSelectable) {
+                                    setSelectedCalendar(cal)
+                                    setSavingCalendarError(null)
+                                    setSavingCalendarSuccess(false)
+                                  }
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '0.75rem 1rem',
+                                  background: 'var(--input-bg)',
+                                  border: isSelected ? '2px solid var(--accent-color)' : '1px solid var(--border-color)',
+                                  borderRadius: '8px',
+                                  fontSize: '0.9rem',
+                                  cursor: isSelectable ? 'pointer' : 'not-allowed',
+                                  opacity: isSelectable ? 1 : 0.6,
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                  <span style={{ fontWeight: isSelected ? '600' : '400' }}>{getCalName(cal)}</span>
+                                  {!isSelectable && (
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                      Apenas leitura ({cal.accessRole})
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  {cal.primary && (
+                                    <span style={{ fontSize: '0.75rem', background: 'var(--accent-glow)', color: 'var(--text-accent)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '500' }}>
+                                      Principal
+                                    </span>
+                                  )}
+                                  {isActive && (
+                                    <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '600' }}>
+                                      Em uso
+                                    </span>
+                                  )}
+                                </div>
+                              </li>
+                            )
+                          })}
+                        </ul>
+
+                        {activeCalendarId && (
+                          <p style={{ fontSize: '0.875rem', color: '#10b981', marginTop: '1rem', fontWeight: '500' }}>
+                            Agenda selecionada: <strong style={{ color: 'var(--text-primary)' }}>{getCalName(googleCalendars.find(c => c.id === activeCalendarId) || selectedCalendar)}</strong>
+                          </p>
+                        )}
+
+                        {selectedCalendar && selectedCalendar.id !== activeCalendarId && (
+                          <div style={{ marginTop: '1.5rem' }}>
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={handleSaveCalendar}
+                              disabled={isSavingCalendar}
+                            >
+                              {isSavingCalendar ? 'Salvando...' : 'Usar esta agenda'}
+                            </button>
+                            
+                            {savingCalendarError && (
+                              <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                                {savingCalendarError}
+                              </p>
+                            )}
+                            {savingCalendarSuccess && (
+                              <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                                Agenda salva com sucesso!
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (
                   <div>
+                    <p style={{ fontSize: '0.95rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                      Status: <span style={{ color: 'var(--text-muted)' }}>Desconectado</span>
+                    </p>
                     <button
                       type="button"
                       className="btn btn-primary"
@@ -1515,6 +1617,7 @@ function App() {
             </div>
           </div>
         )
+      }
       default:
         return null
     }
@@ -1596,7 +1699,7 @@ function App() {
       <div className="login-screen-wrapper">
         <div className="login-card">
           <div className="login-header">
-            <img src={meetLogo} alt="Google Meet Logo" className="login-logo-img" />
+            <img src={meetyLogo} alt="Meety Logo" className="login-logo-img" />
             <h2 className="login-title">{getFormTitle()}</h2>
             <p className="login-subtitle">{getFormSubtitle()}</p>
           </div>
@@ -1761,10 +1864,7 @@ function App() {
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-logo">
-            <img src={meetLogo} alt="Google Meet Logo" className="brand-logo-img" />
-          </div>
-          <span className="brand-name">Agendamento</span>
+          <img src={meetyLogo} alt="Meety Logo" className="sidebar-logo" />
         </div>
 
         <nav className="sidebar-menu">
@@ -1795,8 +1895,20 @@ function App() {
               onClick={() => openPresentationModal()}
             >
               <span className="menu-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <foreignObject width="24" height="24">
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      backgroundColor: 'currentColor',
+                      WebkitMaskImage: `url(${iconCriarApresentacao})`,
+                      maskImage: `url(${iconCriarApresentacao})`,
+                      WebkitMaskSize: 'contain',
+                      maskSize: 'contain',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskRepeat: 'no-repeat'
+                    }} />
+                  </foreignObject>
                 </svg>
               </span>
               <span className="menu-label">Criar apresentação</span>
@@ -1806,8 +1918,20 @@ function App() {
               className="menu-item"
             >
               <span className="menu-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <foreignObject width="24" height="24">
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      backgroundColor: 'currentColor',
+                      WebkitMaskImage: `url(${iconResumo})`,
+                      maskImage: `url(${iconResumo})`,
+                      WebkitMaskSize: 'contain',
+                      maskSize: 'contain',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskRepeat: 'no-repeat'
+                    }} />
+                  </foreignObject>
                 </svg>
               </span>
               <span className="menu-label">Resumo da semana</span>
@@ -1861,8 +1985,20 @@ function App() {
             style={{ marginTop: 'auto' }}
           >
             <span className="menu-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <foreignObject width="24" height="24">
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'currentColor',
+                    WebkitMaskImage: `url(${iconSair})`,
+                    maskImage: `url(${iconSair})`,
+                    WebkitMaskSize: 'contain',
+                    maskSize: 'contain',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskRepeat: 'no-repeat'
+                  }} />
+                </foreignObject>
               </svg>
             </span>
             <span className="menu-label">Sair</span>

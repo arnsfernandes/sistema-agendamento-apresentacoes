@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
       error: integrationError,
     } = await supabaseAdmin.rpc(
       'obter_google_refresh_token',
+      { p_user_id: user.id }
     )
 
     if (integrationError) {
@@ -74,6 +75,8 @@ Deno.serve(async (req) => {
     }
 
     const integration = integrationData?.[0]
+    console.log('[DIAGNOSTIC] RPC integration returned:', !!integration)
+    console.log('[DIAGNOSTIC] Refresh token exists:', !!integration?.refresh_token)
 
     if (!integration?.refresh_token) {
       return Response.json(
@@ -100,6 +103,12 @@ Deno.serve(async (req) => {
     )
 
     const tokenData = await tokenResponse.json()
+    console.log('[DIAGNOSTIC] Refresh token request status:', tokenResponse.status)
+    console.log('[DIAGNOSTIC] Refresh token response body (token values omitted):', JSON.stringify({
+      ...tokenData,
+      access_token: tokenData.access_token ? '[OMITTED]' : undefined,
+      refresh_token: tokenData.refresh_token ? '[OMITTED]' : undefined
+    }))
 
     if (!tokenResponse.ok || !tokenData.access_token) {
       console.error(
@@ -126,6 +135,8 @@ Deno.serve(async (req) => {
     )
 
     const calendarsData = await calendarsResponse.json()
+    console.log('[DIAGNOSTIC] calendarList request status:', calendarsResponse.status)
+    console.log('[DIAGNOSTIC] calendarList response body:', JSON.stringify(calendarsData))
 
     if (!calendarsResponse.ok) {
       console.error(
@@ -156,8 +167,6 @@ Deno.serve(async (req) => {
         googleEmail: integration.google_email,
         selectedCalendarId: integration.calendar_id,
         selectedCalendarName: integration.calendar_name,
-        isResponsible:
-          integration.responsavel_user_id === user.id,
         calendars,
       },
       { headers: corsHeaders },

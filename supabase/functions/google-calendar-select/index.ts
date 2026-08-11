@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
       error: integrationError,
     } = await supabaseAdmin.rpc(
       'obter_google_refresh_token',
+      { p_user_id: user.id }
     )
 
     if (integrationError) {
@@ -120,16 +121,6 @@ Deno.serve(async (req) => {
       return jsonResponse(
         { error: 'Nenhuma conta Google está conectada.' },
         400,
-      )
-    }
-
-    if (integration.responsavel_user_id !== user.id) {
-      return jsonResponse(
-        {
-          error:
-            'Somente o responsável pode selecionar a agenda.',
-        },
-        403,
       )
     }
 

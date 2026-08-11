@@ -400,6 +400,7 @@ Deno.serve(async (req) => {
       error: integrationError,
     } = await supabaseAdmin.rpc(
       'obter_google_refresh_token',
+      { p_user_id: user.id }
     )
 
     if (integrationError) {
@@ -891,6 +892,8 @@ Deno.serve(async (req) => {
           activeCalendarId,
         google_event_updated_at:
           createdEvent.updated || null,
+        user_id: user.id,
+        google_integracao_id: integration.google_integracao_id,
       })
       .select(`
         id,

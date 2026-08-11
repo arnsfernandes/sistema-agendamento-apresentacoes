@@ -83,11 +83,31 @@ Deno.serve(async (req) => {
       supabaseServiceRoleKey
     )
 
-    // 1. Busca a apresentação correspondente
+    // 1. Obtém a integração Google por RPC para validação do contexto
+    const {
+      data: integrationData,
+      error: integrationError,
+    } = await supabaseAdmin.rpc(
+      'obter_google_refresh_token',
+      { p_user_id: user.id }
+    )
+
+    const integration = integrationData?.[0]
+
+    if (integrationError || !integration || !integration.refresh_token || !integration.calendar_id) {
+      return new Response(
+        JSON.stringify({ error: 'Integração ou agenda do Google não configurada.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 2. Busca a apresentação correspondente filtrando pelo contexto ativo
     const { data: presentation, error: presentationError } = await supabaseAdmin
       .from('apresentacoes')
       .select('*')
       .eq('id', numericId)
+      .eq('user_id', user.id)
+      .eq('google_integracao_id', integration.google_integracao_id)
       .single()
 
     if (presentationError || !presentation) {
@@ -106,11 +126,13 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Busca todas as apresentações locais da série
+      // Busca todas as apresentações locais da série no contexto ativo
       const { data: seriesPresentations, error: seriesError } = await supabaseAdmin
         .from('apresentacoes')
         .select('id')
         .eq('google_recurring_event_id', recurringId)
+        .eq('user_id', user.id)
+        .eq('google_integracao_id', integration.google_integracao_id)
 
       if (seriesError || !seriesPresentations) {
         console.error('Erro ao buscar apresentações da série:', seriesError)
@@ -207,21 +229,7 @@ Deno.serve(async (req) => {
     }
 
     // 5. Obtém a integração Google por RPC
-    const {
-      data: integrationData,
-      error: integrationError,
-    } = await supabaseAdmin.rpc(
-      'obter_google_refresh_token',
-    )
 
-    const integration = integrationData?.[0]
-
-    if (integrationError || !integration || !integration.refresh_token || !integration.calendar_id) {
-      return new Response(
-        JSON.stringify({ error: 'Integração ou agenda do Google não configurada.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     // 6. Confirma que a agenda da integração é a mesma da apresentação
     if (integration.calendar_id !== googleCalendarId) {
@@ -289,6 +297,8 @@ Deno.serve(async (req) => {
         .from('apresentacoes')
         .delete()
         .eq('google_recurring_event_id', googleEventId)
+        .eq('user_id', user.id)
+        .eq('google_integracao_id', integration.google_integracao_id)
 
       if (dbDeleteError) {
         console.error('Erro ao excluir apresentações da série no Supabase:', dbDeleteError)
@@ -325,6 +335,8 @@ Deno.serve(async (req) => {
       .from('apresentacoes')
       .delete()
       .eq('id', numericId)
+      .eq('user_id', user.id)
+      .eq('google_integracao_id', integration.google_integracao_id)
       .select('id')
       .single()
 
