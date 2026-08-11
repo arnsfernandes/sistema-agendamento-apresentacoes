@@ -1,92 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import './App.css'
+import Sidebar from './components/Sidebar'
+import AuthScreen from './components/AuthScreen'
+import CalendarGrid from './components/CalendarGrid'
+import ClientsView from './components/ClientsView'
+import SettingsView from './components/SettingsView'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
+import InviteMessageModal from './components/InviteMessageModal'
+import MeetingsPanel from './components/MeetingsPanel'
 import AddParticipantModal from './components/AddParticipantModal'
+import PendingMeetingsModal from './components/PendingMeetingsModal'
 import RescheduleParticipantModal from './components/RescheduleParticipantModal'
 import AddPresentationModal from './components/AddPresentationModal'
 import EditPresentationModal from './components/EditPresentationModal'
 import MoveParticipantsModal from './components/MoveParticipantsModal'
 import DeletePresentationModal from './components/DeletePresentationModal'
-import meetyLogo from './assets/meety-logo.png'
-import iconCalendario from './assets/icon-calendario.png'
-import iconClientes from './assets/icon-clientes.png'
-import iconConfig from './assets/icon-config.png'
-import iconCriarApresentacao from './assets/icon-criar-apresentacao.png'
-import iconResumo from './assets/icon-resumo.png'
-import iconSair from './assets/icon-sair.png'
 import { supabase } from './supabaseClient'
 import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation, generateMeetLink } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
 import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
 import { isPresentationPast, isPresentationFuture } from './utils/dateUtils'
-
-const navigationItems = [
-  {
-    id: 'calendario',
-    label: 'Calendário',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <foreignObject width="24" height="24">
-          <div style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'currentColor',
-            WebkitMaskImage: `url(${iconCalendario})`,
-            maskImage: `url(${iconCalendario})`,
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat'
-          }} />
-        </foreignObject>
-      </svg>
-    )
-  },
-  {
-    id: 'clientes',
-    label: 'Clientes',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <foreignObject width="24" height="24">
-          <div style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'currentColor',
-            WebkitMaskImage: `url(${iconClientes})`,
-            maskImage: `url(${iconClientes})`,
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat'
-          }} />
-        </foreignObject>
-      </svg>
-    )
-  },
-  {
-    id: 'configuracoes',
-    label: 'Configurações',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <foreignObject width="24" height="24">
-          <div style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'currentColor',
-            WebkitMaskImage: `url(${iconConfig})`,
-            maskImage: `url(${iconConfig})`,
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat'
-          }} />
-        </foreignObject>
-      </svg>
-    )
-  }
-]
 
 
 
@@ -119,7 +54,7 @@ function App() {
       return
     }
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('google_integracao')
         .select('id, google_email, calendar_id')
         .eq('user_id', user.id)
@@ -149,8 +84,6 @@ function App() {
       setMeetingsError(null)
       listPresentations()
         .then(data => {
-          console.log('DIAGNOSTIC - listPresentations resolved data:', data)
-          console.log('DIAGNOSTIC - calling setMeetings with:', data)
           setMeetings(data)
           setMeetingsLoading(false)
           setMeetingsError(null)
@@ -170,8 +103,6 @@ function App() {
 
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDateKey, setSelectedDateKey] = useState(null)
-  const [devSyncLoading, setDevSyncLoading] = useState(false)
-  const [devSyncResult, setDevSyncResult] = useState(null)
   
   // Reactive list of meetings
   const [meetings, setMeetings] = useState([])
@@ -191,7 +122,6 @@ function App() {
   const [savingCalendarError, setSavingCalendarError] = useState(null)
   const [savingCalendarSuccess, setSavingCalendarSuccess] = useState(false)
   const [activeCalendarId, setActiveCalendarId] = useState(null)
-  const [isResponsible, setIsResponsible] = useState(false)
   const [isDisconnectingGoogle, setIsDisconnectingGoogle] = useState(false)
   const [googleDisconnectError, setGoogleDisconnectError] = useState(null)
 
@@ -275,7 +205,7 @@ function App() {
 
         supabase.functions.invoke('google-calendar-sync-apply', {
           body: { startDate, endDate }
-        }).then(({ data, error }) => {
+        }).then(({ error }) => {
           if (error) throw error
           listPresentations().then(refreshedData => {
             setMeetings(refreshedData)
@@ -730,7 +660,7 @@ function App() {
 
         supabase.functions.invoke('google-calendar-sync-apply', {
           body: { startDate, endDate }
-        }).then(({ data, error }) => {
+        }).then(({ error }) => {
           if (error) throw error
           listPresentations().then(refreshedData => {
             setMeetings(refreshedData)
@@ -819,7 +749,7 @@ function App() {
 
           supabase.functions.invoke('google-calendar-sync-apply', {
             body: { startDate, endDate }
-          }).then(({ data, error }) => {
+          }).then(({ error }) => {
             if (error) throw error
             listPresentations().then(refreshedData => {
               setMeetings(refreshedData)
@@ -887,7 +817,7 @@ function App() {
 
         supabase.functions.invoke('google-calendar-sync-apply', {
           body: { startDate, endDate }
-        }).then(({ data, error }) => {
+        }).then(({ error }) => {
           if (error) throw error
           listPresentations().then(refreshedData => {
             setMeetings(refreshedData)
@@ -932,7 +862,7 @@ function App() {
 
         supabase.functions.invoke('google-calendar-sync-apply', {
           body: { startDate, endDate }
-        }).then(({ data, error }) => {
+        }).then(({ error }) => {
           if (error) throw error
           listPresentations().then(refreshedData => {
             setMeetings(refreshedData)
@@ -1082,59 +1012,7 @@ function App() {
             </div>
             
             <div className="calendar-area">
-              {import.meta.env.DEV && (
-                <div style={{ marginBottom: '16px' }}>
-                  <button
-                    type="button"
-                    disabled={devSyncLoading}
-                    onClick={() => {
-                      const y = currentDate.getFullYear()
-                      const m = currentDate.getMonth()
-                      const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
-                      const next = new Date(y, m + 1, 1)
-                      const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
-                      setDevSyncLoading(true)
-                      setDevSyncResult(null)
-                      supabase.functions.invoke('google-calendar-sync-apply', {
-                        body: { startDate, endDate }
-                      }).then(({ data, error }) => {
-                        setDevSyncResult(error
-                          ? `Erro: ${error.message}`
-                          : JSON.stringify(data, null, 2))
-                      }).catch(err => {
-                        setDevSyncResult(`Exceção: ${err.message}`)
-                      }).finally(() => setDevSyncLoading(false))
-                    }}
-                    style={{
-                      padding: '5px 14px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      borderRadius: '6px',
-                      border: '1px solid #6366f1',
-                      background: devSyncLoading ? '#e0e7ff' : '#6366f1',
-                      color: devSyncLoading ? '#6366f1' : '#fff',
-                      cursor: devSyncLoading ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    {devSyncLoading ? 'Sincronizando...' : 'Testar sincronização'}
-                  </button>
-                  {devSyncResult && (
-                    <pre style={{
-                      marginTop: '8px',
-                      padding: '10px 14px',
-                      background: '#f8fafc',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      color: '#1e293b',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all',
-                      maxHeight: '180px',
-                      overflowY: 'auto',
-                    }}>{devSyncResult}</pre>
-                  )}
-                </div>
-              )}
+
               {meetingsLoading ? (
                 <div className="loading-state">
                   Carregando apresentações...
@@ -1145,172 +1023,30 @@ function App() {
                 </div>
               ) : (
                 <>
-                  <div className="calendar-card">
-                    {/* Calendar Navigation Header */}
-                    <div className="calendar-header-nav">
-                      <button className="btn-nav" onClick={handlePrevMonth} type="button" aria-label="Mês anterior">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                        </svg>
-                      </button>
-                      <h2 className="calendar-month-title">{capitalizedMonthName} {year}</h2>
-                      <button className="btn-nav" onClick={handleNextMonth} type="button" aria-label="Próximo mês">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                        </svg>
-                      </button>
-                    </div>
+                  <CalendarGrid
+                    handlePrevMonth={handlePrevMonth}
+                    handleNextMonth={handleNextMonth}
+                    capitalizedMonthName={capitalizedMonthName}
+                    year={year}
+                    weekDays={weekDays}
+                    days={days}
+                    selectedDateKey={selectedDateKey}
+                    setSelectedDateKey={setSelectedDateKey}
+                    meetings={meetings}
+                  />
 
-                    {/* Weekdays Labels */}
-                    <div className="calendar-weekdays-grid">
-                      {weekDays.map((wd) => (
-                        <div key={wd} className="weekday-label">
-                          {wd}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Days Grid */}
-                    <div className="calendar-days-grid">
-                      {days.map((day) => {
-                        if (day.type === 'empty') {
-                          return <div key={day.id} className="calendar-day-cell empty" />
-                        }
-                        const isSelected = day.dateKey === selectedDateKey
-                        return (
-                          <div
-                            key={day.id}
-                            className={`calendar-day-cell ${day.isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
-                            onClick={() => {
-                              setSelectedDateKey(day.dateKey)
-                              if (day.dateKey === '2026-07-28') {
-                                const currentDayMeetings = meetings.filter(m => m.date === day.dateKey)
-                                const sortedDayMeetings = [...currentDayMeetings].sort((a, b) => a.time.localeCompare(b.time))
-                                console.log('DIAGNOSTIC - dayMeetings:', currentDayMeetings)
-                                console.log('DIAGNOSTIC - IDs:', currentDayMeetings.map(m => m.id))
-                                console.log('DIAGNOSTIC - selectedDayMeetings (sorted):', sortedDayMeetings)
-                              }
-                            }}
-                          >
-                            {(() => {
-                              const dayMeetings = meetings.filter(m => m.date === day.dateKey)
-                              const hasRecurringEmpty = dayMeetings.some(m => m.googleRecurringEventId && m.syncStatus !== 'google_deleted' && (!m.participantsList || !m.participantsList.some(p => p.statusAtivo)))
-                              return hasRecurringEmpty ? <span className="recurring-indicator-dot" title="Recorrência sem participantes" /> : null
-                            })()}
-                            <span className="day-number">{day.dayNumber}</span>
-                            {(() => {
-                              const dayMeetings = meetings.filter(m => m.date === day.dateKey)
-                              const activeMeetings = dayMeetings.filter(m =>
-                                m.syncStatus !== 'google_deleted' &&
-                                m.participantsList &&
-                                m.participantsList.some(p => p.statusAtivo)
-                              )
-                              const hasMeetings = dayMeetings.length > 0
-                              const hasParticipants = dayMeetings.some(m => m.participantsList && m.participantsList.some(p => p.statusAtivo))
-
-                              if (!hasMeetings) return null
-
-                              return (
-                                <>
-                                  {activeMeetings.length > 0 && (
-                                    <span className="meetings-count-badge">
-                                      {activeMeetings.length} {activeMeetings.length === 1 ? 'reunião' : 'reuniões'}
-                                    </span>
-                                  )}
-                                  <span className={`meetings-dot-indicator ${hasParticipants ? 'purple-dot' : 'grey-dot'}`} />
-                                </>
-                              )
-                            })()}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {selectedDateKey && (
-                    <div className="meetings-panel-overlay" onClick={() => {
-                      setSelectedDateKey(null)
-                      setSelectedMeetingId(null)
-                      setShowMeetLink(false)
-                      setMeetCopied(false)
-                      resetMessageStates()
-                    }}>
-                      <aside className="meetings-panel" onClick={(e) => e.stopPropagation()}>
-                        <div className="panel-header">
-                          <h3 className="panel-title">{formattedSelectedDate}</h3>
-                          <button
-                            className="btn-close"
-                            onClick={() => {
-                              setSelectedDateKey(null)
-                              setSelectedMeetingId(null)
-                              setShowMeetLink(false)
-                              setMeetCopied(false)
-                              resetMessageStates()
-                            }}
-                            type="button"
-                            aria-label="Fechar painel"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="panel-body">
-                          {dayMeetings.length > 0 ? (
-                            <div className="meetings-list">
-                              {[
-                                ...dayMeetings.filter(m => m.syncStatus !== 'google_deleted'),
-                                ...dayMeetings.filter(m => m.syncStatus === 'google_deleted'),
-                              ].map((meeting) => {
-                                const isGoogleDeleted = meeting.syncStatus === 'google_deleted'
-                                return (
-                                  <div
-                                    key={meeting.id}
-                                    className={`meeting-item-card ${selectedMeetingId === meeting.id ? 'active' : ''} ${isGoogleDeleted ? 'google-deleted' : ''} ${meeting.syncStatus === 'pending' ? 'pending' : ''}`}
-                                    onClick={() => {
-                                      setSelectedMeetingId(meeting.id)
-                                      setShowMeetLink(false)
-                                      setMeetCopied(false)
-                                      resetMessageStates()
-                                    }}
-                                  >
-                                    <span className="meeting-time-badge">{meeting.time}{meeting.timeEnd ? ` - ${meeting.timeEnd}` : ''}</span>
-                                    <h4 className="meeting-item-title">{meeting.title}</h4>
-                                    {isGoogleDeleted && (
-                                      <span className="meeting-cancelled-badge">Reunião cancelada</span>
-                                    )}
-                                    {meeting.syncStatus === 'pending' && (
-                                      <span className="meeting-pending-badge">Ação necessária</span>
-                                    )}
-                                    <div className="meeting-participants-info">
-                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.089 20M3 11.627a1.125 1.125 0 011.083-1.127h4.374c.56 0 1.04.388 1.125.941a11.322 11.322 0 004.122 6.556m-8.622-6.37a1.125 1.125 0 00-1.083 1.127V18.5c0 .54.406.991.94 1.036A11.478 11.478 0 0010.089 20m-7.089-8.373a11.42 11.42 0 007.089 8.373m0 0l.092.012a9.39 9.39 0 005.105-1.503M10.089 20a11.385 11.385 0 01-5.111-1.503m10.092-2.118a8.967 8.967 0 00-3.07-5.07M12.188 8.75a3 3 0 116 0 3 3 0 01-6 0zM1.5 9.75a3 3 0 116 0 3 3 0 01-6 0zM12.251 14.75a3.75 3.75 0 016.75 0V15h-6.75v-.25z" />
-                                      </svg>
-                                      <span>
-                                        {meeting.participantsList.length} {meeting.participantsList.length === 1 ? 'participante' : 'participantes'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          ) : (
-                            <p className="no-meetings-message">Nenhuma apresentação agendada para esta data.</p>
-                          )}
-
-                          <div className="day-create-action">
-                            <button
-                              type="button"
-                              className="btn btn-primary"
-                              onClick={() => openPresentationModal(selectedDateKey)}
-                            >
-                              Criar apresentação neste dia
-                            </button>
-                          </div>
-                        </div>
-                      </aside>
-                    </div>
-                  )}
+                  <MeetingsPanel
+                    selectedDateKey={selectedDateKey}
+                    setSelectedDateKey={setSelectedDateKey}
+                    selectedMeetingId={selectedMeetingId}
+                    setSelectedMeetingId={setSelectedMeetingId}
+                    setShowMeetLink={setShowMeetLink}
+                    setMeetCopied={setMeetCopied}
+                    resetMessageStates={resetMessageStates}
+                    formattedSelectedDate={formattedSelectedDate}
+                    dayMeetings={dayMeetings}
+                    openPresentationModal={openPresentationModal}
+                  />
                 </>
               )}
             </div>
@@ -1329,293 +1065,41 @@ function App() {
         })
 
         return (
-          <div className="view-container">
-            <div className="view-header">
-              <h1 className="view-title">Clientes</h1>
-              <p className="view-description">Lista de clientes e contatos comerciais consolidados a partir dos agendamentos.</p>
-            </div>
-
-            <div className="client-search-wrapper">
-              <div className="search-input-container">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="search-icon">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.637 10.637z" />
-                </svg>
-                <input
-                  type="text"
-                  className="client-search-input"
-                  placeholder="Pesquisar por nome, telefone ou agência..."
-                  value={clientSearchTerm}
-                  onChange={(e) => setClientSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="clients-table-container">
-              {filteredClients.length > 0 ? (
-                <table className="clients-table">
-                  <thead>
-                    <tr>
-                      <th>Nome</th>
-                      <th>Telefone</th>
-                      <th>Agência</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredClients.map((client) => (
-                      <tr key={client.telefone}>
-                        <td>
-                          <span className="client-table-name">{client.nome}</span>
-                        </td>
-                        <td>
-                          <span className="client-table-phone">{client.telefone}</span>
-                        </td>
-                        <td>
-                          {client.agencia ? (
-                            <span className="client-table-agency">{client.agencia}</span>
-                          ) : (
-                            <span className="client-table-agency-empty">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="no-clients-found">
-                  <p>Nenhum cliente encontrado para os termos da busca.</p>
-                </div>
-              )}
-            </div>
-          </div>
+          <ClientsView
+            filteredClients={filteredClients}
+            clientSearchTerm={clientSearchTerm}
+            setClientSearchTerm={setClientSearchTerm}
+          />
         )
       }
       case 'configuracoes': {
-        const getCalName = (cal) => {
-          if (!cal) return ''
-          const isEmail = cal.name && (cal.name.includes('@') || cal.name === googleAccountEmail)
-          if (isEmail) {
-            return cal.primary ? 'Agenda principal' : 'Agenda Google'
-          }
-          return cal.name
-        }
         return (
-          <div className="view-container">
-            <div className="view-header">
-              <h1 className="view-title">Configurações</h1>
-              <p className="view-description">Gerencie as preferências da aplicação, incluindo o tema de exibição.</p>
-            </div>
-            
-            <div className="settings-section-card">
-              <h3 className="settings-section-title">Tema do Sistema</h3>
-              <p className="settings-section-subtitle">Escolha entre a aparência Clara ou Escura para a interface da plataforma.</p>
-              
-              <div className="theme-toggle-options">
-                <button
-                  type="button"
-                  className={`theme-option-btn ${theme === 'dark' ? 'active' : ''}`}
-                  onClick={() => setTheme('dark')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="theme-icon">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                  </svg>
-                  <span>Escuro (Padrão)</span>
-                </button>
-                
-                <button
-                  type="button"
-                  className={`theme-option-btn ${theme === 'light' ? 'active' : ''}`}
-                  onClick={() => setTheme('light')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="theme-icon">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m0 13.5V21M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M3 12h2.25m13.5 0H21M6.34 17.66l-1.42 1.42m12.72-12.72l1.42-1.42A9 9 0 1111.25 3v11.25H3z" />
-                  </svg>
-                  <span>Claro</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="settings-section-card">
-              <h3 className="settings-section-title">Integração Google Agenda</h3>
-              <p className="settings-section-subtitle">Vincule sua conta Google para sincronizar e gerenciar as apresentações comerciais diretamente na sua agenda.</p>
-
-              <div style={{ marginTop: '1.5rem' }}>
-                {hasActiveGoogleIntegration ? (
-                  <div>
-                    <p style={{ fontSize: '0.95rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                      Conectado como: <span style={{ color: 'var(--accent-color)' }}>{googleAccountEmail || 'Carregando...'}</span>
-                    </p>
-
-                    <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', gap: '0.75rem' }}>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={handleConnectGoogle}
-                          disabled={isConnectingGoogle || isDisconnectingGoogle}
-                        >
-                          {isConnectingGoogle ? 'Redirecionando...' : 'Trocar conta Google'}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ color: 'var(--text-error)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-                          onClick={handleDisconnectGoogle}
-                          disabled={isConnectingGoogle || isDisconnectingGoogle}
-                        >
-                          {isDisconnectingGoogle ? 'Desconectando...' : 'Desconectar'}
-                        </button>
-                      </div>
-                      {googleConnectError && (
-                        <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                          {googleConnectError}
-                        </p>
-                      )}
-                      {googleDisconnectError && (
-                        <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                          {googleDisconnectError}
-                        </p>
-                      )}
-                    </div>
-
-                    {calendarsLoading ? (
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                        Carregando agendas do Google...
-                      </p>
-                    ) : calendarsError ? (
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
-                          {calendarsError}
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={fetchGoogleCalendars}
-                        >
-                          Tentar carregar agendas novamente
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                          Suas Agendas Google:
-                        </h4>
-                        
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {googleCalendars.map((cal) => {
-                            const isSelectable = cal.accessRole === 'owner' || cal.accessRole === 'writer'
-                            const isSelected = selectedCalendar?.id === cal.id
-                            const isActive = activeCalendarId === cal.id
-                            
-                            return (
-                              <li
-                                key={cal.id}
-                                onClick={() => {
-                                  if (isSelectable) {
-                                    setSelectedCalendar(cal)
-                                    setSavingCalendarError(null)
-                                    setSavingCalendarSuccess(false)
-                                  }
-                                }}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  padding: '0.75rem 1rem',
-                                  background: 'var(--input-bg)',
-                                  border: isSelected ? '2px solid var(--accent-color)' : '1px solid var(--border-color)',
-                                  borderRadius: '8px',
-                                  fontSize: '0.9rem',
-                                  cursor: isSelectable ? 'pointer' : 'not-allowed',
-                                  opacity: isSelectable ? 1 : 0.6,
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                  <span style={{ fontWeight: isSelected ? '600' : '400' }}>{getCalName(cal)}</span>
-                                  {!isSelectable && (
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                      Apenas leitura ({cal.accessRole})
-                                    </span>
-                                  )}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  {cal.primary && (
-                                    <span style={{ fontSize: '0.75rem', background: 'var(--accent-glow)', color: 'var(--text-accent)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '500' }}>
-                                      Principal
-                                    </span>
-                                  )}
-                                  {isActive && (
-                                    <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '600' }}>
-                                      Em uso
-                                    </span>
-                                  )}
-                                </div>
-                              </li>
-                            )
-                          })}
-                        </ul>
-
-                        {activeCalendarId && (
-                          <p style={{ fontSize: '0.875rem', color: '#10b981', marginTop: '1rem', fontWeight: '500' }}>
-                            Agenda selecionada: <strong style={{ color: 'var(--text-primary)' }}>{getCalName(googleCalendars.find(c => c.id === activeCalendarId) || selectedCalendar)}</strong>
-                          </p>
-                        )}
-
-                        {selectedCalendar && selectedCalendar.id !== activeCalendarId && (
-                          <div style={{ marginTop: '1.5rem' }}>
-                            <button
-                              type="button"
-                              className="btn btn-primary"
-                              onClick={handleSaveCalendar}
-                              disabled={isSavingCalendar}
-                            >
-                              {isSavingCalendar ? 'Salvando...' : 'Usar esta agenda'}
-                            </button>
-                            
-                            {savingCalendarError && (
-                              <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                                {savingCalendarError}
-                              </p>
-                            )}
-                            {savingCalendarSuccess && (
-                              <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                                Agenda salva com sucesso!
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <p style={{ fontSize: '0.95rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                      Status: <span style={{ color: 'var(--text-muted)' }}>Desconectado</span>
-                    </p>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleConnectGoogle}
-                      disabled={isConnectingGoogle}
-                    >
-                      {isConnectingGoogle ? 'Conectando...' : 'Conectar Google'}
-                    </button>
-                    {googleConnectError && (
-                      <p style={{ color: 'var(--text-error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                        {googleConnectError}
-                      </p>
-                    )}
-                    {googleSuccessMessage && (
-                      <p className="success-message" style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                        {googleSuccessMessage}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <SettingsView
+            theme={theme}
+            setTheme={setTheme}
+            hasActiveGoogleIntegration={hasActiveGoogleIntegration}
+            googleAccountEmail={googleAccountEmail}
+            handleConnectGoogle={handleConnectGoogle}
+            isConnectingGoogle={isConnectingGoogle}
+            isDisconnectingGoogle={isDisconnectingGoogle}
+            handleDisconnectGoogle={handleDisconnectGoogle}
+            googleConnectError={googleConnectError}
+            googleDisconnectError={googleDisconnectError}
+            calendarsLoading={calendarsLoading}
+            calendarsError={calendarsError}
+            fetchGoogleCalendars={fetchGoogleCalendars}
+            googleCalendars={googleCalendars}
+            selectedCalendar={selectedCalendar}
+            setSelectedCalendar={setSelectedCalendar}
+            setSavingCalendarError={setSavingCalendarError}
+            setSavingCalendarSuccess={setSavingCalendarSuccess}
+            activeCalendarId={activeCalendarId}
+            handleSaveCalendar={handleSaveCalendar}
+            isSavingCalendar={isSavingCalendar}
+            savingCalendarError={savingCalendarError}
+            savingCalendarSuccess={savingCalendarSuccess}
+            googleSuccessMessage={googleSuccessMessage}
+          />
         )
       }
       default:
@@ -1658,353 +1142,47 @@ function App() {
   }
 
   if (!user || authMode === 'update_password') {
-    const getFormTitle = () => {
-      switch (authMode) {
-        case 'signup': return 'Criar Conta'
-        case 'forgot_password': return 'Recuperar Senha'
-        case 'update_password': return 'Criar Nova Senha'
-        default: return 'Acesso ao Agendamento'
-      }
-    }
-
-    const getFormSubtitle = () => {
-      switch (authMode) {
-        case 'signup': return 'Cadastre-se para gerenciar as apresentações'
-        case 'forgot_password': return 'Digite seu e-mail para receber as instruções'
-        case 'update_password': return 'Digite e confirme sua nova senha'
-        default: return 'Entre na sua conta para organizar e gerenciar suas apresentações.'
-      }
-    }
-
-    const getSubmitHandler = () => {
-      switch (authMode) {
-        case 'signup': return handleSignUpSubmit
-        case 'forgot_password': return handleForgotPasswordSubmit
-        case 'update_password': return handleUpdatePasswordSubmit
-        default: return handleLoginSubmit
-      }
-    }
-
-    const getSubmitLabel = () => {
-      if (loginLoading) return 'Carregando...'
-      switch (authMode) {
-        case 'signup': return 'Cadastrar'
-        case 'forgot_password': return 'Enviar E-mail'
-        case 'update_password': return 'Alterar Senha'
-        default: return 'Entrar'
-      }
-    }
-
     return (
-      <div className="login-screen-wrapper">
-        <div className="login-card">
-          <div className="login-header">
-            <img src={meetyLogo} alt="Meety Logo" className="login-logo-img" />
-            <h2 className="login-title">{getFormTitle()}</h2>
-            <p className="login-subtitle">{getFormSubtitle()}</p>
-          </div>
-          <form className="login-form" onSubmit={getSubmitHandler()}>
-            {authMode === 'signup' && (
-              <div className="form-group">
-                <label className="form-label">Nome</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  disabled={loginLoading}
-                />
-              </div>
-            )}
-            
-            {authMode !== 'update_password' && (
-              <div className="form-group">
-                <label className="form-label">E-mail</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  placeholder="seu-email@dominio.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loginLoading}
-                />
-              </div>
-            )}
-
-            {authMode !== 'forgot_password' && authMode !== 'update_password' && (
-              <div className="form-group">
-                <label className="form-label">Senha</label>
-                <input
-                  type="password"
-                  className="form-input"
-                  placeholder="Sua senha"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loginLoading}
-                />
-              </div>
-            )}
-
-            {authMode === 'update_password' && (
-              <>
-                <div className="form-group">
-                  <label className="form-label">Nova Senha</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    placeholder="Sua nova senha"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    disabled={loginLoading}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Confirmar Senha</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    placeholder="Confirme a nova senha"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    disabled={loginLoading}
-                  />
-                </div>
-              </>
-            )}
-
-            {loginError && <span className="login-error-msg">{loginError}</span>}
-            {loginSuccess && <span className="login-success-msg">{loginSuccess}</span>}
-            
-            <button
-              className="btn btn-primary btn-login"
-              type="submit"
-              disabled={loginLoading}
-            >
-              {getSubmitLabel()}
-            </button>
-
-            {authMode === 'login' && (
-              <>
-                <p className="login-switch-text">
-                  Não tem uma conta?{' '}
-                  <button
-                    type="button"
-                    className="btn-link"
-                    onClick={() => {
-                      setAuthMode('signup')
-                      setLoginError(null)
-                      setLoginSuccess(null)
-                    }}
-                  >
-                    Criar conta
-                  </button>
-                </p>
-                <p className="login-switch-text" style={{ marginTop: '0.5rem' }}>
-                  <button
-                    type="button"
-                    className="btn-link"
-                    onClick={() => {
-                      setAuthMode('forgot_password')
-                      setLoginError(null)
-                      setLoginSuccess(null)
-                    }}
-                  >
-                    Esqueci minha senha
-                  </button>
-                </p>
-              </>
-            )}
-
-            {authMode === 'signup' && (
-              <p className="login-switch-text">
-                Já tem uma conta?{' '}
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => {
-                    setAuthMode('login')
-                    setLoginError(null)
-                    setLoginSuccess(null)
-                  }}
-                >
-                  Entrar
-                </button>
-              </p>
-            )}
-
-            {authMode === 'forgot_password' && (
-              <p className="login-switch-text">
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => {
-                    setAuthMode('login')
-                    setLoginError(null)
-                    setLoginSuccess(null)
-                  }}
-                >
-                  Voltar para Entrar
-                </button>
-              </p>
-            )}
-          </form>
-        </div>
-      </div>
+      <AuthScreen
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        name={name}
+        setName={setName}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        confirmPassword={confirmPassword}
+        setConfirmPassword={setConfirmPassword}
+        loginError={loginError}
+        setLoginError={setLoginError}
+        loginSuccess={loginSuccess}
+        setLoginSuccess={setLoginSuccess}
+        loginLoading={loginLoading}
+        handleLoginSubmit={handleLoginSubmit}
+        handleSignUpSubmit={handleSignUpSubmit}
+        handleForgotPasswordSubmit={handleForgotPasswordSubmit}
+        handleUpdatePasswordSubmit={handleUpdatePasswordSubmit}
+      />
     )
   }
 
   return (
     <div className="dashboard-layout">
-      {/* Sidebar Navigation */}
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img src={meetyLogo} alt="Meety Logo" className="sidebar-logo" />
-        </div>
-
-        <nav className="sidebar-menu">
-          {/* Calendário */}
-          {navigationItems.slice(0, 1).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab(item.id)
-                setSelectedMeetingId(null)
-                setShowMeetLink(false)
-                setMeetCopied(false)
-                resetMessageStates()
-              }}
-            >
-              <span className="menu-icon">{item.icon}</span>
-              <span className="menu-label">{item.label}</span>
-            </button>
-          ))}
-
-          {/* Botões de Ação Exclusivos do Desktop no Meio do Menu */}
-          <div className="desktop-only" style={{ flexDirection: 'column', gap: '0.5rem' }}>
-            <button
-              type="button"
-              className="menu-item"
-              onClick={() => openPresentationModal()}
-            >
-              <span className="menu-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                  <foreignObject width="24" height="24">
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      backgroundColor: 'currentColor',
-                      WebkitMaskImage: `url(${iconCriarApresentacao})`,
-                      maskImage: `url(${iconCriarApresentacao})`,
-                      WebkitMaskSize: 'contain',
-                      maskSize: 'contain',
-                      WebkitMaskRepeat: 'no-repeat',
-                      maskRepeat: 'no-repeat'
-                    }} />
-                  </foreignObject>
-                </svg>
-              </span>
-              <span className="menu-label">Criar apresentação</span>
-            </button>
-            <button
-              type="button"
-              className="menu-item"
-            >
-              <span className="menu-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                  <foreignObject width="24" height="24">
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      backgroundColor: 'currentColor',
-                      WebkitMaskImage: `url(${iconResumo})`,
-                      maskImage: `url(${iconResumo})`,
-                      WebkitMaskSize: 'contain',
-                      maskSize: 'contain',
-                      WebkitMaskRepeat: 'no-repeat',
-                      maskRepeat: 'no-repeat'
-                    }} />
-                  </foreignObject>
-                </svg>
-              </span>
-              <span className="menu-label">Resumo da semana</span>
-            </button>
-          </div>
-
-          {/* Clientes e Configurações */}
-          {navigationItems.slice(1).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab(item.id)
-                setSelectedMeetingId(null)
-                setShowMeetLink(false)
-                setMeetCopied(false)
-                resetMessageStates()
-              }}
-            >
-              <span className="menu-icon">{item.icon}</span>
-              <span className="menu-label">{item.label}</span>
-            </button>
-          ))}
-
-          {(() => {
-            const pendingCount = meetings.filter(m => m.syncStatus === 'pending').length
-            if (pendingCount === 0) return null
-            return (
-              <button
-                type="button"
-                className="menu-item pending-menu-item"
-                onClick={() => setShowPendingList(true)}
-              >
-                <span className="menu-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                  </svg>
-                </span>
-                <span className="menu-label">
-                  {pendingCount === 1 ? '1 ação necessária' : `${pendingCount} ações necessárias`}
-                </span>
-              </button>
-            )
-          })()}
-          
-          <button
-            type="button"
-            className="menu-item logout-menu-item"
-            onClick={handleLogout}
-            style={{ marginTop: 'auto' }}
-          >
-            <span className="menu-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <foreignObject width="24" height="24">
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'currentColor',
-                    WebkitMaskImage: `url(${iconSair})`,
-                    maskImage: `url(${iconSair})`,
-                    WebkitMaskSize: 'contain',
-                    maskSize: 'contain',
-                    WebkitMaskRepeat: 'no-repeat',
-                    maskRepeat: 'no-repeat'
-                  }} />
-                </foreignObject>
-              </svg>
-            </span>
-            <span className="menu-label">Sair</span>
-          </button>
-        </nav>
-      </aside>
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        setSelectedMeetingId={setSelectedMeetingId}
+        setShowMeetLink={setShowMeetLink}
+        setMeetCopied={setMeetCopied}
+        resetMessageStates={resetMessageStates}
+        openPresentationModal={openPresentationModal}
+        meetings={meetings}
+        setShowPendingList={setShowPendingList}
+        handleLogout={handleLogout}
+      />
 
       {/* Main Content Area */}
       <main className={`main-content ${activeTab === 'calendario' ? 'calendar-tab-active' : ''}`}>
@@ -2053,64 +1231,20 @@ function App() {
         isGeneratingMeet={isGeneratingMeet}
       />
 
-      {/* Message Customization Sub-Modal */}
-      {showMessageModal && selectedMeeting && (
-        <div className="sub-modal-overlay" onClick={() => { setShowMessageModal(false); setMessageCopied(false); }}>
-          <div className="sub-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="sub-modal-header">
-              <h4 className="sub-modal-title">Mensagem de Convite</h4>
-              <button
-                className="btn-close"
-                onClick={() => {
-                  setShowMessageModal(false)
-                  setMessageCopied(false)
-                }}
-                type="button"
-                aria-label="Fechar modal de mensagem"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="sub-modal-body">
-              <textarea
-                className="message-textarea"
-                value={
-                  customMessages[selectedMeeting.id] !== undefined
-                    ? customMessages[selectedMeeting.id]
-                    : getDefaultMessage(selectedMeeting, formattedMeetingDate)
-                }
-                onChange={(e) => {
-                  const val = e.target.value
-                  setCustomMessages((prev) => ({
-                    ...prev,
-                    [selectedMeeting.id]: val
-                  }))
-                }}
-              />
-              
-              <button
-                className={`btn btn-primary ${messageCopied ? 'copied' : ''}`}
-                type="button"
-                onClick={() => {
-                  const textToCopy =
-                    customMessages[selectedMeeting.id] !== undefined
-                      ? customMessages[selectedMeeting.id]
-                      : getDefaultMessage(selectedMeeting, formattedMeetingDate)
-                  navigator.clipboard.writeText(textToCopy)
-                  setMessageCopied(true)
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="btn-icon">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                {messageCopied ? 'Mensagem copiada' : 'Copiar mensagem'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <InviteMessageModal
+        isOpen={showMessageModal && !!selectedMeeting}
+        onClose={() => {
+          setShowMessageModal(false)
+          setMessageCopied(false)
+        }}
+        selectedMeeting={selectedMeeting}
+        customMessages={customMessages}
+        setCustomMessages={setCustomMessages}
+        messageCopied={messageCopied}
+        setMessageCopied={setMessageCopied}
+        getDefaultMessage={getDefaultMessage}
+        formattedMeetingDate={formattedMeetingDate}
+      />
 
       {/* Add / Edit Participant Sub-Modal */}
       <AddParticipantModal
@@ -2203,74 +1337,13 @@ function App() {
         }}
         isDeleting={isDeletingPresentation}
       />
-      {showPendingList && (
-        <div className="modal-overlay" onClick={() => setShowPendingList(false)}>
-          <div className="modal-card pending-list-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">Reuniões com pendências</h3>
-              <button
-                className="btn-close"
-                onClick={() => setShowPendingList(false)}
-                type="button"
-                aria-label="Fechar"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-              {meetings.filter(m => m.syncStatus === 'pending').length === 0 ? (
-                <p>Nenhuma pendência encontrada.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {meetings.filter(m => m.syncStatus === 'pending').map((meeting) => {
-                    const [y, mon, d] = meeting.date.split('-').map(Number)
-                    const formattedDate = new Date(y, mon - 1, d).toLocaleDateString('pt-BR', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric'
-                    })
-                    return (
-                      <div key={meeting.id} className="pending-item-card-detail" style={{
-                        padding: '1rem',
-                        border: '1px solid rgba(234, 179, 8, 0.3)',
-                        borderRadius: '8px',
-                        backgroundColor: 'rgba(234, 179, 8, 0.02)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.5rem'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{meeting.title}</h4>
-                          <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(234, 179, 8, 0.1)', color: '#eab308', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
-                            {formattedDate} às {meeting.time}
-                          </span>
-                        </div>
-                        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                          <strong>Erro:</strong> {meeting.syncError}
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ alignSelf: 'flex-end', marginTop: '0.25rem' }}
-                          onClick={() => {
-                            setSelectedMeetingId(meeting.id)
-                            // Opcionalmente fechamos para focar no modal principal de detalhes
-                            setShowPendingList(false)
-                          }}
-                        >
-                          Ver reunião
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <PendingMeetingsModal
+        isOpen={showPendingList}
+        onClose={() => setShowPendingList(false)}
+        meetings={meetings}
+        setSelectedMeetingId={setSelectedMeetingId}
+        setShowPendingList={setShowPendingList}
+      />
     </div>
   )
 }

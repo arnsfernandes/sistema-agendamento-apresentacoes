@@ -177,6 +177,20 @@ const deleteGoogleEvent = async ({
   }
 }
 
+const triggerRollback = async (
+  calendarId: string | null,
+  eventId: string | null,
+  accessToken: string | null,
+) => {
+  if (calendarId && eventId && accessToken) {
+    await deleteGoogleEvent({
+      calendarId,
+      eventId,
+      accessToken,
+    })
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
@@ -832,11 +846,11 @@ Deno.serve(async (req) => {
     }
 
     if (!meetLink) {
-      await deleteGoogleEvent({
-        calendarId: activeCalendarId,
-        eventId: createdGoogleEventId,
-        accessToken: googleAccessToken,
-      })
+      await triggerRollback(
+        activeCalendarId,
+        createdGoogleEventId,
+        googleAccessToken,
+      )
 
       createdGoogleEventId = null
 
@@ -914,11 +928,11 @@ Deno.serve(async (req) => {
         saveError,
       )
 
-      await deleteGoogleEvent({
-        calendarId: activeCalendarId,
-        eventId: createdGoogleEventId,
-        accessToken: googleAccessToken,
-      })
+      await triggerRollback(
+        activeCalendarId,
+        createdGoogleEventId,
+        googleAccessToken,
+      )
 
       createdGoogleEventId = null
 
@@ -966,21 +980,11 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error(error)
 
-    /*
-     * Proteção adicional caso uma falha inesperada
-     * aconteça depois da criação no Google.
-     */
-    if (
-      createdGoogleEventId &&
-      googleAccessToken &&
-      activeCalendarId
-    ) {
-      await deleteGoogleEvent({
-        calendarId: activeCalendarId,
-        eventId: createdGoogleEventId,
-        accessToken: googleAccessToken,
-      })
-    }
+    await triggerRollback(
+      activeCalendarId,
+      createdGoogleEventId,
+      googleAccessToken,
+    )
 
     return jsonResponse(
       {

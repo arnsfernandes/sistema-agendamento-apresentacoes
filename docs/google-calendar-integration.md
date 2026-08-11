@@ -37,5 +37,5 @@ O Supabase armazena os dados de negócio e mantém o espelho local necessário d
 * Recorrência semanal.
 * Edição e exclusão de uma ocorrência ou de toda a série.
 * Reconciliação de alterações feitas diretamente no Google Agenda.
-* Controle completo da conta Google responsável.
+* Controle da conta Google conectada por usuário.
 * Apresentações pendentes de sincronização.

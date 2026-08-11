@@ -157,8 +157,6 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'A apresentação não possui vínculo com o Google Agenda.' }, 409)
     }
 
-
-
     // Gerar token de acesso
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',

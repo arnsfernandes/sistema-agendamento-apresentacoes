@@ -26,7 +26,7 @@
 * Edição e exclusão de uma ocorrência ou de toda a série.
 * Sincronização por período visível.
 * Reconciliação de alterações feitas diretamente no Google Agenda.
-* Controle da conta Google responsável.
+* Controle da conta Google ativa de cada usuário.
 * Detecção de conflitos antes de salvar.
 * Tratamento de apresentações pendentes de sincronização.
 

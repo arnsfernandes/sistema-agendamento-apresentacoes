@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 2. Se já existir Meet, retorna o link atual imediatamente
+    // 3. Se já existir Meet, retorna o link atual imediatamente
     if (presentation.meet_link) {
       return new Response(
         JSON.stringify({ meetLink: presentation.meet_link }),
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 3. Valida se os campos do evento Google estão preenchidos
+    // 4. Valida se os campos do evento Google estão preenchidos
     const googleEventId = presentation.google_event_id
     const googleCalendarId = presentation.google_calendar_id
     if (!googleEventId || !googleCalendarId) {
@@ -126,8 +126,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-
 
     // 5. Confirma que a agenda da integração é a mesma da apresentação
     if (integration.calendar_id !== googleCalendarId) {

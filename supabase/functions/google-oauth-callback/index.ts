@@ -142,8 +142,6 @@ Deno.serve(async (req) => {
     )
 
     const tokenData = await tokenResponse.json()
-    console.log('[DIAGNOSTIC] Token exchange response keys:', Object.keys(tokenData))
-    console.log('[DIAGNOSTIC] Token exchange response scope:', tokenData.scope)
 
     if (!tokenResponse.ok) {
       console.error('Erro ao trocar código:', tokenData)

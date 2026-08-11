@@ -228,9 +228,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 5. Obtém a integração Google por RPC
-
-
     // 6. Confirma que a agenda da integração é a mesma da apresentação
     if (integration.calendar_id !== googleCalendarId) {
       return new Response(

@@ -325,12 +325,9 @@ Deno.serve(async (req) => {
     // Comparar locais vs Google mapeados
     for (const local of localPresentations || []) {
       if (!local.google_event_id) continue
-
       const remote = activeGoogleEvents.find(
         (e) => e.id === local.google_event_id,
       )
-
-
 
       if (remote) {
         localMatchedIds.add(local.google_event_id)
@@ -467,8 +464,6 @@ Deno.serve(async (req) => {
         eventResponse.status === 404 ||
         eventResponse.status === 410 ||
         (remoteEventData?.status === 'cancelled')
-
-
 
       if (!isConfirmedDeleted) {
         // Evento existe mas está fora do período — movedOutsidePeriod

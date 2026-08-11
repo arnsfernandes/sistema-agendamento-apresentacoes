@@ -310,14 +310,6 @@ Deno.serve(async (req) => {
         const localEndStr = local.horario_fim.slice(0, 5)
         const remoteStartStr = remoteStart?.time || ''
         const remoteEndStr = remoteEnd?.time || ''
-
-        const localUpdated = local.google_event_updated_at
-          ? new Date(local.google_event_updated_at).getTime()
-          : 0
-        const remoteUpdated = remote.updated
-          ? new Date(remote.updated).getTime()
-          : 0
-
         const diffFields: string[] = []
 
         if (local.titulo.trim() !== (remote.summary || '').trim()) {

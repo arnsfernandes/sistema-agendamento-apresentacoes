@@ -1,21 +1,10 @@
 import { supabase } from '../supabaseClient'
+import { getActiveIntegration } from './googleIntegrationService'
 
-const getActiveIntegration = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado.')
+const CLIENT_FIELDS = 'id, nome, telefone, agencia'
 
-  const { data, error } = await supabase
-    .from('google_integracao')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('ativo', true)
-    .maybeSingle()
-
-  if (error) {
-    throw new Error(`Falha ao obter integração ativa: ${error.message}`)
-  }
-
-  return { userId: user.id, googleIntegracaoId: data?.id || null }
+const handleDbError = (error, action) => {
+  throw new Error(`Falha ao ${action}: ${error.message}`)
 }
 
 export const findClientByPhone = async (telefone) => {
@@ -26,14 +15,14 @@ export const findClientByPhone = async (telefone) => {
 
   const { data, error } = await supabase
     .from('clientes')
-    .select('id, nome, telefone, agencia')
+    .select(CLIENT_FIELDS)
     .eq('telefone', telefone)
     .eq('user_id', userId)
     .eq('google_integracao_id', googleIntegracaoId)
     .maybeSingle()
 
   if (error) {
-    throw new Error(`Falha ao buscar cliente por telefone: ${error.message}`)
+    handleDbError(error, 'buscar cliente por telefone')
   }
 
   return data
@@ -48,11 +37,11 @@ export const createClient = async ({ nome, telefone, agencia }) => {
   const { data, error } = await supabase
     .from('clientes')
     .insert([{ nome, telefone, agencia, user_id: userId, google_integracao_id: googleIntegracaoId }])
-    .select('id, nome, telefone, agencia')
+    .select(CLIENT_FIELDS)
     .single()
 
   if (error) {
-    throw new Error(`Falha ao cadastrar o cliente: ${error.message}`)
+    handleDbError(error, 'cadastrar o cliente')
   }
 
   return data
@@ -70,11 +59,11 @@ export const updateClient = async (clienteId, { nome, telefone, agencia }) => {
     .eq('id', clienteId)
     .eq('user_id', userId)
     .eq('google_integracao_id', googleIntegracaoId)
-    .select('id, nome, telefone, agencia')
+    .select(CLIENT_FIELDS)
     .single()
 
   if (error) {
-    throw new Error(`Falha ao atualizar o cliente: ${error.message}`)
+    handleDbError(error, 'atualizar o cliente')
   }
 
   return data

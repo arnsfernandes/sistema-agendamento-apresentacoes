@@ -1,15 +1,21 @@
 import { supabase } from '../supabaseClient'
 
+const PARTICIPATION_FIELDS = 'id, cliente_id, apresentacao_id, observacao, status'
+
+const handleDbError = (error, action) => {
+  throw new Error(`Falha ao ${action}: ${error.message}`)
+}
+
 export const findParticipation = async (clienteId, apresentacaoId) => {
   const { data, error } = await supabase
     .from('participacoes')
-    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .select(PARTICIPATION_FIELDS)
     .eq('cliente_id', clienteId)
     .eq('apresentacao_id', apresentacaoId)
     .maybeSingle()
 
   if (error) {
-    throw new Error(`Falha ao buscar participação: ${error.message}`)
+    handleDbError(error, 'buscar participação')
   }
 
   return data
@@ -24,11 +30,11 @@ export const createParticipation = async ({ clienteId, apresentacaoId, observaca
       observacao,
       status: 'ativo'
     }])
-    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .select(PARTICIPATION_FIELDS)
     .single()
 
   if (error) {
-    throw new Error(`Falha ao criar participação: ${error.message}`)
+    handleDbError(error, 'criar participação')
   }
 
   return data
@@ -39,11 +45,11 @@ export const updateParticipationObservation = async (participacaoId, observacao)
     .from('participacoes')
     .update({ observacao })
     .eq('id', participacaoId)
-    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .select(PARTICIPATION_FIELDS)
     .single()
 
   if (error) {
-    throw new Error(`Falha ao atualizar observação da participação: ${error.message}`)
+    handleDbError(error, 'atualizar observação da participação')
   }
 
   return data
@@ -58,11 +64,11 @@ export const updateParticipationStatus = async (participacaoId, status) => {
     .from('participacoes')
     .update({ status })
     .eq('id', participacaoId)
-    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .select(PARTICIPATION_FIELDS)
     .single()
 
   if (error) {
-    throw new Error(`Falha ao atualizar status da participação: ${error.message}`)
+    handleDbError(error, 'atualizar status da participação')
   }
 
   return data
@@ -73,11 +79,11 @@ export const updateParticipationPresentation = async (participacaoId, apresentac
     .from('participacoes')
     .update({ apresentacao_id: apresentacaoId })
     .eq('id', participacaoId)
-    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .select(PARTICIPATION_FIELDS)
     .single()
 
   if (error) {
-    throw new Error(`Falha ao atualizar a apresentação da participação: ${error.message}`)
+    handleDbError(error, 'atualizar a apresentação da participação')
   }
 
   return data

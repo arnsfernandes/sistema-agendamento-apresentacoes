@@ -6,7 +6,6 @@
   --bg-primary: #0a0b0d;
   --bg-secondary: #13151b;
   --bg-card: rgba(255, 255, 255, 0.05);
-  --card-bg: rgba(255, 255, 255, 0.05);
   --border-color: rgba(255, 255, 255, 0.12);
   --text-primary: #ffffff;
   --text-secondary: #cbd5e1;
@@ -31,7 +30,6 @@
   --bg-primary: #f3f4f6;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
-  --card-bg: #ffffff;
   --border-color: #e5e7eb;
   --text-primary: #111827;
   --text-secondary: #4b5563;
@@ -89,18 +87,7 @@ body {
   margin-bottom: 2rem;
 }
 
-.brand-logo {
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
-}
+
 
 .sidebar-logo {
   width: 100%;
@@ -118,14 +105,7 @@ body {
   }
 }
 
-.brand-name {
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: -0.02em;
-  background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+
 
 .sidebar-menu {
   display: flex;
@@ -207,17 +187,7 @@ body {
 
 
 
-.badge {
-  background: var(--accent-glow);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  color: var(--text-accent);
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+
 
 .content-body {
   padding: 2.5rem;
@@ -649,21 +619,9 @@ body {
 
   .meetings-dot-indicator {
     display: block !important;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
     margin-top: 4px;
     margin-right: 4px;
     align-self: flex-end;
-    flex-shrink: 0;
-  }
-
-  .meetings-dot-indicator.grey-dot {
-    background-color: var(--text-muted) !important;
-  }
-
-  .meetings-dot-indicator.purple-dot {
-    background-color: var(--text-accent) !important;
   }
 }
 
@@ -1773,7 +1731,7 @@ body {
 
 .client-search-input {
   width: 100%;
-  background-color: var(--card-bg);
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   padding: 0.75rem 1rem 0.75rem 2.75rem;
@@ -1789,7 +1747,7 @@ body {
 }
 
 .clients-table-container {
-  background-color: var(--card-bg);
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   overflow-x: auto;

@@ -76,12 +76,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      serviceRoleKey,
-    )
-
-
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
     const redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI')
     const stateSecret = Deno.env.get(

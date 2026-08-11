@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
 
     const currentSaoPauloTime = getSaoPauloDateTime()
 
-    // 2. Valida se a apresentação de origem já começou
+    // 3. Valida se a apresentação de origem já começou
     const sourceTime = sourcePresentation.horario || '00:00'
     const sourceParts = sourceTime.split(':')
     const sourceNormalizedTime = sourceParts.length === 2 ? `${sourceTime}:00` : sourceTime
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 3. Valida se a apresentação de destino é futura
+    // 4. Valida se a apresentação de destino é futura
     const targetTime = targetPresentation.horario || '00:00'
     const targetParts = targetTime.split(':')
     const targetNormalizedTime = targetParts.length === 2 ? `${targetTime}:00` : targetTime
@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 4. Busca participações da origem
+    // 5. Busca participações da origem
     const { data: sourceParticipations, error: partsError } = await supabaseAdmin
       .from('participacoes')
       .select('*')
@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 5. Valida se os campos do evento Google estão preenchidos para a de origem e de destino
+    // 6. Valida se os campos do evento Google estão preenchidos para a de origem e de destino
     const googleEventId = sourcePresentation.google_event_id
     const googleCalendarId = sourcePresentation.google_calendar_id
     if (!googleEventId || !googleCalendarId) {
@@ -246,8 +246,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-
 
     // Confirma que origem, destino e integração ativa possuem o mesmo google_calendar_id
     if (integration.calendar_id !== googleCalendarId || integration.calendar_id !== targetCalendarId) {
