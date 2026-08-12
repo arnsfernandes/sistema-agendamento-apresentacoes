@@ -191,11 +191,7 @@ export default function GoogleSettings({
                     })}
                   </ul>
 
-                  {activeCalendarId && (
-                    <p style={{ fontSize: '0.875rem', color: '#10b981', marginTop: '1rem', fontWeight: '500' }}>
-                      Agenda selecionada: <strong style={{ color: 'var(--text-primary)' }}>{getCalName(googleCalendars.find(c => c.id === activeCalendarId) || selectedCalendar)}</strong>
-                    </p>
-                  )}
+
 
                   {selectedCalendar && selectedCalendar.id !== activeCalendarId && (
                     <div style={{ marginTop: '1.5rem' }}>
