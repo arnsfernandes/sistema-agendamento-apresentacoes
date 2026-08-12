@@ -167,9 +167,13 @@ function App() {
   })
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
-  }, [theme])
+    if (!user) {
+      document.documentElement.setAttribute('data-theme', 'light')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+      localStorage.setItem('theme', theme)
+    }
+  }, [theme, user])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
