@@ -1123,7 +1123,8 @@ function App() {
 
   const getDefaultMessage = (meeting, formattedDate) => {
     if (!meeting) return ''
-    return `Olá, confirmo nossa apresentação "${meeting.title}" no dia ${formattedDate} às ${meeting.time}. Link do Meet: ${meeting.meetLink}`
+    const timeWithoutSeconds = meeting.time ? meeting.time.slice(0, 5) : ''
+    return `Olá! 😊 Passando para confirmar nossa reunião no dia ${formattedDate}, às ${timeWithoutSeconds}. Link do Meet: ${meeting.meetLink || ''}`
   }
 
   // Filter future meetings, sorted by date and time
