@@ -28,9 +28,24 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
   useEffect(() => {
     if (isOpen && !prevOpenRef.current) {
       setTitle('')
-      setDate(initialDate || '')
-      setStartTime('')
-      setEndTime('')
+      
+      const now = new Date()
+      const currentHours = now.getHours()
+      const nextHours = (currentHours + 1) % 24
+      const endHours = (nextHours + 1) % 24
+
+      setStartTime(`${String(nextHours).padStart(2, '0')}:00`)
+      setEndTime(`${String(endHours).padStart(2, '0')}:00`)
+
+      if (!initialDate) {
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        setDate(`${year}-${month}-${day}`)
+      } else {
+        setDate(initialDate)
+      }
+
       setIsRecurring(false)
       setRecurringDays([])
       setRecurrenceEndOption('never')

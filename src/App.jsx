@@ -16,6 +16,7 @@ import AddPresentationModal from './components/AddPresentationModal'
 import EditPresentationModal from './components/EditPresentationModal'
 import MoveParticipantsModal from './components/MoveParticipantsModal'
 import DeletePresentationModal from './components/DeletePresentationModal'
+import PrivacyView from './components/PrivacyView'
 import { supabase } from './services/supabaseClient'
 import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation, generateMeetLink } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
@@ -162,7 +163,7 @@ function App() {
 
   // Theme state
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'dark'
+    return localStorage.getItem('theme') || 'light'
   })
 
   useEffect(() => {
@@ -536,7 +537,6 @@ function App() {
       if (data) {
         setGoogleAccountEmail(data.googleEmail)
         setGoogleCalendars(data.calendars || [])
-        setIsResponsible(!!data.isResponsible)
         if (data.selectedCalendarId) {
           setActiveCalendarId(data.selectedCalendarId)
           const activeCal = (data.calendars || []).find(c => c.id === data.selectedCalendarId)
@@ -614,7 +614,7 @@ function App() {
       setGoogleCalendars([])
       setSelectedCalendar(null)
       setActiveCalendarId(null)
-      setIsResponsible(false)
+      setHasActiveGoogleIntegration(false)
       setGoogleSuccessMessage('Conta Google desconectada com sucesso.')
     } catch (err) {
       console.error('Erro ao desconectar Google:', err)
@@ -1134,6 +1134,10 @@ function App() {
       if (dateDiff !== 0) return dateDiff
       return a.time.localeCompare(b.time)
     })
+
+  if (window.location.pathname === '/privacy') {
+    return <PrivacyView />
+  }
 
   if (authLoading) {
     return (
