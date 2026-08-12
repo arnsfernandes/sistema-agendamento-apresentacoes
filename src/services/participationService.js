@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient'
+import { supabase } from './supabaseClient'
 
 const PARTICIPATION_FIELDS = 'id, cliente_id, apresentacao_id, observacao, status'
 

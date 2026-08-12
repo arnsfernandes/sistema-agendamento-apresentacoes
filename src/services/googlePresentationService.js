@@ -1,5 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import { supabase } from '../supabaseClient'
+import { supabase } from './supabaseClient'
 
 const handleFunctionError = async (err, defaultMessage) => {
   let errorMsg = defaultMessage

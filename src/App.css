@@ -1811,17 +1811,6 @@ body {
   color: var(--text-muted);
 }
 
-.client-table-count-badge {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 500;
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  display: inline-block;
-}
-
 .no-clients-found {
   text-align: center;
   color: var(--text-muted);
@@ -1829,9 +1818,6 @@ body {
   font-size: 0.9rem;
 }
 
-.text-center {
-  text-align: center;
-}
 
 /* Settings Page Styling */
 .settings-section-card {
@@ -2088,23 +2074,3 @@ body {
   box-sizing: border-box;
 }
 
-.sidebar-user-greeting {
-  padding: 0 0.5rem 1.25rem 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1.5rem;
-}
-
-.greeting-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  word-break: break-word;
-}
-
-.greeting-subtitle {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}

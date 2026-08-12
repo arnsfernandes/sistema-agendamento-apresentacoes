@@ -1,6 +1,6 @@
 import meetyLogo from '../assets/meety-logo.png'
 
-export default function AuthScreen({
+export default function AuthView({
   authMode,
   setAuthMode,
   name,

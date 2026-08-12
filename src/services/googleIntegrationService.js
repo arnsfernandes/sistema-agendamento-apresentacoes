@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient'
+import { supabase } from './supabaseClient'
 
 export const getActiveIntegration = async () => {
   const { data: { user } } = await supabase.auth.getUser()

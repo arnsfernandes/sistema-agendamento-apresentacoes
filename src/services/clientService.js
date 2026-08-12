@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient'
+import { supabase } from './supabaseClient'
 import { getActiveIntegration } from './googleIntegrationService'
 
 const CLIENT_FIELDS = 'id, nome, telefone, agencia'

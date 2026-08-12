@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import './App.css'
 import Sidebar from './components/Sidebar'
-import AuthScreen from './components/AuthScreen'
+import AuthView from './components/AuthView'
 import CalendarGrid from './components/CalendarGrid'
 import ClientsView from './components/ClientsView'
 import SettingsView from './components/SettingsView'
@@ -16,7 +16,7 @@ import AddPresentationModal from './components/AddPresentationModal'
 import EditPresentationModal from './components/EditPresentationModal'
 import MoveParticipantsModal from './components/MoveParticipantsModal'
 import DeletePresentationModal from './components/DeletePresentationModal'
-import { supabase } from './supabaseClient'
+import { supabase } from './services/supabaseClient'
 import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation, generateMeetLink } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient } from './services/clientService'
@@ -559,7 +559,7 @@ function App() {
     setSavingCalendarError(null)
     setSavingCalendarSuccess(false)
     try {
-      const { data, error } = await supabase.functions.invoke('google-calendar-select', {
+      const { error } = await supabase.functions.invoke('google-calendar-select', {
         body: { calendarId: selectedCalendar.id }
       })
       if (error) throw error
@@ -589,7 +589,8 @@ function App() {
           if (body && body.error) {
             errorMsg = body.error
           }
-        } catch (_) {}
+        } catch {
+        }
       } else if (err && err.message) {
         errorMsg = err.message
       }
@@ -624,7 +625,8 @@ function App() {
           if (body && body.error) {
             errorMsg = body.error
           }
-        } catch (_) {}
+        } catch {
+        }
       } else if (err && err.message) {
         errorMsg = err.message
       }
@@ -1143,7 +1145,7 @@ function App() {
 
   if (!user || authMode === 'update_password') {
     return (
-      <AuthScreen
+      <AuthView
         authMode={authMode}
         setAuthMode={setAuthMode}
         name={name}
@@ -1278,7 +1280,7 @@ function App() {
           try {
             await handleRescheduleParticipant(reschedulingParticipant.id, selectedMeeting.id, targetMeetingId)
             setReschedulingParticipant(null)
-          } catch (err) {
+          } catch {
             // Keep the modal open
           }
         }}
