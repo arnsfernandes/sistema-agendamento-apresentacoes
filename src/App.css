@@ -404,12 +404,18 @@ body {
   justify-content: space-between;
   align-items: flex-end;
   box-sizing: border-box;
-  transition: all 0.2s ease;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out, background-color 200ms ease-out, z-index 200ms ease-out;
+  z-index: 1;
 }
 
-.calendar-day-cell:not(.empty):hover {
-  background-color: var(--accent-hover);
-  border-color: rgba(99, 102, 241, 0.1);
+@media (min-width: 1024px) {
+  .calendar-day-cell:not(.empty):hover {
+    transform: scale(1.08);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background-color: var(--accent-hover);
+    border-color: rgba(99, 102, 241, 0.1);
+  }
 }
 
 .calendar-day-cell.empty {
