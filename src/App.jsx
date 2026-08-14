@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar'
 import AuthView from './components/AuthView'
 import CalendarGrid from './components/CalendarGrid'
 import ClientsView from './components/ClientsView'
+import WeeklySummaryView from './components/WeeklySummaryView'
 import SettingsView from './components/SettingsView'
 import MeetingDetailsModal from './components/MeetingDetailsModal'
 import InviteMessageModal from './components/InviteMessageModal'
@@ -20,7 +21,7 @@ import PrivacyView from './components/PrivacyView'
 import { supabase } from './services/supabaseClient'
 import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation, generateMeetLink } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
-import { findClientByPhone, createClient, updateClient } from './services/clientService'
+import { findClientByPhone, createClient, updateClient, listClients, deleteClientLogical } from './services/clientService'
 import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
 import { isPresentationPast, isPresentationFuture } from './utils/dateUtils'
 
@@ -72,11 +73,27 @@ function App() {
         }
       } else {
         setHasActiveGoogleIntegration(false)
+        setGoogleAccountEmail(null)
       }
     } catch (e) {
       console.error('Erro ao checar integração:', e)
     }
   }
+
+  const loadClients = async () => {
+    try {
+      const data = await listClients()
+      setClients(data)
+    } catch (err) {
+      console.error('Erro ao carregar clientes:', err)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'clientes' && user) {
+      loadClients()
+    }
+  }, [activeTab, user])
 
   useEffect(() => {
     if (user) {
@@ -158,8 +175,8 @@ function App() {
   const [reschedulingParticipant, setReschedulingParticipant] = useState(null)
   const lastSyncedMonthRef = useRef(null)
 
-  // Client search state
-  const [clientSearchTerm, setClientSearchTerm] = useState('')
+  // Client list state
+  const [clients, setClients] = useState([])
 
   // Theme state
   const [theme, setTheme] = useState(() => {
@@ -559,7 +576,7 @@ function App() {
       const { data, error } = await supabase.functions.invoke('google-calendar-list')
       if (error) throw error
       if (data) {
-        setGoogleAccountEmail(data.googleEmail)
+        setGoogleAccountEmail(prev => prev || data.googleEmail)
         setGoogleCalendars(data.calendars || [])
         if (data.selectedCalendarId) {
           setActiveCalendarId(data.selectedCalendarId)
@@ -930,27 +947,6 @@ function App() {
     }
   }
 
-  const getUniqueClients = () => {
-    const clientsMap = {}
-    meetings.forEach(meeting => {
-      meeting.participantsList.forEach(participant => {
-        const cleanTel = participant.telefone.replace(/\D/g, '')
-        if (!cleanTel) return
-
-        if (!clientsMap[cleanTel]) {
-          clientsMap[cleanTel] = {
-            nome: participant.nome,
-            telefone: participant.telefone,
-            agencia: participant.agencia,
-            totalAgendamentos: 0
-          }
-        }
-        clientsMap[cleanTel].totalAgendamentos += 1
-      })
-    })
-
-    return Object.values(clientsMap).sort((a, b) => a.nome.localeCompare(b.nome))
-  }
 
   const getMonthDays = () => {
     const year = currentDate.getFullYear()
@@ -1079,22 +1075,42 @@ function App() {
           </div>
         )
       }
+      case 'resumo': {
+        return (
+          <WeeklySummaryView
+            meetings={meetings}
+            onSelectMeeting={setSelectedMeetingId}
+          />
+        )
+      }
       case 'clientes': {
-        const uniqueClients = getUniqueClients()
-        const filteredClients = uniqueClients.filter(client => {
-          const term = clientSearchTerm.toLowerCase()
-          return (
-            client.nome.toLowerCase().includes(term) ||
-            client.telefone.replace(/\D/g, '').includes(term) ||
-            client.agencia.toLowerCase().includes(term)
-          )
-        })
+        const handleAddDirectClient = async (clientData) => {
+          const existing = await findClientByPhone(clientData.telefone)
+          if (existing) {
+            throw new Error('Já existe um cliente cadastrado com este telefone.')
+          }
+          await createClient(clientData)
+          await loadClients()
+        }
+
+        const handleUpdateDirectClient = async (clientId, clientData) => {
+          await updateClient(clientId, clientData)
+          await loadClients()
+        }
+
+        const handleDeleteDirectClient = async (clientId) => {
+          await deleteClientLogical(clientId)
+          await loadClients()
+        }
 
         return (
           <ClientsView
-            filteredClients={filteredClients}
-            clientSearchTerm={clientSearchTerm}
-            setClientSearchTerm={setClientSearchTerm}
+            clients={clients}
+            meetings={meetings}
+            onAddClient={handleAddDirectClient}
+            onUpdateClient={handleUpdateDirectClient}
+            onDeleteClient={handleDeleteDirectClient}
+            hasActiveGoogleIntegration={hasActiveGoogleIntegration}
           />
         )
       }
@@ -1214,6 +1230,7 @@ function App() {
         meetings={meetings}
         setShowPendingList={setShowPendingList}
         handleLogout={handleLogout}
+        user={user}
       />
 
       {/* Main Content Area */}

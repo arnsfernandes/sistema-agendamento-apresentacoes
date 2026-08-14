@@ -82,13 +82,28 @@ export default function Sidebar({
   openPresentationModal,
   meetings,
   setShowPendingList,
-  handleLogout
+  handleLogout,
+  user
 }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
         <img src={meetyLogo} alt="Meety Logo" className="sidebar-logo" />
       </div>
+
+      {(() => {
+        const name = user?.user_metadata?.name
+        return (
+          <div className="sidebar-greeting" style={{ padding: '0.25rem 1.5rem 0.25rem 1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+              Olá{name ? `, ${name}` : ''}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              Gerencie todas as suas reuniões aqui.
+            </div>
+          </div>
+        )
+      })()}
 
       <nav className="sidebar-menu">
         {/* Calendário */}
@@ -138,7 +153,14 @@ export default function Sidebar({
           </button>
           <button
             type="button"
-            className="menu-item"
+            className={`menu-item ${activeTab === 'resumo' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('resumo')
+              setSelectedMeetingId(null)
+              setShowMeetLink(false)
+              setMeetCopied(false)
+              resetMessageStates()
+            }}
           >
             <span className="menu-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">

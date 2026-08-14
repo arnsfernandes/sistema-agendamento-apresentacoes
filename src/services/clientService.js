@@ -1,10 +1,31 @@
 import { supabase } from './supabaseClient'
 import { getActiveIntegration } from './googleIntegrationService'
 
-const CLIENT_FIELDS = 'id, nome, telefone, agencia'
+const CLIENT_FIELDS = 'id, nome, telefone, agencia, excluido'
 
 const handleDbError = (error, action) => {
   throw new Error(`Falha ao ${action}: ${error.message}`)
+}
+
+export const listClients = async () => {
+  const { userId, googleIntegracaoId } = await getActiveIntegration()
+  if (!googleIntegracaoId) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('clientes')
+    .select(CLIENT_FIELDS)
+    .eq('user_id', userId)
+    .eq('google_integracao_id', googleIntegracaoId)
+    .eq('excluido', false)
+    .order('nome', { ascending: true })
+
+  if (error) {
+    handleDbError(error, 'listar os clientes')
+  }
+
+  return data || []
 }
 
 export const findClientByPhone = async (telefone) => {
@@ -64,6 +85,28 @@ export const updateClient = async (clienteId, { nome, telefone, agencia }) => {
 
   if (error) {
     handleDbError(error, 'atualizar o cliente')
+  }
+
+  return data
+}
+
+export const deleteClientLogical = async (clientId) => {
+  const { userId, googleIntegracaoId } = await getActiveIntegration()
+  if (!googleIntegracaoId) {
+    throw new Error('Não é possível excluir o cliente sem uma conta Google ativa conectada.')
+  }
+
+  const { data, error } = await supabase
+    .from('clientes')
+    .update({ excluido: true })
+    .eq('id', clientId)
+    .eq('user_id', userId)
+    .eq('google_integracao_id', googleIntegracaoId)
+    .select(CLIENT_FIELDS)
+    .single()
+
+  if (error) {
+    handleDbError(error, 'excluir logicamente o cliente')
   }
 
   return data
