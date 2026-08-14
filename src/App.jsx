@@ -167,12 +167,32 @@ function App() {
   })
 
   useEffect(() => {
-    if (!user) {
-      document.documentElement.setAttribute('data-theme', 'light')
-    } else {
-      document.documentElement.setAttribute('data-theme', theme)
-      localStorage.setItem('theme', theme)
+    const applyTheme = () => {
+      if (!user) {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.setAttribute('data-theme', systemTheme)
+      } else {
+        if (theme === 'system') {
+          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          document.documentElement.setAttribute('data-theme', systemTheme)
+        } else {
+          document.documentElement.setAttribute('data-theme', theme)
+        }
+        localStorage.setItem('theme', theme)
+      }
     }
+
+    applyTheme()
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = () => {
+      if (!user || theme === 'system') {
+        applyTheme()
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
   }, [theme, user])
 
   useEffect(() => {
@@ -1081,6 +1101,7 @@ function App() {
       case 'configuracoes': {
         return (
           <SettingsView
+            user={user}
             theme={theme}
             setTheme={setTheme}
             hasActiveGoogleIntegration={hasActiveGoogleIntegration}
