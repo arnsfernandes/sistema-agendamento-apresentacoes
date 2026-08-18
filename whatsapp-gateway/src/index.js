@@ -1,6 +1,12 @@
 import 'dotenv/config';
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectToWhatsApp, getWhatsAppSocket } from './whatsapp.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,6 +16,25 @@ app.use(express.json());
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// QR Code route
+app.get('/qr', (req, res) => {
+  // Authorization check
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.GATEWAY_API_KEY;
+
+  if (!expectedKey || apiKey !== expectedKey) {
+    return res.status(401).json({ error: 'Acesso não autorizado. Chave de API ausente ou inválida.' });
+  }
+
+  const qrPath = path.join(__dirname, '../whatsapp-qr.png');
+
+  if (!fs.existsSync(qrPath)) {
+    return res.status(404).json({ error: 'QR Code não disponível (aparelho já pode estar conectado ou nenhum QR foi gerado ainda).' });
+  }
+
+  return res.sendFile(qrPath);
 });
 
 // Send message endpoint
