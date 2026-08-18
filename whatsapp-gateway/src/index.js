@@ -3,7 +3,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { connectToWhatsApp, getWhatsAppSocket } from './whatsapp.js';
+import { connectToWhatsApp, getWhatsAppSocket, resetWhatsAppSession, getActiveQrCode } from './whatsapp.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -198,6 +198,78 @@ app.post('/send-message', async (req, res) => {
     console.error('Erro ao enviar mensagem:', err?.message || 'Erro desconhecido');
     return res.status(500).json({ error: 'Erro interno ao enviar a mensagem pelo WhatsApp.' });
   }
+});
+
+// GET /status administrative route
+app.get('/status', (req, res) => {
+  // Authorization check (header only)
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.GATEWAY_API_KEY;
+
+  if (!expectedKey || apiKey !== expectedKey) {
+    return res.status(401).json({ error: 'Acesso não autorizado. Chave de API ausente ou inválida.' });
+  }
+
+  const socket = getWhatsAppSocket();
+  
+  if (!socket || !socket.user) {
+    return res.json({
+      connected: false,
+      number: null,
+      name: null
+    });
+  }
+
+  const jid = socket.user.id || '';
+  // Parse clean number from JID (e.g. 5515981360306@s.whatsapp.net or 5515981360306:2@s.whatsapp.net)
+  const number = jid ? jid.split('@')[0].split(':')[0] : null;
+  const name = socket.user.name || null;
+
+  return res.json({
+    connected: true,
+    number: number,
+    name: name
+  });
+});
+
+// POST /logout administrative route
+app.post('/logout', async (req, res) => {
+  // Authorization check (header only)
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.GATEWAY_API_KEY;
+
+  if (!expectedKey || apiKey !== expectedKey) {
+    return res.status(401).json({ error: 'Acesso não autorizado. Chave de API ausente ou inválida.' });
+  }
+
+  try {
+    await resetWhatsAppSession();
+    return res.json({
+      success: true,
+      message: 'Sessão deslogada e credenciais locais limpas com sucesso.'
+    });
+  } catch (err) {
+    console.error('Erro ao deslogar sessão:', err?.message || 'Erro desconhecido');
+    return res.status(500).json({ error: 'Erro interno ao realizar o logout.' });
+  }
+});
+
+// GET /qr-code administrative route
+app.get('/qr-code', (req, res) => {
+  // Authorization check (header only)
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.GATEWAY_API_KEY;
+
+  if (!expectedKey || apiKey !== expectedKey) {
+    return res.status(401).json({ error: 'Acesso não autorizado. Chave de API ausente ou inválida.' });
+  }
+
+  const qr = getActiveQrCode();
+
+  return res.json({
+    available: !!qr,
+    qr: qr || null
+  });
 });
 
 app.listen(port, async () => {

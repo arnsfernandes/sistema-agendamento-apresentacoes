@@ -3,6 +3,7 @@ import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeys
 import logger from '@whiskeysockets/baileys/lib/Utils/logger.js';
 import QRCode from 'qrcode';
 import pino from 'pino';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,9 +14,15 @@ const __dirname = path.dirname(__filename);
 
 let socket = null;
 let isConnected = false;
+let isResetting = false;
+let activeQrCode = null;
 
 export function getWhatsAppSocket() {
   return isConnected ? socket : null;
+}
+
+export function getActiveQrCode() {
+  return activeQrCode;
 }
 
 export async function connectToWhatsApp() {
@@ -34,6 +41,7 @@ export async function connectToWhatsApp() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
+      activeQrCode = qr;
       console.log(`[${new Date().toLocaleTimeString()}] Novo QR gerado`);
 
       const qrPath = path.join(__dirname, '../whatsapp-qr.png');
@@ -48,6 +56,7 @@ export async function connectToWhatsApp() {
       console.log('WhatsApp connection state: connecting');
     } else if (connection === 'open') {
       isConnected = true;
+      activeQrCode = null;
       console.log('WhatsApp connection state: connected');
     } else if (connection === 'close') {
       isConnected = false;
@@ -56,11 +65,11 @@ export async function connectToWhatsApp() {
       console.log(`WhatsApp connection state: disconnected (StatusCode: ${statusCode}, Erro: ${errorMessage})`);
       
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      if (shouldReconnect) {
+      if (shouldReconnect && !isResetting) {
         console.log('Attempting to reconnect...');
         connectToWhatsApp();
       } else {
-        console.log('Connection closed. Logged out.');
+        console.log('Connection closed. Logged out or resetting.');
       }
     }
   });
@@ -77,4 +86,55 @@ export async function connectToWhatsApp() {
 
   socket = sock;
   return sock;
+}
+
+export async function resetWhatsAppSession() {
+  console.log('Resetting WhatsApp session...');
+  isResetting = true;
+  activeQrCode = null;
+
+  if (socket) {
+    try {
+      if (isConnected) {
+        await socket.logout();
+      }
+    } catch (err) {
+      console.error('Error during Baileys socket.logout():', err?.message || 'Erro desconhecido');
+    }
+    try {
+      socket.end();
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  socket = null;
+  isConnected = false;
+
+  const authPath = process.env.WHATSAPP_AUTH_DIR
+    ? path.resolve(process.env.WHATSAPP_AUTH_DIR)
+    : path.join(__dirname, '../auth_info_baileys');
+
+  if (fs.existsSync(authPath)) {
+    try {
+      fs.rmSync(authPath, { recursive: true, force: true });
+      console.log(`Directory ${authPath} cleared successfully.`);
+    } catch (err) {
+      console.error('Error clearing auth directory:', err?.message || 'Erro desconhecido');
+    }
+  }
+
+  const qrPath = path.join(__dirname, '../whatsapp-qr.png');
+  if (fs.existsSync(qrPath)) {
+    try {
+      fs.unlinkSync(qrPath);
+      console.log('Current QR image removed.');
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  isResetting = false;
+  console.log('Starting new WhatsApp connection...');
+  await connectToWhatsApp();
 }
