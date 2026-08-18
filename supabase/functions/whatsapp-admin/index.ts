@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     // 2. Parse Request Payload
     const { action } = await req.json().catch(() => ({ action: null }))
 
-    if (action !== 'status' && action !== 'qr' && action !== 'logout') {
+    if (action !== 'status' && action !== 'qr' && action !== 'logout' && action !== 'disconnect') {
       return Response.json(
         { error: 'Ação não informada ou não suportada.' },
         { status: 400, headers: corsHeaders }
@@ -178,8 +178,7 @@ Deno.serve(async (req) => {
         },
         { headers: corsHeaders }
       )
-    } else {
-      // action === 'logout'
+    } else if (action === 'logout') {
       const response = await fetch(`${server_url}/logout`, {
         method: 'POST',
         headers: {
@@ -201,6 +200,32 @@ Deno.serve(async (req) => {
         {
           success: true,
           message: logoutData.message || 'Sessão deslogada e credenciais locais limpas com sucesso.'
+        },
+        { headers: corsHeaders }
+      )
+    } else {
+      // action === 'disconnect'
+      const response = await fetch(`${server_url}/disconnect`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': token,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        return Response.json(
+          { error: 'Não foi possível realizar a desconexão da instância do WhatsApp.' },
+          { status: response.status, headers: corsHeaders }
+        )
+      }
+
+      const disconnectData = await response.json()
+
+      return Response.json(
+        {
+          success: true,
+          message: disconnectData.message || 'Sessão deslogada e instância mantida offline com sucesso.'
         },
         { headers: corsHeaders }
       )
