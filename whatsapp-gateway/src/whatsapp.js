@@ -65,6 +65,14 @@ export async function connectToWhatsApp() {
 
   sock.ev.on('creds.update', saveCreds);
 
+  sock.ev.on('messages.update', (updates) => {
+    for (const update of updates) {
+      if (update.update && typeof update.update.status === 'number') {
+        console.log(`[Message Update] Message ID ${update.key.id} status changed to ${update.update.status}`);
+      }
+    }
+  });
+
   socket = sock;
   return sock;
 }

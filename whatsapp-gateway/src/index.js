@@ -179,12 +179,20 @@ app.post('/send-message', async (req, res) => {
   }
 
   try {
-    const jid = `${number}@s.whatsapp.net`;
-    const sent = await socket.sendMessage(jid, { text: text.trim() });
+    // Check if the number exists on WhatsApp and get the correct JID
+    const jidCheck = await socket.onWhatsApp(number);
+    if (!jidCheck || jidCheck.length === 0 || !jidCheck[0].exists) {
+      return res.status(404).json({ error: 'O número informado não está cadastrado no WhatsApp.' });
+    }
+    const targetJid = jidCheck[0].jid;
+
+    const sent = await socket.sendMessage(targetJid, { text: text.trim() });
+    const messageId = sent?.key?.id;
+    console.log(`[Send Message] Mensagem enviada com sucesso. ID: ${messageId}`);
     
     return res.json({
       success: true,
-      messageId: sent?.key?.id
+      messageId: messageId
     });
   } catch (err) {
     console.error('Erro ao enviar mensagem:', err);
