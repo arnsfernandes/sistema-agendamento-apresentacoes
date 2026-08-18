@@ -3,7 +3,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { connectToWhatsApp, getWhatsAppSocket, resetWhatsAppSession, getActiveQrCode } from './whatsapp.js';
+import { connectToWhatsApp, getWhatsAppSocket, resetWhatsAppSession, getActiveQrCode, isManuallyDisconnected, disconnectWhatsAppSession } from './whatsapp.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -254,6 +254,28 @@ app.post('/logout', async (req, res) => {
   }
 });
 
+// POST /disconnect administrative route
+app.post('/disconnect', async (req, res) => {
+  // Authorization check (header only)
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.GATEWAY_API_KEY;
+
+  if (!expectedKey || apiKey !== expectedKey) {
+    return res.status(401).json({ error: 'Acesso não autorizado. Chave de API ausente ou inválida.' });
+  }
+
+  try {
+    await disconnectWhatsAppSession();
+    return res.json({
+      success: true,
+      message: 'Sessão deslogada e instância mantida offline com sucesso.'
+    });
+  } catch (err) {
+    console.error('Erro ao desconectar sessão:', err?.message || 'Erro desconhecido');
+    return res.status(500).json({ error: 'Erro interno ao realizar a desconexão.' });
+  }
+});
+
 // GET /qr-code administrative route
 app.get('/qr-code', (req, res) => {
   // Authorization check (header only)
@@ -274,6 +296,10 @@ app.get('/qr-code', (req, res) => {
 
 app.listen(port, async () => {
   console.log(`WhatsApp Gateway listening on port ${port}`);
+  if (isManuallyDisconnected()) {
+    console.log('WhatsApp is manually disconnected. Staying offline.');
+    return;
+  }
   try {
     await connectToWhatsApp();
   } catch (err) {

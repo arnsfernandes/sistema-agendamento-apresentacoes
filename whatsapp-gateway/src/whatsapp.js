@@ -17,6 +17,32 @@ let isConnected = false;
 let isResetting = false;
 let activeQrCode = null;
 
+export function getAuthPath() {
+  return process.env.WHATSAPP_AUTH_DIR
+    ? path.resolve(process.env.WHATSAPP_AUTH_DIR)
+    : path.join(__dirname, '../auth_info_baileys');
+}
+
+export function isManuallyDisconnected() {
+  const markerPath = path.join(getAuthPath(), '.disconnected');
+  return fs.existsSync(markerPath);
+}
+
+export function setManuallyDisconnected(value) {
+  const authPath = getAuthPath();
+  const markerPath = path.join(authPath, '.disconnected');
+  if (value) {
+    if (!fs.existsSync(authPath)) {
+      fs.mkdirSync(authPath, { recursive: true });
+    }
+    fs.writeFileSync(markerPath, 'true');
+  } else {
+    if (fs.existsSync(markerPath)) {
+      fs.unlinkSync(markerPath);
+    }
+  }
+}
+
 export function getWhatsAppSocket() {
   return isConnected ? socket : null;
 }
@@ -26,9 +52,8 @@ export function getActiveQrCode() {
 }
 
 export async function connectToWhatsApp() {
-  const authPath = process.env.WHATSAPP_AUTH_DIR
-    ? path.resolve(process.env.WHATSAPP_AUTH_DIR)
-    : path.join(__dirname, '../auth_info_baileys');
+  setManuallyDisconnected(false);
+  const authPath = getAuthPath();
   const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
   const sock = makeWASocket({
@@ -65,11 +90,11 @@ export async function connectToWhatsApp() {
       console.log(`WhatsApp connection state: disconnected (StatusCode: ${statusCode}, Erro: ${errorMessage})`);
       
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      if (shouldReconnect && !isResetting) {
+      if (shouldReconnect && !isResetting && !isManuallyDisconnected()) {
         console.log('Attempting to reconnect...');
         connectToWhatsApp();
       } else {
-        console.log('Connection closed. Logged out or resetting.');
+        console.log('Connection closed. Logged out, resetting, or manually disconnected.');
       }
     }
   });
@@ -137,4 +162,54 @@ export async function resetWhatsAppSession() {
   isResetting = false;
   console.log('Starting new WhatsApp connection...');
   await connectToWhatsApp();
+}
+
+export async function disconnectWhatsAppSession() {
+  console.log('Disconnecting WhatsApp session completely...');
+  setManuallyDisconnected(true);
+  activeQrCode = null;
+
+  if (socket) {
+    try {
+      if (isConnected) {
+        await socket.logout();
+      }
+    } catch (err) {
+      console.error('Error during Baileys socket.logout():', err?.message || 'Erro desconhecido');
+    }
+    try {
+      socket.end();
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  socket = null;
+  isConnected = false;
+
+  const authPath = getAuthPath();
+
+  if (fs.existsSync(authPath)) {
+    try {
+      fs.rmSync(authPath, { recursive: true, force: true });
+      console.log(`Directory ${authPath} cleared successfully.`);
+    } catch (err) {
+      console.error('Error clearing auth directory:', err?.message || 'Erro desconhecido');
+    }
+  }
+
+  // Restore directory and write the .disconnected flag back
+  setManuallyDisconnected(true);
+
+  const qrPath = path.join(__dirname, '../whatsapp-qr.png');
+  if (fs.existsSync(qrPath)) {
+    try {
+      fs.unlinkSync(qrPath);
+      console.log('Current QR image removed.');
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  console.log('WhatsApp connection terminated and offline state persisted.');
 }
