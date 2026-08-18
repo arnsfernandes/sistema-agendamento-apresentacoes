@@ -33,6 +33,7 @@ export default function GoogleSettings({
 
   const defaultReminderTemplate = "Olá! Este é um lembrete da sua reunião agendada para o dia {data}, às {hora}.\n\nParticipantes confirmados:\n{participantes}\n\nPara acessar a reunião:\n{meet}"
   const [reminderMessage, setReminderMessage] = useState(user?.user_metadata?.custom_reminder_message || defaultReminderTemplate)
+  const [reminderWithoutParticipants, setReminderWithoutParticipants] = useState(!!user?.user_metadata?.reminder_without_participants)
   const [isSavingMessage, setIsSavingMessage] = useState(false)
   const [messageError, setMessageError] = useState(null)
   const [messageSuccess, setMessageSuccess] = useState(null)
@@ -49,14 +50,15 @@ export default function GoogleSettings({
       const { error } = await supabase.auth.updateUser({
         data: {
           ...user?.user_metadata,
-          custom_reminder_message: reminderMessage
+          custom_reminder_message: reminderMessage,
+          reminder_without_participants: reminderWithoutParticipants
         }
       })
       if (error) throw error
-      setMessageSuccess("Mensagem de lembrete salva com sucesso!")
+      setMessageSuccess("Configurações de mensagem salvas com sucesso!")
     } catch (err) {
-      console.error('Erro ao salvar mensagem de lembrete:', err)
-      setMessageError(err.message || 'Erro ao salvar a mensagem.')
+      console.error('Erro ao salvar configurações de mensagem:', err)
+      setMessageError(err.message || 'Erro ao salvar as configurações.')
     } finally {
       setIsSavingMessage(false)
     }
@@ -71,9 +73,21 @@ export default function GoogleSettings({
       .replace(/{meet}/g, "https://meet.google.com/abc-defg-hij")
   }
 
+  const getPreviewWithoutParticipants = () => {
+    if (!reminderMessage) return ""
+    let msg = reminderMessage
+      .replace(/Participantes confirmados:\s*\{participantes\}\s*/gi, "")
+      .replace(/{data}/g, "20/08/2026")
+      .replace(/{hora}/g, "14:00")
+      .replace(/{meet}/g, "https://meet.google.com/abc-defg-hij")
+    
+    return msg.replace(/\n{3,}/g, "\n\n").trim()
+  }
+
   useEffect(() => {
     if (user) {
       setReminderMessage(user?.user_metadata?.custom_reminder_message || defaultReminderTemplate)
+      setReminderWithoutParticipants(!!user?.user_metadata?.reminder_without_participants)
     }
   }, [user])
 
@@ -844,6 +858,32 @@ export default function GoogleSettings({
               />
             </div>
 
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.25rem 0' }}>
+              <input
+                type="checkbox"
+                id="reminder-without-participants"
+                checked={reminderWithoutParticipants}
+                onChange={(e) => setReminderWithoutParticipants(e.target.checked)}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  cursor: 'pointer',
+                  accentColor: 'var(--accent-color, #3b82f6)'
+                }}
+              />
+              <label
+                htmlFor="reminder-without-participants"
+                style={{
+                  fontSize: '0.875rem',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+                Enviar lembrete mesmo sem participantes confirmados
+              </label>
+            </div>
+
              <div style={{
               padding: '0.75rem 1rem',
               backgroundColor: 'var(--accent-glow)',
@@ -893,6 +933,36 @@ export default function GoogleSettings({
                 {getPreviewMessage()}
               </div>
             </div>
+
+            {reminderWithoutParticipants && (
+              <div style={{
+                padding: '1rem',
+                borderRadius: '8px',
+                border: '1px dashed var(--border-color)',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Como ficará sem participantes
+                </span>
+                <div style={{
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'inherit',
+                  fontSize: '0.875rem',
+                  lineHeight: '1.5',
+                  color: 'var(--text-primary)',
+                  padding: '0.75rem',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.15)',
+                  border: '1px solid var(--border-color)',
+                  wordBreak: 'break-word'
+                }}>
+                  {getPreviewWithoutParticipants()}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
