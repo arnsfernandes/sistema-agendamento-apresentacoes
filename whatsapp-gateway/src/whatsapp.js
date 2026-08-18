@@ -1,9 +1,12 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import logger from '@whiskeysockets/baileys/lib/Utils/logger.js';
 import QRCode from 'qrcode';
 import pino from 'pino';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+logger.level = 'error';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
