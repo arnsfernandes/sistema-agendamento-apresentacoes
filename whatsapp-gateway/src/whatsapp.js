@@ -32,9 +32,7 @@ export async function connectToWhatsApp() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log('\n--- WhatsApp QR Code ---');
-      qrcode.generate(qr, { small: true });
-      console.log('Por favor, escaneie o código acima usando o WhatsApp no seu celular.');
+      console.log(`[${new Date().toLocaleTimeString()}] Novo QR gerado`);
 
       const qrPath = path.join(__dirname, '../whatsapp-qr.png');
       QRCode.toFile(qrPath, qr, (err) => {
@@ -51,9 +49,11 @@ export async function connectToWhatsApp() {
       console.log('WhatsApp connection state: connected');
     } else if (connection === 'close') {
       isConnected = false;
-      console.log('WhatsApp connection state: disconnected');
+      const statusCode = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.status || 'desconhecido';
+      const errorMessage = lastDisconnect?.error?.message || lastDisconnect?.error || 'sem detalhes';
+      console.log(`WhatsApp connection state: disconnected (StatusCode: ${statusCode}, Erro: ${errorMessage})`);
       
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
       if (shouldReconnect) {
         console.log('Attempting to reconnect...');
         connectToWhatsApp();
