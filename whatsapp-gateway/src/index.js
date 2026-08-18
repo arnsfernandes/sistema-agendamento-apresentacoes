@@ -20,8 +20,8 @@ app.get('/health', (req, res) => {
 
 // QR Code route
 app.get('/qr', (req, res) => {
-  // Authorization check
-  const apiKey = req.headers['x-api-key'];
+  // Authorization check (support header or query param)
+  const apiKey = req.headers['x-api-key'] || req.query.key;
   const expectedKey = process.env.GATEWAY_API_KEY;
 
   if (!expectedKey || apiKey !== expectedKey) {
@@ -37,10 +37,118 @@ app.get('/qr', (req, res) => {
   return res.sendFile(qrPath);
 });
 
+// Pair device HTML route
+app.get('/pair', (req, res) => {
+  const apiKey = req.headers['x-api-key'] || req.query.key;
+  const expectedKey = process.env.GATEWAY_API_KEY;
+
+  if (!expectedKey || apiKey !== expectedKey) {
+    return res.status(401).send('Acesso não autorizado. Chave de API ausente ou inválida.');
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>WhatsApp Gateway - Pareamento</title>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          background: #f0f2f5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          margin: 0;
+        }
+        .container {
+          background: white;
+          padding: 2.5rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          text-align: center;
+          max-width: 400px;
+          width: 100%;
+        }
+        h1 {
+          color: #00a884;
+          font-size: 1.8rem;
+          margin-bottom: 1rem;
+        }
+        .status {
+          font-weight: bold;
+          margin-bottom: 1.5rem;
+          padding: 8px 12px;
+          border-radius: 4px;
+        }
+        .status.connected {
+          background-color: #d1e7dd;
+          color: #0f5132;
+        }
+        .status.disconnected {
+          background-color: #f8d7da;
+          color: #842029;
+        }
+        img {
+          max-width: 250px;
+          border: 1px solid #ccc;
+          padding: 10px;
+          background: white;
+          margin: 1rem 0;
+        }
+        .info {
+          font-size: 0.9rem;
+          color: #667781;
+          margin-top: 1rem;
+        }
+      </style>
+      <script>
+        async function checkStatus() {
+          try {
+            const qrRes = await fetch('/qr?key=${apiKey}', { method: 'HEAD' });
+            const statusEl = document.getElementById('status');
+            const qrContainer = document.getElementById('qr-container');
+
+            if (qrRes.status === 200) {
+              statusEl.className = 'status disconnected';
+              statusEl.innerText = 'Desconectado - Escaneie o QR Code';
+              document.getElementById('qr-img').src = '/qr?key=${apiKey}&t=' + new Date().getTime();
+              qrContainer.style.display = 'block';
+            } else {
+              statusEl.className = 'status connected';
+              statusEl.innerText = 'Conectado com Sucesso!';
+              qrContainer.style.display = 'none';
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        
+        setInterval(checkStatus, 3000);
+        window.onload = checkStatus;
+      </script>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Meety WhatsApp Gateway</h1>
+        <div id="status" class="status disconnected">Verificando conexão...</div>
+        <div id="qr-container" style="display: none;">
+          <img id="qr-img" src="" alt="WhatsApp QR Code">
+          <p class="info">Abra o WhatsApp > Aparelhos Conectados > Conectar um Aparelho</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  res.send(html);
+});
+
 // Send message endpoint
 app.post('/send-message', async (req, res) => {
-  // Authorization check
-  const apiKey = req.headers['x-api-key'];
+  // Authorization check (support header or query param)
+  const apiKey = req.headers['x-api-key'] || req.query.key;
   const expectedKey = process.env.GATEWAY_API_KEY;
 
   if (!expectedKey || apiKey !== expectedKey) {
