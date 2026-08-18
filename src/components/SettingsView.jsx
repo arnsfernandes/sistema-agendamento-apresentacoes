@@ -30,13 +30,30 @@ export default function GoogleSettings({
 }) {
   const [activeSubTab, setActiveSubTab] = useState('conta')
   const [isEditing, setIsEditing] = useState(false)
+  const formatWhatsapp = (val) => {
+    if (!val) return ''
+    let clean = val.replace(/\D/g, '')
+    if (clean.startsWith('55') && clean.length === 13) {
+      clean = clean.slice(2)
+    }
+    if (clean.length > 7) {
+      return `(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7, 11)}`
+    }
+    if (clean.length > 2) {
+      return `(${clean.slice(0, 2)}) ${clean.slice(2)}`
+    }
+    return clean ? `(${clean}` : ''
+  }
+
   const [newName, setNewName] = useState(user?.user_metadata?.name || '')
+  const [newWhatsapp, setNewWhatsapp] = useState(formatWhatsapp(user?.user_metadata?.whatsapp_number || ''))
   const [isSaving, setIsSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
   const [successMsg, setSuccessMsg] = useState(null)
 
   useEffect(() => {
     setNewName(user?.user_metadata?.name || '')
+    setNewWhatsapp(formatWhatsapp(user?.user_metadata?.whatsapp_number || ''))
   }, [user])
 
   const [avatarLoading, setAvatarLoading] = useState(false)
@@ -142,9 +159,30 @@ export default function GoogleSettings({
     setSuccessMsg(null)
   }
 
+  const handleWhatsappChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '')
+    if (value.startsWith('55') && value.length === 13) {
+      value = value.slice(2)
+    }
+    if (value.length > 11) value = value.slice(0, 11)
+    
+    let formatted = ''
+    if (value.length > 0) {
+      formatted += `(${value.slice(0, 2)}`
+    }
+    if (value.length > 2) {
+      formatted += `) ${value.slice(2, 7)}`
+    }
+    if (value.length > 7) {
+      formatted += `-${value.slice(7, 11)}`
+    }
+    setNewWhatsapp(formatted || value)
+  }
+
   const handleCancel = () => {
     setIsEditing(false)
     setNewName(user?.user_metadata?.name || '')
+    setNewWhatsapp(formatWhatsapp(user?.user_metadata?.whatsapp_number || ''))
     setErrorMsg(null)
   }
 
@@ -199,18 +237,33 @@ export default function GoogleSettings({
     setErrorMsg(null)
     setSuccessMsg(null)
     setIsSaving(true)
+
+    let normalizedWhatsapp = null
+    if (newWhatsapp) {
+      const cleanWhatsapp = newWhatsapp.replace(/\D/g, '')
+      if (cleanWhatsapp.length !== 11 || cleanWhatsapp[2] !== '9') {
+        setErrorMsg('Informe um número de WhatsApp válido.')
+        setIsSaving(false)
+        return
+      }
+      normalizedWhatsapp = `55${cleanWhatsapp}`
+    }
+
     try {
       const { error } = await supabase.auth.updateUser({
-        data: { name: newName }
+        data: { 
+          name: newName,
+          whatsapp_number: normalizedWhatsapp
+        }
       })
       if (error) {
         setErrorMsg(error.message)
       } else {
-        setSuccessMsg('Nome atualizado com sucesso!')
+        setSuccessMsg('Dados atualizados com sucesso!')
         setIsEditing(false)
       }
     } catch {
-      setErrorMsg('Erro ao atualizar o nome.')
+      setErrorMsg('Erro ao atualizar os dados.')
     } finally {
       setIsSaving(false)
     }
@@ -343,6 +396,17 @@ export default function GoogleSettings({
               className="form-input"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
+              disabled={!isEditing || isSaving}
+            />
+          </div>
+          <div>
+            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-secondary)' }}>WhatsApp</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="(11) 99999-9999"
+              value={newWhatsapp}
+              onChange={handleWhatsappChange}
               disabled={!isEditing || isSaving}
             />
           </div>

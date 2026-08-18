@@ -9,6 +9,8 @@ export default function AuthView({
   setEmail,
   password,
   setPassword,
+  whatsapp,
+  setWhatsapp,
   newPassword,
   setNewPassword,
   confirmPassword,
@@ -23,6 +25,23 @@ export default function AuthView({
   handleForgotPasswordSubmit,
   handleUpdatePasswordSubmit
 }) {
+  const handleWhatsappChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '')
+    if (value.length > 11) value = value.slice(0, 11)
+    
+    let formatted = ''
+    if (value.length > 0) {
+      formatted += `(${value.slice(0, 2)}`
+    }
+    if (value.length > 2) {
+      formatted += `) ${value.slice(2, 7)}`
+    }
+    if (value.length > 7) {
+      formatted += `-${value.slice(7, 11)}`
+    }
+    setWhatsapp(formatted || value)
+  }
+
   const getFormTitle = () => {
     switch (authMode) {
       case 'signup': return 'Criar Conta'
@@ -70,18 +89,31 @@ export default function AuthView({
         </div>
         <form className="login-form" onSubmit={getSubmitHandler()}>
           {authMode === 'signup' && (
-            <div className="form-group">
-              <label className="form-label">Nome</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Seu nome"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={loginLoading}
-              />
-            </div>
+            <>
+              <div className="form-group">
+                <label className="form-label">Nome</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Seu nome"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  disabled={loginLoading}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">WhatsApp</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="(11) 99999-9999"
+                  value={whatsapp}
+                  onChange={handleWhatsappChange}
+                  disabled={loginLoading}
+                />
+              </div>
+            </>
           )}
           
           {authMode !== 'update_password' && (

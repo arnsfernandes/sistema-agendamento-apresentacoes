@@ -268,6 +268,7 @@ function App() {
   const [loginSuccess, setLoginSuccess] = useState(null)
   const [loginLoading, setLoginLoading] = useState(false)
   const [name, setName] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
@@ -292,12 +293,26 @@ function App() {
     setLoginError(null)
     setLoginSuccess(null)
     setLoginLoading(true)
+
+    // WhatsApp validation and normalization (DDI 55 + DDD + 9 digits) - optional field
+    let normalizedWhatsapp = null
+    if (whatsapp) {
+      const cleanWhatsapp = whatsapp.replace(/\D/g, '')
+      if (cleanWhatsapp.length !== 11 || cleanWhatsapp[2] !== '9') {
+        setLoginError('Informe um número de WhatsApp válido.')
+        setLoginLoading(false)
+        return
+      }
+      normalizedWhatsapp = `55${cleanWhatsapp}`
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          name: name
+          name: name,
+          ...(normalizedWhatsapp ? { whatsapp_number: normalizedWhatsapp } : {})
         }
       }
     })
@@ -307,6 +322,7 @@ function App() {
       setLoginSuccess('Cadastro realizado! Verifique seu e-mail para confirmar sua conta antes de entrar.')
       setAuthMode('login')
       setName('')
+      setWhatsapp('')
       setEmail('')
       setPassword('')
     }
@@ -1200,6 +1216,8 @@ function App() {
         setEmail={setEmail}
         password={password}
         setPassword={setPassword}
+        whatsapp={whatsapp}
+        setWhatsapp={setWhatsapp}
         newPassword={newPassword}
         setNewPassword={setNewPassword}
         confirmPassword={confirmPassword}
