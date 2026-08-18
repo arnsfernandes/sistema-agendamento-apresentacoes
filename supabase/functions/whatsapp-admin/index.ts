@@ -47,6 +47,14 @@ Deno.serve(async (req) => {
       )
     }
 
+    // 1.1 Authorization: allow only the specific admin email
+    if (user.email !== 'webychatsistema@gmail.com') {
+      return Response.json(
+        { error: 'Acesso não autorizado.' },
+        { status: 403, headers: corsHeaders }
+      )
+    }
+
     // 2. Parse Request Payload
     const { action } = await req.json().catch(() => ({ action: null }))
 
