@@ -195,7 +195,7 @@ app.post('/send-message', async (req, res) => {
       messageId: messageId
     });
   } catch (err) {
-    console.error('Erro ao enviar mensagem:', err);
+    console.error('Erro ao enviar mensagem:', err?.message || 'Erro desconhecido');
     return res.status(500).json({ error: 'Erro interno ao enviar a mensagem pelo WhatsApp.' });
   }
 });
@@ -205,6 +205,6 @@ app.listen(port, async () => {
   try {
     await connectToWhatsApp();
   } catch (err) {
-    console.error('Failed to initialize WhatsApp connection:', err);
+    console.error('Failed to initialize WhatsApp connection:', err?.message || 'Erro desconhecido');
   }
 });

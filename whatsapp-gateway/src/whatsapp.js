@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
-import qrcode from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import pino from 'pino';
 import path from 'path';
@@ -50,7 +49,7 @@ export async function connectToWhatsApp() {
     } else if (connection === 'close') {
       isConnected = false;
       const statusCode = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.status || 'desconhecido';
-      const errorMessage = lastDisconnect?.error?.message || lastDisconnect?.error || 'sem detalhes';
+      const errorMessage = lastDisconnect?.error?.message || (lastDisconnect?.error ? 'Erro na conexão' : 'sem detalhes');
       console.log(`WhatsApp connection state: disconnected (StatusCode: ${statusCode}, Erro: ${errorMessage})`);
       
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
