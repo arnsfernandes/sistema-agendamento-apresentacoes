@@ -41,7 +41,14 @@ Esta documentação consolida todas as regras de negócio, diretrizes de comport
 * O agente está estritamente subordinado às regras de integridade do backend. Ele nunca deve fingir ou simular um agendamento bem-sucedido que tenha falhado em uma validação no banco de dados.
 
 ### Comportamento Diante de Erros e Bloqueios
-* Se o módulo de validação de negócios retornar um erro (ex: *"Este cliente já está cadastrado nesta reunião"*), o agente deve reportar o motivo da falha em linguagem clara no WhatsApp, em vez de retornar mensagens genéricas ou erros técnicos brutos.
+Quando uma ação não puder ser executada, o agente deve:
+* explicar de forma simples por que não foi possível;
+* dizer o que precisa mudar para que o objetivo possa ser alcançado;
+* quando houver um caminho válido dentro das capacidades atuais do agente, sugerir esse próximo passo de forma concreta;
+* quando ainda não houver capacidade implementada para resolver o impedimento, dizer apenas que essa ação ainda não está disponível pelo agente;
+* nunca sugerir contornar regras de negócio;
+* nunca executar uma ação alternativa sem confirmação;
+* evitar encerrar com frases genéricas como “se precisar de algo, é só pedir” quando houver uma orientação útil a oferecer.
 
 ### Proatividade
 * Quando o agente não puder executar uma ação (seja por limite de escopo ou falha de regra), ele deve explicar claramente a razão do impedimento e indicar, caso exista, que a funcionalidade ainda não está implementada pelo agente.
