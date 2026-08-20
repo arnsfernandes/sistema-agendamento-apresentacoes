@@ -169,6 +169,30 @@ export async function connectToWhatsApp() {
 - Google Integrado: ${data.has_google_integration ? 'Sim' : 'Não'}
 - Mensagem: "${text.trim()}"`);
 
+        if (data.user_id) {
+          const agentResponse = await fetch(`${supabaseUrl}/functions/v1/whatsapp-agent`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': `Bearer ${anonKey}`,
+              'x-gateway-secret': gatewaySecret || ''
+            },
+            body: JSON.stringify({ userId: data.user_id, text: text })
+          });
+
+          if (!agentResponse.ok) {
+            console.error(`[WhatsApp Gateway] Erro ao invocar whatsapp-agent. Status: ${agentResponse.status}`);
+            continue;
+          }
+
+          const agentData = await agentResponse.json();
+          if (agentData.responseText) {
+            await sock.sendMessage(jid, { text: agentData.responseText });
+            console.log(`[WhatsApp Agent Sent] Mensagem enviada para ${maskedPhone}: "${agentData.responseText.replace(/\n/g, ' ')}"`);
+          }
+        }
+
       } catch (err) {
         console.error('[WhatsApp Gateway] Erro ao chamar Edge Function:', err.message || err);
       }

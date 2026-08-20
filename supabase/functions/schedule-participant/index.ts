@@ -1,6 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-
-const TIME_ZONE = 'America/Sao_Paulo'
+import { scheduleParticipant } from '../_shared/scheduling.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,44 +11,6 @@ const jsonResponse = (body: Record<string, any>, status = 200) => {
     status,
     headers: corsHeaders,
   })
-}
-
-const getSaoPauloDateTime = (date = new Date()) => {
-  const formatter = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23'
-  })
-  return formatter.format(date).replace(' ', 'T')
-}
-
-const isPresentationPast = (meeting: any) => {
-  if (!meeting) return false
-  const timeToCheck = meeting.horario_fim || meeting.horario
-  if (!timeToCheck) return false
-
-  const parts = timeToCheck.split(':')
-  const normalizedTime = parts.length === 2 ? `${timeToCheck}:00` : timeToCheck
-
-  const meetingDateTimeStr = `${meeting.data}T${normalizedTime}`
-  const nowDateTimeStr = getSaoPauloDateTime()
-  return meetingDateTimeStr < nowDateTimeStr
-}
-
-const isPresentationFuture = (meeting: any) => {
-  if (!meeting) return false
-  const timeToCheck = meeting.horario || '00:00'
-  const parts = timeToCheck.split(':')
-  const normalizedTime = parts.length === 2 ? `${timeToCheck}:00` : timeToCheck
-
-  const meetingDateTimeStr = `${meeting.data}T${normalizedTime}`
-  const nowDateTimeStr = getSaoPauloDateTime()
-  return meetingDateTimeStr > nowDateTimeStr
 }
 
 Deno.serve(async (req) => {
@@ -110,129 +71,19 @@ Deno.serve(async (req) => {
 
     const googleIntegracaoId = integration.id
 
-    // 3. Fetch presentation to validate
-    const { data: meeting, error: meetingError } = await supabaseAdmin
-      .from('apresentacoes')
-      .select('id, data, horario, horario_fim, user_id, google_integracao_id')
-      .eq('id', meetingId)
-      .eq('user_id', userId)
-      .eq('google_integracao_id', googleIntegracaoId)
-      .maybeSingle()
+    // 3. Call shared scheduling rules
+    const result = await scheduleParticipant(
+      supabaseAdmin,
+      userId,
+      googleIntegracaoId,
+      meetingId,
+      participantData
+    )
 
-    if (meetingError || !meeting) {
-      return jsonResponse({ error: 'Apresentação comercial não encontrada.' }, 404)
-    }
-
-    // Validate if the presentation has already passed
-    if (isPresentationPast(meeting)) {
-      return jsonResponse({ error: 'Não é possível alterar uma apresentação que já ocorreu.' }, 400)
-    }
-
-    // 4. Find or create client
-    let { data: client, error: clientError } = await supabaseAdmin
-      .from('clientes')
-      .select('id, nome, telefone, agencia')
-      .eq('telefone', participantData.telefone)
-      .eq('user_id', userId)
-      .eq('google_integracao_id', googleIntegracaoId)
-      .maybeSingle()
-
-    if (clientError) {
-      return jsonResponse({ error: 'Erro ao buscar cliente.' }, 500)
-    }
-
-    if (!client) {
-      const { data: newClient, error: createError } = await supabaseAdmin
-        .from('clientes')
-        .insert([{
-          nome: participantData.nome,
-          telefone: participantData.telefone,
-          agencia: participantData.agencia,
-          user_id: userId,
-          google_integracao_id: googleIntegracaoId
-        }])
-        .select('id, nome, telefone, agencia')
-        .single()
-
-      if (createError) {
-        return jsonResponse({ error: 'Erro ao cadastrar novo cliente.' }, 500)
-      }
-      client = newClient
-    }
-
-    // 5. Verify existing participation on the same presentation
-    const { data: existingPart, error: existingPartError } = await supabaseAdmin
-      .from('participacoes')
-      .select('id, status')
-      .eq('cliente_id', client.id)
-      .eq('apresentacao_id', meetingId)
-      .maybeSingle()
-
-    if (existingPartError) {
-      return jsonResponse({ error: 'Erro ao verificar participação existente.' }, 500)
-    }
-
-    if (existingPart) {
-      if (existingPart.status === 'ativo') {
-        return jsonResponse({ error: 'Este cliente já está cadastrado nesta reunião.' }, 400)
-      } else {
-        return jsonResponse({ error: 'Este cliente já possui uma participação cancelada nesta reunião.' }, 400)
-      }
-    }
-
-    // 6. Verify if the client has any active participation in other future presentations
-    const { data: otherParticipations, error: otherPartError } = await supabaseAdmin
-      .from('participacoes')
-      .select(`
-        id,
-        status,
-        apresentacoes!inner (
-          id,
-          data,
-          horario,
-          horario_fim,
-          user_id,
-          google_integracao_id
-        )
-      `)
-      .eq('cliente_id', client.id)
-      .eq('status', 'ativo')
-      .neq('apresentacao_id', meetingId)
-      .eq('apresentacoes.user_id', userId)
-      .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
-
-    if (otherPartError) {
-      return jsonResponse({ error: 'Erro ao verificar outras participações do cliente.' }, 500)
-    }
-
-    const hasFuture = (otherParticipations || []).some((part: any) => {
-      return isPresentationFuture(part.apresentacoes)
-    })
-
-    if (hasFuture) {
-      return jsonResponse({ error: 'Este cliente já está agendado em outra reunião futura.' }, 400)
-    }
-
-    // 7. Create active participation
-    const { data: participation, error: partCreateError } = await supabaseAdmin
-      .from('participacoes')
-      .insert([{
-        cliente_id: client.id,
-        apresentacao_id: meetingId,
-        observacao: participantData.observacao,
-        status: 'ativo'
-      }])
-      .select('id, cliente_id, apresentacao_id, observacao, status')
-      .single()
-
-    if (partCreateError) {
-      return jsonResponse({ error: 'Erro ao criar a participação.' }, 500)
-    }
-
-    return jsonResponse({ success: true, client, participation })
+    return jsonResponse({ success: true, ...result })
 
   } catch (error: any) {
     console.error('Erro na Edge Function:', error.message || error)
-    return jsonResponse({ error: 'Ocorreu um erro interno ao agendar o participante.' }, 500)
+    return jsonResponse({ error: error.message || 'Ocorreu um erro interno ao agendar o participante.' }, 500)
   }
 })
