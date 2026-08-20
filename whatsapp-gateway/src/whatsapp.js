@@ -109,6 +109,72 @@ export async function connectToWhatsApp() {
     }
   });
 
+  sock.ev.on('messages.upsert', async (m) => {
+    if (m.type !== 'notify') return;
+
+    for (const msg of m.messages) {
+      if (msg.key.fromMe) {
+        console.log('[WhatsApp Gateway] Ignorando mensagem enviada por mim (fromMe).');
+        continue;
+      }
+
+      let jid = msg.key.remoteJid || '';
+      if (jid.endsWith('@lid') && msg.key.remoteJidAlt) {
+        jid = msg.key.remoteJidAlt;
+      }
+
+      if (jid.endsWith('@g.us')) {
+        console.log('[WhatsApp Gateway] Ignorando mensagem de grupo.');
+        continue;
+      }
+
+      const text = msg.message?.conversation ||
+                   msg.message?.extendedTextMessage?.text ||
+                   '';
+
+      if (!text.trim()) {
+        console.log('[WhatsApp Gateway] Ignorando mensagem sem conteúdo de texto.');
+        continue;
+      }
+
+      const cleanPhone = jid.split('@')[0].split(':')[0].replace(/\D/g, '');
+      const supabaseUrl = process.env.SUPABASE_URL || 'https://jhpuyflyddxwnxrbqiso.supabase.co';
+      const gatewaySecret = process.env.GATEWAY_SECRET;
+
+      const maskedPhone = `${cleanPhone.slice(0, 4)}*****${cleanPhone.slice(-4)}`;
+
+      try {
+        const anonKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_8CLG692ICd0Iu3S-kkYZ_g_45STMGTT';
+        const response = await fetch(`${supabaseUrl}/functions/v1/identify-whatsapp-user`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+            'Authorization': `Bearer ${anonKey}`,
+            'x-gateway-secret': gatewaySecret || ''
+          },
+          body: JSON.stringify({ phone: cleanPhone })
+        });
+
+        if (!response.ok) {
+          console.error(`[WhatsApp Gateway] Erro ao identificar remetente no Supabase. Status: ${response.status}`);
+          continue;
+        }
+
+        const data = await response.json();
+
+        console.log(`[WhatsApp Agent Received]
+- Telefone: ${maskedPhone}
+- User ID: ${data.user_id || 'Não encontrado'}
+- Google Integrado: ${data.has_google_integration ? 'Sim' : 'Não'}
+- Mensagem: "${text.trim()}"`);
+
+      } catch (err) {
+        console.error('[WhatsApp Gateway] Erro ao chamar Edge Function:', err.message || err);
+      }
+    }
+  });
+
   socket = sock;
   return sock;
 }
