@@ -189,3 +189,103 @@ export async function scheduleParticipant(
 
   return { client, participation }
 }
+
+export async function rescheduleParticipant(
+  supabaseAdmin: any,
+  userId: string,
+  googleIntegracaoId: number,
+  participantId: number,
+  fromMeetingId: number,
+  toMeetingId: number
+) {
+  // 1. Fetch source meeting
+  const { data: fromMeeting, error: fromError } = await supabaseAdmin
+    .from('apresentacoes')
+    .select('id, data, horario, horario_fim, user_id, google_integracao_id')
+    .eq('id', fromMeetingId)
+    .eq('user_id', userId)
+    .eq('google_integracao_id', googleIntegracaoId)
+    .maybeSingle()
+
+  if (fromError || !fromMeeting) {
+    throw new Error('Apresentação de origem não encontrada ou sem acesso.')
+  }
+
+  // 2. Fetch destination meeting
+  const { data: toMeeting, error: toError } = await supabaseAdmin
+    .from('apresentacoes')
+    .select('id, data, horario, horario_fim, user_id, google_integracao_id')
+    .eq('id', toMeetingId)
+    .eq('user_id', userId)
+    .eq('google_integracao_id', googleIntegracaoId)
+    .maybeSingle()
+
+  if (toError || !toMeeting) {
+    throw new Error('Apresentação de destino não encontrada ou sem acesso.')
+  }
+
+  // 3. Verify temporal rules (past presentations cannot be changed/moved)
+  if (isPresentationPast(fromMeeting) || isPresentationPast(toMeeting)) {
+    throw new BusinessRuleError(
+      'Não é possível alterar uma apresentação que já ocorreu.',
+      'PRESENTATION_ALREADY_OCCURRED'
+    )
+  }
+
+  // 4. Fetch the existing participation to move
+  const { data: participation, error: partError } = await supabaseAdmin
+    .from('participacoes')
+    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .eq('id', participantId)
+    .eq('apresentacao_id', fromMeetingId)
+    .maybeSingle()
+
+  if (partError || !participation) {
+    throw new Error('Participação não encontrada ou não pertence à apresentação de origem informada.')
+  }
+
+  // 5. Check if client already has participation in destination
+  const { data: destinationPart, error: destError } = await supabaseAdmin
+    .from('participacoes')
+    .select('id, status')
+    .eq('cliente_id', participation.cliente_id)
+    .eq('apresentacao_id', toMeetingId)
+    .maybeSingle()
+
+  if (destError) {
+    throw new Error('Erro ao verificar participação no destino.')
+  }
+
+  if (destinationPart) {
+    if (destinationPart.status === 'ativo') {
+      throw new BusinessRuleError(
+        'Este cliente já está ativo na reunião de destino.',
+        'CLIENT_ALREADY_ACTIVE_IN_DESTINATION',
+        { participation_id: destinationPart.id }
+      )
+    } else {
+      throw new BusinessRuleError(
+        'Já existe uma participação cancelada no destino.',
+        'CLIENT_CANCELLED_IN_DESTINATION',
+        { participation_id: destinationPart.id }
+      )
+    }
+  }
+
+  // 6. Update the existing participation's presentation ID
+  const { data: updatedParticipation, error: updateError } = await supabaseAdmin
+    .from('participacoes')
+    .update({ apresentacao_id: toMeetingId })
+    .eq('id', participantId)
+    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .single()
+
+  if (updateError || !updatedParticipation) {
+    throw new Error(`Falha ao remarcar participante: ${updateError?.message}`)
+  }
+
+  return {
+    success: true,
+    participation: updatedParticipation
+  }
+}

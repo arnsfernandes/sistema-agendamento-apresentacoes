@@ -116,3 +116,21 @@ export const findActiveOtherParticipations = async (clienteId, currentPresentati
 
   return data || []
 }
+
+export const rescheduleParticipantApi = async (participantId, fromMeetingId, toMeetingId) => {
+  const { data, error } = await supabase.functions.invoke('reschedule-participant', {
+    body: { participantId, fromMeetingId, toMeetingId }
+  })
+
+  if (error) {
+    throw new Error(error.message || 'Erro ao comunicar com o servidor.')
+  }
+
+  if (data && data.error) {
+    const err = new Error(data.error)
+    err.isValidationError = true
+    throw err
+  }
+
+  return data.participation
+}

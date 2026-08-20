@@ -22,7 +22,7 @@ import { supabase } from './services/supabaseClient'
 import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation, generateMeetLink } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient, listClients, deleteClientLogical } from './services/clientService'
-import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
+import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation, rescheduleParticipantApi } from './services/participationService'
 import { isPresentationPast, isPresentationFuture } from './utils/dateUtils'
 import { scheduleParticipant } from './services/schedulingService'
 
@@ -497,34 +497,8 @@ function App() {
   }
 
   const handleRescheduleParticipant = async (participantId, fromMeetingId, toMeetingId) => {
-    const fromMeeting = meetings.find(m => m.id === fromMeetingId)
-    const toMeeting = meetings.find(m => m.id === toMeetingId)
-    const participantToMove = fromMeeting?.participantsList.find(p => p.id === participantId)
-    if (!participantToMove) return
-
-    const clienteId = participantToMove.clienteId
-
     try {
-      if (isPresentationPast(fromMeeting) || isPresentationPast(toMeeting)) {
-        const err = new Error('Não é possível alterar uma apresentação que já ocorreu.')
-        err.isValidationError = true
-        throw err
-      }
-
-      const destinationPart = await findParticipation(clienteId, toMeetingId)
-      if (destinationPart) {
-        if (destinationPart.status === 'ativo') {
-          const err = new Error('Este cliente já está ativo na reunião de destino.')
-          err.isValidationError = true
-          throw err
-        } else {
-          const err = new Error('Já existe uma participação cancelada no destino.')
-          err.isValidationError = true
-          throw err
-        }
-      }
-
-      await updateParticipationPresentation(participantId, toMeetingId)
+      await rescheduleParticipantApi(participantId, fromMeetingId, toMeetingId)
       const refreshed = await listPresentations()
       setMeetings(refreshed)
     } catch (err) {
