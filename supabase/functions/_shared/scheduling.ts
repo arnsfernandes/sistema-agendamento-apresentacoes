@@ -1,5 +1,17 @@
 const TIME_ZONE = 'America/Sao_Paulo'
 
+export class BusinessRuleError extends Error {
+  code: string
+  details?: any
+
+  constructor(message: string, code: string, details?: any) {
+    super(message)
+    this.name = 'BusinessRuleError'
+    this.code = code
+    this.details = details
+  }
+}
+
 export const getSaoPauloDateTime = (date = new Date()) => {
   const formatter = new Intl.DateTimeFormat('sv-SE', {
     timeZone: TIME_ZONE,
@@ -140,12 +152,23 @@ export async function scheduleParticipant(
     throw new Error('Erro ao verificar outras participações do cliente.')
   }
 
-  const hasFuture = (otherParticipations || []).some((part: any) => {
+  const conflictingPart = (otherParticipations || []).find((part: any) => {
     return isPresentationFuture(part.apresentacoes)
   })
 
-  if (hasFuture) {
-    throw new Error('Este cliente já está agendado em outra reunião futura.')
+  if (conflictingPart) {
+    const meet = conflictingPart.apresentacoes
+    throw new BusinessRuleError(
+      'Este cliente já está agendado em outra reunião futura.',
+      'CLIENT_ALREADY_SCHEDULED_FUTURE',
+      {
+        presentation_id: meet.id,
+        titulo: meet.titulo,
+        data: meet.data,
+        horario_inicio: meet.horario,
+        horario_fim: meet.horario_fim
+      }
+    )
   }
 
   // 5. Create active participation

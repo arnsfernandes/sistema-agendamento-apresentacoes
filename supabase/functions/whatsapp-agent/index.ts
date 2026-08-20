@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { scheduleParticipant } from '../_shared/scheduling.ts'
+import { scheduleParticipant, BusinessRuleError } from '../_shared/scheduling.ts'
 import { getAgentInstructions } from '../_shared/whatsappAgentInstructions.ts'
 
 const corsHeaders = {
@@ -227,6 +227,15 @@ async function executeTool(
           previous_response_id: contextData?.previous_response_id || null,
           updated_at: new Date().toISOString()
         })
+
+      if (err.name === 'BusinessRuleError' || err instanceof BusinessRuleError) {
+        return {
+          status: 'error',
+          code: err.code,
+          message: `Falha de validação: ${err.message}`,
+          details: err.details
+        }
+      }
 
       return {
         status: 'error',
