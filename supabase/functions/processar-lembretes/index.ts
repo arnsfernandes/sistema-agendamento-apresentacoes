@@ -138,14 +138,21 @@ Deno.serve(async (req) => {
         const user = userData?.user
         const found = !!(user && !userError)
         
-        let hasWhatsapp = false
+        const { data: dbUserWhatsapp, error: dbUserWhatsappError } = await supabaseAdmin
+          .from('usuario_whatsapp')
+          .select('whatsapp_number')
+          .eq('user_id', pres.user_id)
+          .maybeSingle()
+
+        const dbWhatsappNumber = !dbUserWhatsappError && dbUserWhatsapp ? dbUserWhatsapp.whatsapp_number : null
+
+        let hasWhatsapp = !!dbWhatsappNumber
         let hasCustomTemplate = false
         let reminderWithoutParticipants = false
         let _template = defaultReminderTemplate
 
         if (found && user) {
           const meta = user.user_metadata || {}
-          hasWhatsapp = !!meta.whatsapp_number
           hasCustomTemplate = !!meta.custom_reminder_message
           _template = meta.custom_reminder_message || defaultReminderTemplate
           reminderWithoutParticipants = !!meta.reminder_without_participants
@@ -186,7 +193,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        const whatsappDestino = found && user ? user.user_metadata?.whatsapp_number : null
+        const whatsappDestino = dbWhatsappNumber
         const destinoValido = validarNumeroDestino(whatsappDestino)
 
         if (!destinoValido || !integrationValida) {

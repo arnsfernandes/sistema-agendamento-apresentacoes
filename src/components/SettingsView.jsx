@@ -286,14 +286,35 @@ export default function GoogleSettings({
   }
 
   const [newName, setNewName] = useState(user?.user_metadata?.name || '')
-  const [newWhatsapp, setNewWhatsapp] = useState(formatWhatsapp(user?.user_metadata?.whatsapp_number || ''))
+  const [savedWhatsapp, setSavedWhatsapp] = useState('')
+  const [newWhatsapp, setNewWhatsapp] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
   const [successMsg, setSuccessMsg] = useState(null)
 
   useEffect(() => {
     setNewName(user?.user_metadata?.name || '')
-    setNewWhatsapp(formatWhatsapp(user?.user_metadata?.whatsapp_number || ''))
+    const fetchWhatsappNumber = async () => {
+      if (!user) return
+      try {
+        const { data, error } = await supabase
+          .from('usuario_whatsapp')
+          .select('whatsapp_number')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (error) throw error
+        if (data && data.whatsapp_number) {
+          setSavedWhatsapp(data.whatsapp_number)
+          setNewWhatsapp(formatWhatsapp(data.whatsapp_number))
+        } else {
+          setSavedWhatsapp('')
+          setNewWhatsapp('')
+        }
+      } catch (err) {
+        console.error('Erro ao buscar whatsapp_number:', err)
+      }
+    }
+    fetchWhatsappNumber()
   }, [user])
 
   const [avatarLoading, setAvatarLoading] = useState(false)
@@ -422,7 +443,7 @@ export default function GoogleSettings({
   const handleCancel = () => {
     setIsEditing(false)
     setNewName(user?.user_metadata?.name || '')
-    setNewWhatsapp(formatWhatsapp(user?.user_metadata?.whatsapp_number || ''))
+    setNewWhatsapp(formatWhatsapp(savedWhatsapp))
     setErrorMsg(null)
   }
 
@@ -490,20 +511,36 @@ export default function GoogleSettings({
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error: authError } = await supabase.auth.updateUser({
         data: { 
-          name: newName,
-          whatsapp_number: normalizedWhatsapp
+          name: newName
         }
       })
-      if (error) {
-        setErrorMsg(error.message)
+      if (authError) throw authError
+
+      if (normalizedWhatsapp) {
+        const { error: dbError } = await supabase
+          .from('usuario_whatsapp')
+          .upsert({
+            user_id: user.id,
+            whatsapp_number: normalizedWhatsapp,
+            updated_at: new Date().toISOString()
+          })
+        if (dbError) throw dbError
+        setSavedWhatsapp(normalizedWhatsapp)
       } else {
-        setSuccessMsg('Dados atualizados com sucesso!')
-        setIsEditing(false)
+        const { error: dbError } = await supabase
+          .from('usuario_whatsapp')
+          .delete()
+          .eq('user_id', user.id)
+        if (dbError) throw dbError
+        setSavedWhatsapp('')
       }
-    } catch {
-      setErrorMsg('Erro ao atualizar os dados.')
+
+      setSuccessMsg('Dados atualizados com sucesso!')
+      setIsEditing(false)
+    } catch (err) {
+      setErrorMsg(err?.message || 'Erro ao atualizar os dados.')
     } finally {
       setIsSaving(false)
     }
