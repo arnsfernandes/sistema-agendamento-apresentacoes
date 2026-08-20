@@ -88,3 +88,31 @@ export const updateParticipationPresentation = async (participacaoId, apresentac
 
   return data
 }
+
+export const findActiveOtherParticipations = async (clienteId, currentPresentationId, userId, googleIntegracaoId) => {
+  const { data, error } = await supabase
+    .from('participacoes')
+    .select(`
+      id,
+      status,
+      apresentacoes!inner (
+        id,
+        data,
+        horario,
+        horario_fim,
+        user_id,
+        google_integracao_id
+      )
+    `)
+    .eq('cliente_id', clienteId)
+    .eq('status', 'ativo')
+    .neq('apresentacao_id', currentPresentationId)
+    .eq('apresentacoes.user_id', userId)
+    .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+
+  if (error) {
+    handleDbError(error, 'buscar outras participações ativas')
+  }
+
+  return data || []
+}

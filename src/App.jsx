@@ -24,6 +24,7 @@ import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient, listClients, deleteClientLogical } from './services/clientService'
 import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation } from './services/participationService'
 import { isPresentationPast, isPresentationFuture } from './utils/dateUtils'
+import { scheduleParticipant } from './services/schedulingService'
 
 
 
@@ -405,36 +406,7 @@ function App() {
   }
 
   const handleAddParticipant = async (meetingId, participantData) => {
-    const meeting = meetings.find(m => m.id === meetingId)
-    if (isPresentationPast(meeting)) {
-      throw new Error('Não é possível alterar uma apresentação que já ocorreu.')
-    }
-
-    let client = await findClientByPhone(participantData.telefone)
-    
-    if (!client) {
-      client = await createClient({
-        nome: participantData.nome,
-        telefone: participantData.telefone,
-        agencia: participantData.agencia
-      })
-    }
-    
-    const existingPart = await findParticipation(client.id, meetingId)
-    if (existingPart) {
-      if (existingPart.status === 'ativo') {
-        throw new Error('Este cliente já está cadastrado nesta reunião.')
-      } else {
-        throw new Error('Este cliente já possui uma participação cancelada nesta reunião.')
-      }
-    }
-    
-    await createParticipation({
-      clienteId: client.id,
-      apresentacaoId: meetingId,
-      observacao: participantData.observacao
-    })
-    
+    await scheduleParticipant(meetingId, participantData)
     const updatedData = await listPresentations()
     setMeetings(updatedData)
   }
