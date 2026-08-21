@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { scheduleParticipant, rescheduleParticipant, BusinessRuleError } from '../_shared/scheduling.ts'
+import { scheduleParticipant, rescheduleParticipant, cancelParticipant, reactivateParticipant, BusinessRuleError } from '../_shared/scheduling.ts'
 import { getAgentInstructions } from '../_shared/whatsappAgentInstructions.ts'
 
 const corsHeaders = {
@@ -88,7 +88,8 @@ async function executeTool(
   }
 
   if (name === 'list_participants') {
-    const { presentation_id } = args
+    const presentation_id = args.presentation_id
+    const status = args.status || 'ativo'
     // Verify presentation belongs to this user
     const { data: pres } = await supabaseAdmin
       .from('apresentacoes')
@@ -105,7 +106,7 @@ async function executeTool(
       .from('participacoes')
       .select('id, status, clientes(nome, telefone)')
       .eq('apresentacao_id', presentation_id)
-      .eq('status', 'ativo')
+      .eq('status', status)
 
     if (error) throw error
     return data || []
@@ -398,6 +399,241 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_cancel_participant') {
+    const { participant_id, presentation_id } = args
+
+    const { data: meeting } = await supabaseAdmin
+      .from('apresentacoes')
+      .select('id, titulo')
+      .eq('id', presentation_id)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    const { data: participation } = await supabaseAdmin
+      .from('participacoes')
+      .select('id, cliente_id, status, clientes(nome)')
+      .eq('id', participant_id)
+      .eq('apresentacao_id', presentation_id)
+      .maybeSingle()
+
+    if (!meeting || !participation) {
+      return { error: 'Reunião ou participação correspondente não foram encontradas no banco de dados.' }
+    }
+
+    if (participation.status === 'cancelado') {
+      return { error: 'Esta participação já está cancelada.' }
+    }
+
+    const clientName = participation.clientes?.nome || 'Cliente'
+
+    const pendingAction = {
+      type: 'cancel_participant',
+      participant_id,
+      presentation_id,
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de cancelar a participação de "${clientName}" na reunião "${meeting.titulo}" salva como pendente. Aguardando confirmação do usuário.`
+    }
+  }
+
+  if (name === 'confirm_cancel_participant') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'cancel_participant') {
+      return { error: 'Não há nenhuma ação de cancelamento de participação pendente ou a pendência expirou.' }
+    }
+
+    try {
+      const res = await cancelParticipant(
+        supabaseAdmin,
+        userId,
+        googleIntegracaoId,
+        pendingAction.participant_id
+      )
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Cancelamento de participação concluído com sucesso.',
+        participation: res.participation
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao cancelar participação: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_cancel_participant') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de cancelamento de participação cancelada e removida com sucesso.'
+    }
+  }
+
+  if (name === 'prepare_reactivate_participant') {
+    const { participant_id, presentation_id } = args
+
+    const { data: meeting } = await supabaseAdmin
+      .from('apresentacoes')
+      .select('id, titulo')
+      .eq('id', presentation_id)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    const { data: participation } = await supabaseAdmin
+      .from('participacoes')
+      .select('id, cliente_id, status, clientes(nome)')
+      .eq('id', participant_id)
+      .eq('apresentacao_id', presentation_id)
+      .maybeSingle()
+
+    if (!meeting || !participation) {
+      return { error: 'Reunião ou participação correspondente não foram encontradas no banco de dados.' }
+    }
+
+    if (participation.status === 'ativo') {
+      return { error: 'Esta participação já está ativa.' }
+    }
+
+    const clientName = participation.clientes?.nome || 'Cliente'
+
+    const pendingAction = {
+      type: 'reactivate_participant',
+      participant_id,
+      presentation_id,
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de reativar a participação de "${clientName}" na reunião "${meeting.titulo}" salva como pendente. Aguardando confirmação do usuário.`
+    }
+  }
+
+  if (name === 'confirm_reactivate_participant') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'reactivate_participant') {
+      return { error: 'Não há nenhuma ação de reativação de participação pendente ou a pendência expirou.' }
+    }
+
+    try {
+      const res = await reactivateParticipant(
+        supabaseAdmin,
+        userId,
+        googleIntegracaoId,
+        pendingAction.participant_id
+      )
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Reativação de participação concluída com sucesso.',
+        participation: res.participation
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      if (err.name === 'BusinessRuleError' || err instanceof BusinessRuleError) {
+        return {
+          status: 'error',
+          code: err.code,
+          message: `Falha ao reativar participação: ${err.message}`,
+          details: err.details
+        }
+      }
+
+      return {
+        status: 'error',
+        message: `Falha ao reativar participação: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_reactivate_participant') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de reativação de participação cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -505,6 +741,26 @@ Deno.serve(async (req) => {
             const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
             pendingActionDetails = `Remarcar participante "${clientName}" da reunião "${fromPr.titulo}" para a reunião "${toPr.titulo}" no dia ${formattedDate} às ${toPr.horario.slice(0, 5)}`
           }
+        } else if (pendingAction.type === 'cancel_participant') {
+          const { data: part } = await supabaseAdmin.from('participacoes').select('id, cliente_id, clientes(nome)').eq('id', pendingAction.participant_id).maybeSingle()
+          const { data: pr } = await supabaseAdmin.from('apresentacoes').select('titulo, data, horario').eq('id', pendingAction.presentation_id).maybeSingle()
+
+          if (part && pr) {
+            const clientName = part.clientes?.nome || 'Cliente'
+            const dateParts = pr.data.split('-')
+            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+            pendingActionDetails = `Cancelar participante "${clientName}" da reunião "${pr.titulo}" no dia ${formattedDate} às ${pr.horario.slice(0, 5)}`
+          }
+        } else if (pendingAction.type === 'reactivate_participant') {
+          const { data: part } = await supabaseAdmin.from('participacoes').select('id, cliente_id, clientes(nome)').eq('id', pendingAction.participant_id).maybeSingle()
+          const { data: pr } = await supabaseAdmin.from('apresentacoes').select('titulo, data, horario').eq('id', pendingAction.presentation_id).maybeSingle()
+
+          if (part && pr) {
+            const clientName = part.clientes?.nome || 'Cliente'
+            const dateParts = pr.data.split('-')
+            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+            pendingActionDetails = `Reativar participante "${clientName}" na reunião "${pr.titulo}" no dia ${formattedDate} às ${pr.horario.slice(0, 5)}`
+          }
         }
       }
     }
@@ -574,13 +830,18 @@ Deno.serve(async (req) => {
       {
         type: 'function',
         name: 'list_participants',
-        description: 'Lista os nomes dos participantes ativos confirmados para uma determinada apresentação.',
+        description: 'Lista os nomes dos participantes para uma determinada apresentação. Pode listar ativos ou cancelados.',
         parameters: {
           type: 'object',
           properties: {
             presentation_id: {
               type: 'integer',
               description: 'ID numérico da apresentação'
+            },
+            status: {
+              type: 'string',
+              description: 'Status dos participantes a listar (ativo ou cancelado). Padrão é ativo.',
+              enum: ['ativo', 'cancelado']
             }
           },
           required: ['presentation_id'],
@@ -684,6 +945,90 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_reschedule_participant',
         description: 'Cancela e descarta a ação pendente de remarcação atual.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_cancel_participant',
+        description: 'Salva uma ação pendente de cancelamento de participação na reunião comercial.',
+        parameters: {
+          type: 'object',
+          properties: {
+            participant_id: {
+              type: 'integer',
+              description: 'ID da participação a ser cancelada'
+            },
+            presentation_id: {
+              type: 'integer',
+              description: 'ID da reunião comercial'
+            }
+          },
+          required: ['participant_id', 'presentation_id'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_cancel_participant',
+        description: 'Efetiva o cancelamento da participação da ação pendente no banco de dados aplicando todas as regras de validação do Meety.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_cancel_participant',
+        description: 'Cancela e descarta a ação pendente de cancelamento de participação atual.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_reactivate_participant',
+        description: 'Salva uma ação pendente de reativação de participação na reunião comercial.',
+        parameters: {
+          type: 'object',
+          properties: {
+            participant_id: {
+              type: 'integer',
+              description: 'ID da participação cancelada a ser reativada'
+            },
+            presentation_id: {
+              type: 'integer',
+              description: 'ID da reunião comercial'
+            }
+          },
+          required: ['participant_id', 'presentation_id'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_reactivate_participant',
+        description: 'Efetiva a reativação da participação da ação pendente no banco de dados aplicando todas as regras de validação do Meety.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_reactivate_participant',
+        description: 'Cancela e descarta a ação pendente de reativação de participação atual.',
         parameters: {
           type: 'object',
           properties: {},

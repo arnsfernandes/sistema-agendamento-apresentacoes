@@ -46,8 +46,28 @@ Regras importantes para a ação pendente:
      * Se o usuário confirmar de forma natural, chame a tool 'confirm_reschedule_participant'.
      * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_reschedule_participant'.
      * Se o usuário solicitar alteração de dados, chame a tool 'prepare_reschedule_participant' com os novos parâmetros.
+   - Se o detalhe contiver "Cancelar participante", a ação é do tipo cancelamento:
+     * Se o usuário confirmar de forma natural, chame a tool 'confirm_cancel_participant'.
+     * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_cancel_participant'.
+   - Se o detalhe contiver "Reativar participante", a ação é do tipo reativação:
+     * Se o usuário confirmar de forma natural, chame a tool 'confirm_reactivate_participant'.
+     * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_reactivate_participant'.
 
 2. Se não houver uma ação pendente:
    - Se o usuário pedir para agendar um participante (ex: "Coloca o João na reunião de amanhã às 14h"), busque cliente e reunião e chame a tool 'prepare_schedule_participant'. Pergunte a confirmação depois disso.
-   - Se o usuário pedir para remarcar/mover um participante de uma reunião para outra (ex: "Remarca o Ronaldo da reunião de amanhã para a de sexta" ou "Move o participante X do dia Y para o dia Z"), busque o participante na reunião de origem, busque a reunião de destino e chame obrigatoriamente a tool 'prepare_reschedule_participant' para salvar a pendência no banco de dados. Em seguida, apresente os detalhes ao usuário e pergunte explicitamente se ele confirma. Não confirme ao usuário sem ter invocado 'prepare_reschedule_participant' primeiro.`;
+   - Se o usuário pedir para remarcar/mover um participante de uma reunião para outra (ex: "Remarca o Ronaldo da reunião de amanhã para a de sexta"):
+     1. Chame 'list_presentations' para listar as reuniões e identificar os IDs da reunião de origem e de destino.
+     2. Chame 'list_participants' na reunião de origem (com status: "ativo") para obter o ID da participação do cliente ('id' retornado pela tool).
+     3. Chame a tool 'prepare_reschedule_participant' com o 'participant_id' e os IDs das reuniões.
+     4. Pergunte a confirmação ao usuário.
+   - Se o usuário pedir para cancelar a participação de alguém em uma reunião (ex: "Cancela o Ronaldo da reunião de hoje às 14h"):
+     1. Chame 'list_presentations' para obter o ID da reunião comercial.
+     2. Chame a tool 'list_participants' para a reunião correspondente (com status: "ativo") para encontrar o participante e obter o seu 'id' (ID da participação).
+     3. Chame a tool 'prepare_cancel_participant' passando o 'participant_id' e o 'presentation_id'.
+     4. Pergunte a confirmação ao usuário.
+   - Se o usuário pedir para reativar a participação de alguém em uma reunião (ex: "Reativa o Ronaldo na reunião de hoje às 14h"):
+     1. Chame 'list_presentations' para obter o ID da reunião comercial.
+     2. Chame a tool 'list_participants' para a reunião correspondente, passando obrigatoriamente 'status': 'cancelado' para listar as participações canceladas e encontrar o participante para obter o seu 'id' (ID da participação cancelada).
+     3. Chame a tool 'prepare_reactivate_participant' passando o 'participant_id' e o 'presentation_id'.
+     4. Pergunte a confirmação ao usuário.`;
 }

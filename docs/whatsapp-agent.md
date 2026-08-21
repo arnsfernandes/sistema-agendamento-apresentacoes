@@ -79,6 +79,12 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_reschedule_participant`**: Cria o registro temporário de pendência de remarcação de participante entre duas apresentações no banco de dados.
 * **`confirm_reschedule_participant`**: Executa a gravação definitiva de remarcação (troca de reunião) usando o módulo central do backend.
 * **`cancel_reschedule_participant`**: Limpa o registro de pendência de remarcação.
+* **`prepare_cancel_participant`**: Cria o registro temporário de pendência de cancelamento de participação no banco de dados.
+* **`confirm_cancel_participant`**: Executa a gravação definitiva de cancelamento de participação (muda status para cancelado) usando o módulo central do backend.
+* **`cancel_cancel_participant`**: Limpa o registro de pendência de cancelamento de participação.
+* **`prepare_reactivate_participant`**: Cria o registro temporário de pendência de reativação de participação no banco de dados.
+* **`confirm_reactivate_participant`**: Executa a gravação definitiva de reativação de participação (muda status para ativo) usando o módulo central do backend.
+* **`cancel_reactivate_participant`**: Limpa o registro de pendência de reativação de participação.
 
 ---
 
