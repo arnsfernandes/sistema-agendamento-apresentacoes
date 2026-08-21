@@ -134,3 +134,35 @@ export const rescheduleParticipantApi = async (participantId, fromMeetingId, toM
 
   return data.participation
 }
+
+export const cancelParticipantApi = async (participationId) => {
+  const { data, error } = await supabase.functions.invoke('cancel-participant', {
+    body: { participationId }
+  })
+
+  if (error) {
+    throw new Error(error.message || 'Erro ao comunicar com o servidor.')
+  }
+
+  if (data && data.error) {
+    throw new Error(data.error)
+  }
+
+  return data.participation
+}
+
+export const reactivateParticipantApi = async (participationId) => {
+  const { data, error } = await supabase.functions.invoke('reactivate-participant', {
+    body: { participationId }
+  })
+
+  if (error) {
+    throw new Error(error.message || 'Erro ao comunicar com o servidor.')
+  }
+
+  if (data && data.error) {
+    throw new Error(data.error)
+  }
+
+  return data.participation
+}

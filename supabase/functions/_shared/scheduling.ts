@@ -289,3 +289,182 @@ export async function rescheduleParticipant(
     participation: updatedParticipation
   }
 }
+
+export async function cancelParticipant(
+  supabaseAdmin: any,
+  userId: string,
+  googleIntegracaoId: number,
+  participationId: number
+) {
+  // 1. Fetch participation details including presentation
+  const { data: participation, error: partError } = await supabaseAdmin
+    .from('participacoes')
+    .select(`
+      id,
+      cliente_id,
+      apresentacao_id,
+      observacao,
+      status,
+      apresentacoes!inner (
+        id,
+        data,
+        horario,
+        horario_fim,
+        user_id,
+        google_integracao_id
+      )
+    `)
+    .eq('id', participationId)
+    .eq('apresentacoes.user_id', userId)
+    .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+    .maybeSingle()
+
+  if (partError || !participation) {
+    throw new Error('Participação não encontrada.')
+  }
+
+  // 2. Validate temporal rules (past presentation cannot be altered)
+  if (isPresentationPast(participation.apresentacoes)) {
+    throw new Error('Não é possível alterar uma apresentação que já ocorreu.')
+  }
+
+  // 3. Update status to cancelado
+  const { data: updatedParticipation, error: updateError } = await supabaseAdmin
+    .from('participacoes')
+    .update({ status: 'cancelado' })
+    .eq('id', participationId)
+    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .single()
+
+  if (updateError || !updatedParticipation) {
+    throw new Error(`Falha ao cancelar participação: ${updateError?.message}`)
+  }
+
+  return {
+    success: true,
+    participation: updatedParticipation
+  }
+}
+
+export async function reactivateParticipant(
+  supabaseAdmin: any,
+  userId: string,
+  googleIntegracaoId: number,
+  participationId: number
+) {
+  // 1. Fetch participation details including presentation
+  const { data: participation, error: partError } = await supabaseAdmin
+    .from('participacoes')
+    .select(`
+      id,
+      cliente_id,
+      apresentacao_id,
+      observacao,
+      status,
+      apresentacoes!inner (
+        id,
+        data,
+        horario,
+        horario_fim,
+        user_id,
+        google_integracao_id
+      ),
+      clientes!inner (
+        id,
+        nome,
+        telefone
+      )
+    `)
+    .eq('id', participationId)
+    .eq('apresentacoes.user_id', userId)
+    .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+    .maybeSingle()
+
+  if (partError || !participation) {
+    throw new Error('Participação não encontrada.')
+  }
+
+  // 2. Validate temporal rules (past presentation cannot be altered)
+  if (isPresentationPast(participation.apresentacoes)) {
+    throw new Error('Não é possível alterar uma apresentação que já ocorreu.')
+  }
+
+  // 3. Check duplicate client active in the same presentation
+  const { data: duplicateActive, error: dupError } = await supabaseAdmin
+    .from('participacoes')
+    .select('id')
+    .eq('apresentacao_id', participation.apresentacao_id)
+    .eq('cliente_id', participation.cliente_id)
+    .eq('status', 'ativo')
+    .neq('id', participationId)
+    .maybeSingle()
+
+  if (dupError) {
+    throw new Error('Erro ao verificar duplicidade.')
+  }
+
+  if (duplicateActive) {
+    throw new Error('Este cliente já está cadastrado nesta reunião.')
+  }
+
+  // 4. Verify if the client has any active participation in other future presentations of the same integration
+  const { data: otherParticipations, error: otherPartError } = await supabaseAdmin
+    .from('participacoes')
+    .select(`
+      id,
+      status,
+      apresentacoes!inner (
+        id,
+        data,
+        horario,
+        horario_fim,
+        user_id,
+        google_integracao_id
+      )
+    `)
+    .eq('cliente_id', participation.cliente_id)
+    .eq('status', 'ativo')
+    .neq('apresentacao_id', participation.apresentacao_id)
+    .eq('apresentacoes.user_id', userId)
+    .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+
+  if (otherPartError) {
+    throw new Error('Erro ao verificar outras participações do cliente.')
+  }
+
+  const conflictingPart = (otherParticipations || []).find((part: any) => {
+    return isPresentationFuture(part.apresentacoes)
+  })
+
+  if (conflictingPart) {
+    const meet = conflictingPart.apresentacoes
+    throw new BusinessRuleError(
+      'Este cliente já está agendado em outra reunião futura.',
+      'CLIENT_ALREADY_SCHEDULED_FUTURE',
+      {
+        presentation_id: meet.id,
+        titulo: meet.titulo,
+        data: meet.data,
+        horario_inicio: meet.horario,
+        horario_fim: meet.horario_fim
+      }
+    )
+  }
+
+  // 5. Update status to ativo
+  const { data: updatedParticipation, error: updateError } = await supabaseAdmin
+    .from('participacoes')
+    .update({ status: 'ativo' })
+    .eq('id', participationId)
+    .select('id, cliente_id, apresentacao_id, observacao, status')
+    .single()
+
+  if (updateError || !updatedParticipation) {
+    throw new Error(`Falha ao reativar participação: ${updateError?.message}`)
+  }
+
+  return {
+    success: true,
+    participation: updatedParticipation
+  }
+}

@@ -22,7 +22,7 @@ import { supabase } from './services/supabaseClient'
 import { createGooglePresentation, updateGooglePresentation, deleteGooglePresentation, moveParticipantsAndDeletePresentation, generateMeetLink } from './services/googlePresentationService'
 import { listPresentations } from './services/presentationService'
 import { findClientByPhone, createClient, updateClient, listClients, deleteClientLogical } from './services/clientService'
-import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationStatus, updateParticipationPresentation, rescheduleParticipantApi } from './services/participationService'
+import { findParticipation, createParticipation, updateParticipationObservation, updateParticipationPresentation, rescheduleParticipantApi, cancelParticipantApi, reactivateParticipantApi } from './services/participationService'
 import { isPresentationPast, isPresentationFuture } from './utils/dateUtils'
 import { scheduleParticipant } from './services/schedulingService'
 
@@ -447,13 +447,8 @@ function App() {
   }
 
   const handleCancelParticipant = async (meetingId, participantId) => {
-    const meeting = meetings.find(m => m.id === meetingId)
-    if (isPresentationPast(meeting)) {
-      alert('Não é possível alterar uma apresentação que já ocorreu.')
-      return
-    }
     try {
-      await updateParticipationStatus(participantId, 'cancelado')
+      await cancelParticipantApi(participantId)
       const refreshed = await listPresentations()
       setMeetings(refreshed)
     } catch (err) {
@@ -464,29 +459,8 @@ function App() {
   }
 
   const handleReactivateParticipant = async (meetingId, participantId) => {
-    const meeting = meetings.find(m => m.id === meetingId)
-    if (!meeting) return
-
-    if (isPresentationPast(meeting)) {
-      alert('Não é possível alterar uma apresentação que já ocorreu.')
-      return
-    }
-
-    // Find the participant to get their telephone
-    const participant = meeting.participantsList.find(p => p.id === participantId)
-    if (!participant) return
-
-    // Check if duplicate client is already active
-    const isAlreadyActive = meeting.participantsList.some(
-      p => p.telefone === participant.telefone && p.statusAtivo && p.id !== participantId
-    )
-    if (isAlreadyActive) {
-      alert('Este cliente já está ativo nesta reunião.')
-      return
-    }
-
     try {
-      await updateParticipationStatus(participantId, 'ativo')
+      await reactivateParticipantApi(participantId)
       const refreshed = await listPresentations()
       setMeetings(refreshed)
     } catch (err) {
