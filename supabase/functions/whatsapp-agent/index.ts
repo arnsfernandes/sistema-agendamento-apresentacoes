@@ -847,6 +847,131 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_update_presentation') {
+    const { presentationId, title, date, startTime, endTime, editScope } = args
+
+    // Fetch original presentation to get fallback values and etag
+    const { data: original, error: fetchErr } = await supabaseAdmin
+      .from('apresentacoes')
+      .select('titulo, data, horario, horario_fim, google_event_updated_at')
+      .eq('id', presentationId)
+      .single()
+
+    if (fetchErr || !original) {
+      return { error: 'Reunião comercial não encontrada.' }
+    }
+
+    const pendingAction = {
+      type: 'update_presentation',
+      presentationId,
+      title: (title && typeof title === 'string' && title.trim()) ? title.trim() : original.titulo,
+      date: (date && typeof date === 'string' && date.trim()) ? date.trim() : original.data,
+      startTime: (startTime && typeof startTime === 'string' && startTime.trim()) ? startTime.trim() : original.horario.slice(0, 5),
+      endTime: (endTime && typeof endTime === 'string' && endTime.trim()) ? endTime.trim() : original.horario_fim.slice(0, 5),
+      etag: null,
+      editScope: editScope || 'occurrence',
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de editar reunião comercial de ID ${presentationId} salva como pendente. Aguardando confirmação.`
+    }
+  }
+
+  if (name === 'confirm_update_presentation') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'update_presentation') {
+      return { error: 'Não há nenhuma ação de edição de reunião pendente ou a pendência expirou.' }
+    }
+
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/google-presentation-update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'x-user-id': userId
+        },
+        body: JSON.stringify({
+          presentationId: pendingAction.presentationId,
+          title: pendingAction.title,
+          date: pendingAction.date,
+          startTime: pendingAction.startTime,
+          endTime: pendingAction.endTime,
+          etag: pendingAction.etag,
+          editScope: pendingAction.editScope
+        })
+      })
+
+      const responseData = await response.json()
+
+      if (!response.ok || responseData.error) {
+        throw new Error(responseData.error || 'Erro desconhecido ao atualizar apresentação no Google.')
+      }
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Reunião comercial atualizada com sucesso.',
+        presentation: responseData.presentation
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao editar reunião: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_update_presentation') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de edição de reunião cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -980,6 +1105,10 @@ Deno.serve(async (req) => {
           const dateParts = pendingAction.date.split('-')
           const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
           pendingActionDetails = `Criar reunião comercial "${pendingAction.title}" no dia ${formattedDate} das ${pendingAction.startTime} às ${pendingAction.endTime}`
+        } else if (pendingAction.type === 'update_presentation') {
+          const dateParts = pendingAction.date.split('-')
+          const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+          pendingActionDetails = `Editar reunião comercial de ID ${pendingAction.presentationId} para: Título: "${pendingAction.title}", Dia: ${formattedDate}, das ${pendingAction.startTime} às ${pendingAction.endTime} (Escopo: ${pendingAction.editScope === 'series' ? 'Série completa' : 'Apenas esta ocorrência'})`
         }
       }
     }
@@ -1344,6 +1473,64 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_create_presentation',
         description: 'Cancela e descarta a ação pendente de criação de reunião atual.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_update_presentation',
+        description: 'Salva uma ação pendente de editar uma reunião comercial no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {
+            presentationId: {
+              type: 'integer',
+              description: 'ID da reunião comercial a ser editada'
+            },
+            title: {
+              type: 'string',
+              description: 'Novo título opcional da reunião comercial'
+            },
+            date: {
+              type: 'string',
+              description: 'Nova data opcional no formato YYYY-MM-DD'
+            },
+            startTime: {
+              type: 'string',
+              description: 'Novo horário de início opcional no formato HH:MM'
+            },
+            endTime: {
+              type: 'string',
+              description: 'Novo horário de término opcional no formato HH:MM'
+            },
+            editScope: {
+              type: 'string',
+              description: 'Escopo de edição para reuniões recorrentes: "occurrence" ou "series"'
+            }
+          },
+          required: ['presentationId'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_update_presentation',
+        description: 'Efetiva a edição da reunião comercial da ação pendente no Google Agenda e banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_update_presentation',
+        description: 'Cancela e descarta a ação pendente de edição de reunião atual.',
         parameters: {
           type: 'object',
           properties: {},

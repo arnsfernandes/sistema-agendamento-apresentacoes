@@ -58,8 +58,16 @@ Regras importantes para a ação pendente:
    - Se o detalhe contiver "Criar reunião comercial", a ação é do tipo criação de reunião:
      * Se o usuário confirmar de forma natural, chame a tool 'confirm_create_presentation'.
      * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_create_presentation'.
+   - Se o detalhe contiver "Editar reunião comercial", a ação é do tipo edição:
+     * Se o usuário confirmar de forma natural, chame a tool 'confirm_update_presentation'.
+     * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_update_presentation'.
 
 2. Se não houver uma ação pendente:
+   - Se o usuário pedir para editar/alterar/atualizar uma reunião comercial (ex: "Muda o horário da reunião de hoje às 14h para 15h"):
+     1. Chame a tool 'list_presentations' para localizar a reunião desejada e obter seu ID.
+     2. Se a reunião fizer parte de uma série recorrente e o usuário não especificou o escopo, pergunte explicitamente de forma muito objetiva se ele deseja alterar "apenas esta ocorrência" ou "toda a série". Nunca decida ou escolha esse escopo de série sem a resposta dele.
+     3. Uma vez definido o ID, o escopo (se aplicável), e coletados os campos de alteração desejados (título, data, horário de início ou fim), chame 'prepare_update_presentation'.
+     4. Peça a confirmação do usuário com o resumo das alterações.
    - Se o usuário pedir para criar/agendar uma nova reunião comercial (ex: "Cria uma reunião de Alinhamento na terça às 10h até as 11h"):
      1. Colete de forma natural os dados que faltarem (título, data, horário de início, horário de término).
      2. Assim que tiver todos esses dados, chame 'prepare_create_presentation'.

@@ -91,6 +91,9 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_create_presentation`**: Cria o registro temporário de pendência de criação de nova reunião comercial.
 * **`confirm_create_presentation`**: Executa a criação definitiva da nova reunião no Google Agenda e banco de dados.
 * **`cancel_create_presentation`**: Limpa o registro de pendência de criação de reunião.
+* **`prepare_update_presentation`**: Cria o registro temporário de pendência de edição de reunião comercial.
+* **`confirm_update_presentation`**: Executa a gravação definitiva da edição de reunião no Google Agenda e banco de dados.
+* **`cancel_update_presentation`**: Limpa o registro de pendência de edição de reunião.
 
 ---
 

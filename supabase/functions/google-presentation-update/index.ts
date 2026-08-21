@@ -292,26 +292,40 @@ Deno.serve(async (req) => {
       )
     }
 
-    const supabaseUser = createClient(
-      supabaseUrl,
-      anonKey,
-    )
+    let user: any = null
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseUser.auth.getUser(
-      accessToken,
-    )
-
-    if (userError || !user) {
-      return jsonResponse(
-        {
-          error:
-            'Sessão inválida ou expirada.',
-        },
-        401,
+    if (accessToken === serviceRoleKey) {
+      const targetUserId = req.headers.get('x-user-id')
+      if (!targetUserId) {
+        return jsonResponse(
+          { error: 'Cabeçalho x-user-id é obrigatório para chamadas de service role.' },
+          400,
+        )
+      }
+      user = { id: targetUserId }
+    } else {
+      const supabaseUser = createClient(
+        supabaseUrl,
+        anonKey,
       )
+
+      const {
+        data: { user: authUser },
+        error: userError,
+      } = await supabaseUser.auth.getUser(
+        accessToken,
+      )
+
+      if (userError || !authUser) {
+        return jsonResponse(
+          {
+            error:
+              'Sessão inválida ou expirada.',
+          },
+          401,
+        )
+      }
+      user = authUser
     }
 
     let body: Record<string, unknown>
