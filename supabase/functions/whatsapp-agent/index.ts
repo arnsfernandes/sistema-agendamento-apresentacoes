@@ -739,6 +739,114 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_create_presentation') {
+    const { title, date, startTime, endTime } = args
+
+    const pendingAction = {
+      type: 'create_presentation',
+      title,
+      date,
+      startTime,
+      endTime,
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de criar reunião comercial "${title}" no dia ${date} das ${startTime} às ${endTime} salva como pendente. Aguardando confirmação do usuário.`
+    }
+  }
+
+  if (name === 'confirm_create_presentation') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'create_presentation') {
+      return { error: 'Não há nenhuma ação de criação de reunião pendente ou a pendência expirou.' }
+    }
+
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/google-presentation-create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'x-user-id': userId
+        },
+        body: JSON.stringify({
+          title: pendingAction.title,
+          date: pendingAction.date,
+          startTime: pendingAction.startTime,
+          endTime: pendingAction.endTime
+        })
+      })
+
+      const responseData = await response.json()
+
+      if (!response.ok || responseData.error) {
+        throw new Error(responseData.error || 'Erro desconhecido ao criar apresentação no Google.')
+      }
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Reunião comercial criada com sucesso.',
+        presentation: responseData.presentation
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao criar reunião: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_create_presentation') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de criação de reunião cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -868,6 +976,10 @@ Deno.serve(async (req) => {
           }
         } else if (pendingAction.type === 'create_client') {
           pendingActionDetails = `Cadastrar cliente "${pendingAction.nome}" (Telefone: ${pendingAction.telefone}${pendingAction.agencia ? `, Agência: ${pendingAction.agencia}` : ''})`
+        } else if (pendingAction.type === 'create_presentation') {
+          const dateParts = pendingAction.date.split('-')
+          const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+          pendingActionDetails = `Criar reunião comercial "${pendingAction.title}" no dia ${formattedDate} das ${pendingAction.startTime} às ${pendingAction.endTime}`
         }
       }
     }
@@ -1182,6 +1294,56 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_create_client',
         description: 'Cancela e descarta a ação pendente de cadastro de cliente atual.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_create_presentation',
+        description: 'Salva uma ação pendente de criar uma nova reunião comercial no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Título da reunião comercial'
+            },
+            date: {
+              type: 'string',
+              description: 'Data da reunião no formato YYYY-MM-DD'
+            },
+            startTime: {
+              type: 'string',
+              description: 'Horário de início no formato HH:MM'
+            },
+            endTime: {
+              type: 'string',
+              description: 'Horário de término no formato HH:MM'
+            }
+          },
+          required: ['title', 'date', 'startTime', 'endTime'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_create_presentation',
+        description: 'Efetiva a criação da nova reunião comercial da ação pendente no Google Agenda e banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_create_presentation',
+        description: 'Cancela e descarta a ação pendente de criação de reunião atual.',
         parameters: {
           type: 'object',
           properties: {},

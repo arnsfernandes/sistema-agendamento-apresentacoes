@@ -55,8 +55,15 @@ Regras importantes para a ação pendente:
    - Se o detalhe contiver "Cadastrar cliente", a ação é do tipo cadastro:
      * Se o usuário confirmar de forma natural, chame a tool 'confirm_create_client'.
      * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_create_client'.
+   - Se o detalhe contiver "Criar reunião comercial", a ação é do tipo criação de reunião:
+     * Se o usuário confirmar de forma natural, chame a tool 'confirm_create_presentation'.
+     * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_create_presentation'.
 
 2. Se não houver uma ação pendente:
+   - Se o usuário pedir para criar/agendar uma nova reunião comercial (ex: "Cria uma reunião de Alinhamento na terça às 10h até as 11h"):
+     1. Colete de forma natural os dados que faltarem (título, data, horário de início, horário de término).
+     2. Assim que tiver todos esses dados, chame 'prepare_create_presentation'.
+     3. Peça a confirmação do usuário.
    - Se o usuário pedir para agendar um participante:
      1. Chame a tool 'find_client' com o nome ou telefone informado para verificar se o cliente já existe.
      2. Se o cliente for encontrado, prossiga com o fluxo tradicional chamando 'prepare_schedule_participant' com o ID do cliente.
