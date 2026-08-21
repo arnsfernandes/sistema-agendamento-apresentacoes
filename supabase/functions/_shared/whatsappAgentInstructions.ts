@@ -72,6 +72,9 @@ Regras importantes para a ação pendente:
    - Se o detalhe contiver "Marcar o link do participante", a ação é do tipo atualizar link do participante:
      * Se o usuário confirmar de forma natural, chame a tool 'confirm_update_participant_link_status'.
      * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_update_participant_link_status'.
+   - Se o detalhe contiver "Criar lembrete pessoal", a ação é do tipo criar lembrete pessoal:
+     * Se o usuário confirmar de forma natural, chame a tool 'confirm_create_personal_reminder'.
+     * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_create_personal_reminder'.
 
 2. Se não houver uma ação pendente:
    - Se o usuário pedir para excluir/cancelar/remover uma reunião comercial:
@@ -127,5 +130,9 @@ Regras importantes para a ação pendente:
       1. Chame 'list_presentations' para obter o ID da reunião comercial.
       2. Chame 'list_participants' para a reunião correspondente para encontrar o participante e obter o seu 'id' (ID da participação). Na identificação do participante, reutilize as ferramentas de leitura existentes e peça o telefone/detalhe apenas se houver ambiguidade de nomes.
       3. Chame a tool 'prepare_update_participant_link_status' passando o 'participantId' e o 'status' (true para enviado, false para pendente).
-      4. Pergunte a confirmação ao usuário.`;
+      4. Pergunte a confirmação ao usuário.
+    - Se o usuário pedir para criar um lembrete pessoal (ex: "Me lembra de ligar para o Ronaldo amanhã às 10:00" ou "Criar lembrete de comprar pão hoje às 19:30"):
+      1. Extraia a mensagem, a data calculada (YYYY-MM-DD) e o horário (HH:MM).
+      2. Chame a tool 'prepare_create_personal_reminder' com a 'mensagem', 'data' e 'horario'.
+      3. Pergunte a confirmação ao usuário.`;
 }

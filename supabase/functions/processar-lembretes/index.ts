@@ -52,7 +52,10 @@ Deno.serve(async (req) => {
     const envSecret = Deno.env.get('LEMBRETES_CRON_SECRET')
     const reqSecret = req.headers.get('x-cron-secret')
 
-    if (!envSecret || reqSecret !== envSecret) {
+    const cleanEnv = envSecret ? envSecret.replace(/\s/g, '') : ''
+    const cleanReq = reqSecret ? reqSecret.replace(/\s/g, '') : ''
+
+    if (!cleanEnv || cleanReq !== cleanEnv) {
       return Response.json(
         { error: 'Acesso não autorizado.' },
         { status: 401, headers: corsHeaders }
@@ -81,11 +84,24 @@ Deno.serve(async (req) => {
       )
     }
 
+    const { data: reservadasPessoais, error: rpcPessoaisError } = await supabaseAdmin.rpc(
+      'reservar_lembretes_pessoais',
+      { p_limite: 10 }
+    )
+
+    if (rpcPessoaisError) {
+      console.error('Erro ao reservar lembretes pessoais:', rpcPessoaisError.message || 'Erro desconhecido')
+      return Response.json(
+        { error: 'Não foi possível reservar os lembretes pessoais para envio.' },
+        { status: 500, headers: corsHeaders }
+      )
+    }
+
     let _serverUrl = ""
     let _token = ""
     let integrationValida = false
 
-    if (reservadas && reservadas.length > 0) {
+    if ((reservadas && reservadas.length > 0) || (reservadasPessoais && reservadasPessoais.length > 0)) {
       const { data: activeIntegrationList, error: queryError } = await supabaseAdmin.rpc(
         'obter_whatsapp_integracao_ativa'
       )
@@ -305,11 +321,110 @@ Deno.serve(async (req) => {
       }
     }
 
+    const resultadosPessoais: Array<{
+      reminderId: number
+      hasWhatsapp: boolean
+      destinoValido: boolean
+      envioRealizado: boolean
+      messageId: string | null
+    }> = []
+
+    for (const lp of (reservadasPessoais || [])) {
+      try {
+        const { data: dbUserWhatsapp, error: dbUserWhatsappError } = await supabaseAdmin
+          .from('usuario_whatsapp')
+          .select('whatsapp_number')
+          .eq('user_id', lp.user_id)
+          .maybeSingle()
+
+        const dbWhatsappNumber = !dbUserWhatsappError && dbUserWhatsapp ? dbUserWhatsapp.whatsapp_number : null
+        const hasWhatsapp = !!dbWhatsappNumber
+        const destinoValido = validarNumeroDestino(dbWhatsappNumber)
+
+        let elegivel = integrationValida && destinoValido
+        let envioRealizado = false
+        let messageId = null
+
+        if (elegivel && dbWhatsappNumber) {
+          try {
+            const response = await fetch(`${_serverUrl}/send-message`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': _token
+              },
+              body: JSON.stringify({
+                number: dbWhatsappNumber,
+                text: lp.mensagem
+              })
+            })
+
+            const resData = await response.json()
+            if (response.ok && resData.success) {
+              envioRealizado = true
+              messageId = resData.messageId || null
+            } else {
+              console.error(`Erro ao enviar lembrete pessoal ${lp.id}:`, resData.error || 'Erro na resposta do gateway')
+            }
+          } catch (fetchErr: any) {
+            console.error(`Falha na requisição de envio para lembrete pessoal ${lp.id}:`, fetchErr.message || 'Erro de rede')
+          }
+        }
+
+        // Atualizar o banco de dados
+        try {
+          if (envioRealizado) {
+            const { error: updateError } = await supabaseAdmin
+              .from('lembretes_pessoais')
+              .update({
+                enviado_em: new Date().toISOString(),
+                reservado_em: null
+              })
+              .eq('id', lp.id)
+
+            if (updateError) throw updateError
+          } else {
+            const { error: updateError } = await supabaseAdmin
+              .from('lembretes_pessoais')
+              .update({
+                reservado_em: null
+              })
+              .eq('id', lp.id)
+
+            if (updateError) throw updateError
+          }
+        } catch (dbErr: any) {
+          console.error(`Erro ao atualizar estado para lembrete pessoal ${lp.id}:`, dbErr.message || 'Erro desconhecido')
+        }
+
+        console.log(`Lembrete pessoal ${lp.id} - Envio realizado: ${envioRealizado ? 'Sim' : 'Não'}`)
+
+        resultadosPessoais.push({
+          reminderId: Number(lp.id),
+          hasWhatsapp,
+          destinoValido,
+          envioRealizado,
+          messageId
+        })
+      } catch (err: any) {
+        console.error(`Erro ao processar lembrete pessoal ${lp.id}:`, err?.message || 'Erro desconhecido')
+        resultadosPessoais.push({
+          reminderId: Number(lp.id),
+          hasWhatsapp: false,
+          destinoValido: false,
+          envioRealizado: false,
+          messageId: null
+        })
+      }
+    }
+
     return Response.json(
       {
         success: true,
         count: reservadas?.length || 0,
-        resultados
+        resultados,
+        countPessoais: reservadasPessoais?.length || 0,
+        resultadosPessoais
       },
       { headers: corsHeaders }
     )

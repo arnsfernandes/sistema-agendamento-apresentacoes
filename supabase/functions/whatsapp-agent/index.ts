@@ -28,6 +28,14 @@ const getSaoPauloTodayDetails = () => {
   return formatter.format(date) // e.g. "quinta-feira, 20 de agosto de 2026"
 }
 
+const parseSaoPauloDateTime = (dateStr: string, timeStr: string): Date => {
+  const dummy = new Date(`${dateStr}T${timeStr}:00Z`)
+  const tzString = dummy.toLocaleString('sv', { timeZone: TIME_ZONE })
+  const spDate = new Date(tzString.replace(' ', 'T') + 'Z')
+  const diffMs = dummy.getTime() - spDate.getTime()
+  return new Date(dummy.getTime() + diffMs)
+}
+
 async function callOpenAI(apiKey: string, payload: Record<string, any>) {
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -1413,6 +1421,113 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_create_personal_reminder') {
+    const { mensagem, data, horario } = args
+
+    // Valida data/horário futuro no timezone America/Sao_Paulo
+    const targetDate = parseSaoPauloDateTime(data, horario)
+    if (targetDate <= new Date()) {
+      return { error: 'Não é possível agendar um lembrete para uma data/horário que já passou.' }
+    }
+
+    const pendingAction = {
+      type: 'create_personal_reminder',
+      mensagem,
+      disparar_em: targetDate.toISOString(),
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    const dateParts = data.split('-')
+    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de criar o lembrete pessoal "${mensagem}" para o dia ${formattedDate} às ${horario} salva como pendente. Aguardando confirmação.`
+    }
+  }
+
+  if (name === 'confirm_create_personal_reminder') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'create_personal_reminder') {
+      return { error: 'Não há nenhuma ação de criar lembrete pessoal pendente ou a pendência expirou.' }
+    }
+
+    try {
+      // Re-valida que o horário ainda está no futuro no momento da confirmação
+      const targetDate = new Date(pendingAction.disparar_em)
+      if (targetDate <= new Date()) {
+        throw new Error('A data/horário do lembrete já passou.')
+      }
+
+      const { error: insertError } = await supabaseAdmin
+        .from('lembretes_pessoais')
+        .insert({
+          user_id: userId,
+          mensagem: pendingAction.mensagem,
+          disparar_em: pendingAction.disparar_em
+        })
+
+      if (insertError) throw insertError
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Lembrete pessoal criado com sucesso.',
+        mensagem: pendingAction.mensagem,
+        disparar_em: pendingAction.disparar_em
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao criar lembrete pessoal: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_create_personal_reminder') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de criar lembrete pessoal cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -1574,6 +1689,12 @@ Deno.serve(async (req) => {
           const dateParts = pendingAction.presentationDate.split('-')
           const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
           pendingActionDetails = `Marcar o link do participante "${pendingAction.clientName}" na reunião "${pendingAction.presentationTitle}" em ${formattedDate} às ${pendingAction.presentationTime.slice(0, 5)} como "${statusLabel}"`
+        } else if (pendingAction.type === 'create_personal_reminder') {
+          const date = new Date(pendingAction.disparar_em)
+          const spStr = date.toLocaleString('sv', { timeZone: TIME_ZONE }).replace(' ', 'T')
+          const datePart = spStr.slice(0, 10).split('-').reverse().join('/')
+          const timePart = spStr.slice(11, 16)
+          pendingActionDetails = `Criar lembrete pessoal "${pendingAction.mensagem}" para o dia ${datePart} às ${timePart}`
         }
       }
     }
@@ -2147,6 +2268,52 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_update_participant_link_status',
         description: 'Cancela e descarta a ação pendente de alterar o status de link_enviado do participante.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_create_personal_reminder',
+        description: 'Salva uma ação pendente de criar um lembrete pessoal no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {
+            mensagem: {
+              type: 'string',
+              description: 'Texto/conteúdo do lembrete pessoal'
+            },
+            data: {
+              type: 'string',
+              description: 'Data de disparo no formato YYYY-MM-DD'
+            },
+            horario: {
+              type: 'string',
+              description: 'Horário de disparo no formato HH:MM'
+            }
+          },
+          required: ['mensagem', 'data', 'horario'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_create_personal_reminder',
+        description: 'Efetiva a criação do lembrete pessoal da ação pendente no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_create_personal_reminder',
+        description: 'Cancela e descarta a ação pendente de criação de lembrete pessoal.',
         parameters: {
           type: 'object',
           properties: {},

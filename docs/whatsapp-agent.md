@@ -103,6 +103,9 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_update_participant_link_status`**: Cria o registro temporário de pendência de alteração do status de link enviado de um participante.
 * **`confirm_update_participant_link_status`**: Executa a alteração definitiva de link_enviado na tabela de participações do Supabase.
 * **`cancel_update_participant_link_status`**: Limpa o registro de pendência de alteração do link_enviado do participante.
+* **`prepare_create_personal_reminder`**: Cria o registro temporário de pendência de criação de lembrete pessoal no banco de dados.
+* **`confirm_create_personal_reminder`**: Executa a criação definitiva do lembrete pessoal no banco de dados.
+* **`cancel_create_personal_reminder`**: Limpa o registro de pendência de criação de lembrete pessoal.
 
 ---
 
