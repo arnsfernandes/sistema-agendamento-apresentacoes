@@ -69,7 +69,7 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 ### Leitura (Read)
 * **`list_presentations`**: Consulta apresentações da agenda dentro de um intervalo de datas.
 * **`get_presentation_details`**: Retorna informações básicas de uma apresentação específica e seu link do Meet.
-* **`list_participants`**: Retorna os nomes dos participantes confirmados em uma reunião.
+* **`list_participants`**: Retorna os nomes dos participantes confirmados em uma reunião e o status de envio do link (`link_enviado`).
 * **`find_client`**: Busca registros de clientes por nome ou telefone.
 
 ### Escrita (Write)
@@ -100,6 +100,9 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_move_and_delete_presentation`**: Cria o registro temporário de pendência de mover participantes de reunião comercial.
 * **`confirm_move_and_delete_presentation`**: Executa a gravação definitiva de mover participantes e excluir no Google Agenda e banco de dados.
 * **`cancel_move_and_delete_presentation`**: Limpa o registro de pendência de mover participantes.
+* **`prepare_update_participant_link_status`**: Cria o registro temporário de pendência de alteração do status de link enviado de um participante.
+* **`confirm_update_participant_link_status`**: Executa a alteração definitiva de link_enviado na tabela de participações do Supabase.
+* **`cancel_update_participant_link_status`**: Limpa o registro de pendência de alteração do link_enviado do participante.
 
 ---
 

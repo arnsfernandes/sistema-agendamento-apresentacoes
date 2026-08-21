@@ -129,7 +129,7 @@ async function executeTool(
 
     const { data, error } = await supabaseAdmin
       .from('participacoes')
-      .select('id, status, clientes(nome, telefone)')
+      .select('id, status, link_enviado, clientes(nome, telefone)')
       .eq('apresentacao_id', presentation_id)
       .eq('status', status)
 
@@ -1291,6 +1291,128 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_update_participant_link_status') {
+    const { participantId, status } = args
+
+    // Valida que o participante pertence a uma reunião do usuário e à integração Google ativa
+    const { data: part, error: partError } = await supabaseAdmin
+      .from('participacoes')
+      .select('id, status, link_enviado, apresentacoes!inner(titulo, data, horario, user_id, google_integracao_id), clientes(nome)')
+      .eq('id', participantId)
+      .eq('apresentacoes.user_id', userId)
+      .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+      .maybeSingle()
+
+    if (partError || !part) {
+      return { error: 'Participante não encontrado ou você não tem permissão para gerenciar esta participação nesta integração ativa.' }
+    }
+
+    const pendingAction = {
+      type: 'update_participant_link_status',
+      participantId,
+      status,
+      clientName: part.clientes?.nome || 'Participante',
+      presentationTitle: part.apresentacoes?.titulo || 'Reunião',
+      presentationDate: part.apresentacoes?.data || '',
+      presentationTime: part.apresentacoes?.horario || '',
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    const statusLabel = status ? 'enviado' : 'pendente (não enviado)'
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de marcar o link do participante "${pendingAction.clientName}" na reunião "${pendingAction.presentationTitle}" como "${statusLabel}" salva como pendente. Aguardando confirmação.`
+    }
+  }
+
+  if (name === 'confirm_update_participant_link_status') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'update_participant_link_status') {
+      return { error: 'Não há nenhuma ação de atualizar status do link de participante pendente ou a pendência expirou.' }
+    }
+
+    try {
+      // Re-valida que o participante pertence a uma reunião do usuário e à integração Google ativa
+      const { data: part, error: partError } = await supabaseAdmin
+        .from('participacoes')
+        .select('id, apresentacoes!inner(user_id, google_integracao_id)')
+        .eq('id', pendingAction.participantId)
+        .eq('apresentacoes.user_id', userId)
+        .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+        .maybeSingle()
+
+      if (partError || !part) {
+        throw new Error('Permissão negada ou participação inexistente.')
+      }
+
+      // Atualiza a coluna no banco
+      const { error: updateError } = await supabaseAdmin
+        .from('participacoes')
+        .update({ link_enviado: pendingAction.status })
+        .eq('id', pendingAction.participantId)
+
+      if (updateError) throw updateError
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: `Status de envio do link do participante "${pendingAction.clientName}" atualizado com sucesso para: ${pendingAction.status ? 'enviado' : 'pendente'}.`,
+        participantId: pendingAction.participantId,
+        status: pendingAction.status
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao atualizar status do link do participante: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_update_participant_link_status') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de atualizar status do link de participante cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -1447,6 +1569,11 @@ Deno.serve(async (req) => {
           const tDateParts = pendingAction.targetDate.split('-')
           const tFormattedDate = `${tDateParts[2]}/${tDateParts[1]}/${tDateParts[0]}`
           pendingActionDetails = `Mover participantes da reunião comercial de ID ${pendingAction.sourcePresentationId} ("${pendingAction.sourceTitle}" em ${sFormattedDate} às ${pendingAction.sourceStartTime}) para a reunião de ID ${pendingAction.targetPresentationId} ("${pendingAction.targetTitle}" em ${tFormattedDate} às ${pendingAction.targetStartTime}) e depois excluir a de origem`
+        } else if (pendingAction.type === 'update_participant_link_status') {
+          const statusLabel = pendingAction.status ? 'enviado' : 'pendente'
+          const dateParts = pendingAction.presentationDate.split('-')
+          const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+          pendingActionDetails = `Marcar o link do participante "${pendingAction.clientName}" na reunião "${pendingAction.presentationTitle}" em ${formattedDate} às ${pendingAction.presentationTime.slice(0, 5)} como "${statusLabel}"`
         }
       }
     }
@@ -1978,6 +2105,48 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_move_and_delete_presentation',
         description: 'Cancela e descarta a ação pendente de mover participantes e excluir.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_update_participant_link_status',
+        description: 'Salva uma ação pendente de atualizar o status de envio do link (link_enviado) de um participante.',
+        parameters: {
+          type: 'object',
+          properties: {
+            participantId: {
+              type: 'integer',
+              description: 'ID da participação do cliente (id retornado por list_participants)'
+            },
+            status: {
+              type: 'boolean',
+              description: 'O novo status de link_enviado (true para enviado, false para pendente)'
+            }
+          },
+          required: ['participantId', 'status'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_update_participant_link_status',
+        description: 'Efetiva a alteração do status de link_enviado da ação pendente no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_update_participant_link_status',
+        description: 'Cancela e descarta a ação pendente de alterar o status de link_enviado do participante.',
         parameters: {
           type: 'object',
           properties: {},
