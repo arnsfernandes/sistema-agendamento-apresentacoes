@@ -73,9 +73,12 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`find_client`**: Busca registros de clientes por nome ou telefone.
 
 ### Escrita (Write)
-* **`prepare_schedule_participant`**: Cria ou atualiza o registro temporário de pendência de agendamento em cache de banco de dados.
-* **`confirm_schedule_participant`**: Executa e grava a confirmação definitiva utilizando a regra central de negócios do backend.
-* **`cancel_schedule_participant`**: Limpa o registro de pendência.
+* **`prepare_schedule_participant`**: Cria o registro temporário de pendência de agendamento no banco de dados.
+* **`confirm_schedule_participant`**: Executa a gravação definitiva de agendamento usando o módulo central do backend.
+* **`cancel_schedule_participant`**: Limpa o registro de pendência de agendamento.
+* **`prepare_reschedule_participant`**: Cria o registro temporário de pendência de remarcação de participante entre duas apresentações no banco de dados.
+* **`confirm_reschedule_participant`**: Executa a gravação definitiva de remarcação (troca de reunião) usando o módulo central do backend.
+* **`cancel_reschedule_participant`**: Limpa o registro de pendência de remarcação.
 
 ---
 

@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { scheduleParticipant, BusinessRuleError } from '../_shared/scheduling.ts'
+import { scheduleParticipant, rescheduleParticipant, BusinessRuleError } from '../_shared/scheduling.ts'
 import { getAgentInstructions } from '../_shared/whatsappAgentInstructions.ts'
 
 const corsHeaders = {
@@ -22,8 +22,8 @@ const getSaoPauloTodayDetails = () => {
     timeZone: TIME_ZONE,
     weekday: 'long',
     year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    month: 'long',
+    day: 'numeric',
   })
   return formatter.format(date) // e.g. "quinta-feira, 20 de agosto de 2026"
 }
@@ -55,7 +55,10 @@ async function executeTool(
   contextData: any
 ) {
   if (name === 'list_presentations') {
-    const { start_date, end_date } = args
+    let { start_date, end_date } = args
+    if (start_date.includes('T')) start_date = start_date.split('T')[0]
+    if (end_date.includes('T')) end_date = end_date.split('T')[0]
+
     const { data, error } = await supabaseAdmin
       .from('apresentacoes')
       .select('id, titulo, data, horario, horario_fim')
@@ -100,7 +103,7 @@ async function executeTool(
 
     const { data, error } = await supabaseAdmin
       .from('participacoes')
-      .select('id, status, clientes(nome, telefone, agencia)')
+      .select('id, status, clientes(nome, telefone)')
       .eq('apresentacao_id', presentation_id)
       .eq('status', 'ativo')
 
@@ -260,6 +263,141 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_reschedule_participant') {
+    const { participant_id, from_presentation_id, to_presentation_id } = args
+
+    // 1. Verify source meeting exists and belongs to user
+    const { data: fromMeeting } = await supabaseAdmin
+      .from('apresentacoes')
+      .select('id, titulo')
+      .eq('id', from_presentation_id)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    // 2. Verify destination meeting exists and belongs to user
+    const { data: toMeeting } = await supabaseAdmin
+      .from('apresentacoes')
+      .select('id, titulo')
+      .eq('id', to_presentation_id)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    // 3. Verify participation exists for that presentation
+    const { data: participation } = await supabaseAdmin
+      .from('participacoes')
+      .select('id, cliente_id, clientes(nome)')
+      .eq('id', participant_id)
+      .eq('apresentacao_id', from_presentation_id)
+      .maybeSingle()
+
+    if (!fromMeeting || !toMeeting || !participation) {
+      return { error: 'Reunião de origem, reunião de destino ou a participação selecionada não foram encontradas no banco de dados.' }
+    }
+
+    const clientName = participation.clientes?.nome || 'Cliente'
+
+    // Save pending reschedule action
+    const pendingAction = {
+      type: 'reschedule_participant',
+      participant_id,
+      from_presentation_id,
+      to_presentation_id,
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de remarcar "${clientName}" da reunião "${fromMeeting.titulo}" para a reunião "${toMeeting.titulo}" salva como pendente. Aguardando confirmação do usuário.`
+    }
+  }
+
+  if (name === 'confirm_reschedule_participant') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'reschedule_participant') {
+      return { error: 'Não há nenhuma ação de remarcação pendente no momento ou a pendência expirou.' }
+    }
+
+    try {
+      // Execute shared rescheduling rules module
+      const res = await rescheduleParticipant(
+        supabaseAdmin,
+        userId,
+        googleIntegracaoId,
+        pendingAction.participant_id,
+        pendingAction.from_presentation_id,
+        pendingAction.to_presentation_id
+      )
+
+      // Clear pending action on success
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Remarcação concluída com sucesso no banco de dados.',
+        participation: res.participation
+      }
+    } catch (err: any) {
+      // Clear pending action even on validation failure to enforce flow
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      if (err.name === 'BusinessRuleError' || err instanceof BusinessRuleError) {
+        return {
+          status: 'error',
+          code: err.code,
+          message: `Falha de validação: ${err.message}`,
+          details: err.details
+        }
+      }
+
+      return {
+        status: 'error',
+        message: `Falha de validação: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_reschedule_participant') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de remarcação cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -347,13 +485,26 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString()
           })
       } else {
-        const { data: cl } = await supabaseAdmin.from('clientes').select('nome, telefone').eq('id', pendingAction.client_id).maybeSingle()
-        const { data: pr } = await supabaseAdmin.from('apresentacoes').select('titulo, data, horario').eq('id', pendingAction.presentation_id).maybeSingle()
+        if (pendingAction.type === 'schedule_participant') {
+          const { data: cl } = await supabaseAdmin.from('clientes').select('nome, telefone').eq('id', pendingAction.client_id).maybeSingle()
+          const { data: pr } = await supabaseAdmin.from('apresentacoes').select('titulo, data, horario').eq('id', pendingAction.presentation_id).maybeSingle()
 
-        if (cl && pr) {
-          const dateParts = pr.data.split('-')
-          const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
-          pendingActionDetails = `Agendar participante "${cl.nome}" (Telefone: ${cl.telefone}) na reunião "${pr.titulo}" no dia ${formattedDate} às ${pr.horario.slice(0, 5)}`
+          if (cl && pr) {
+            const dateParts = pr.data.split('-')
+            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+            pendingActionDetails = `Agendar participante "${cl.nome}" (Telefone: ${cl.telefone}) na reunião "${pr.titulo}" no dia ${formattedDate} às ${pr.horario.slice(0, 5)}`
+          }
+        } else if (pendingAction.type === 'reschedule_participant') {
+          const { data: part } = await supabaseAdmin.from('participacoes').select('id, cliente_id, clientes(nome)').eq('id', pendingAction.participant_id).maybeSingle()
+          const { data: fromPr } = await supabaseAdmin.from('apresentacoes').select('titulo').eq('id', pendingAction.from_presentation_id).maybeSingle()
+          const { data: toPr } = await supabaseAdmin.from('apresentacoes').select('titulo, data, horario').eq('id', pendingAction.to_presentation_id).maybeSingle()
+
+          if (part && fromPr && toPr) {
+            const clientName = part.clientes?.nome || 'Cliente'
+            const dateParts = toPr.data.split('-')
+            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+            pendingActionDetails = `Remarcar participante "${clientName}" da reunião "${fromPr.titulo}" para a reunião "${toPr.titulo}" no dia ${formattedDate} às ${toPr.horario.slice(0, 5)}`
+          }
         }
       }
     }
@@ -487,6 +638,52 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_schedule_participant',
         description: 'Cancela e descarta a ação pendente de agendamento atual.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_reschedule_participant',
+        description: 'Salva uma ação pendente de remarcação de participante entre duas apresentações comerciais.',
+        parameters: {
+          type: 'object',
+          properties: {
+            participant_id: {
+              type: 'integer',
+              description: 'ID da participação existente do cliente a ser movido'
+            },
+            from_presentation_id: {
+              type: 'integer',
+              description: 'ID da reunião comercial de origem'
+            },
+            to_presentation_id: {
+              type: 'integer',
+              description: 'ID da reunião comercial futura de destino'
+            }
+          },
+          required: ['participant_id', 'from_presentation_id', 'to_presentation_id'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_reschedule_participant',
+        description: 'Efetiva a remarcação da ação pendente no banco de dados aplicando todas as regras de validação do Meety.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_reschedule_participant',
+        description: 'Cancela e descarta a ação pendente de remarcação atual.',
         parameters: {
           type: 'object',
           properties: {},

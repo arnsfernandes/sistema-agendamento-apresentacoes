@@ -38,9 +38,16 @@ AÇÃO PENDENTE DE CONFIRMAÇÃO DO BACKEND (Validade de 5 minutos):
 
 Regras importantes para a ação pendente:
 1. Se houver uma ação pendente (diferente de "Nenhuma ação pendente"):
-   - Se o usuário confirmar a ação de forma natural (ex: "sim", "pode", "isso mesmo", "pode agendar", "ok", "confirmar"), chame obrigatoriamente a tool 'confirm_schedule_participant'.
-   - Se o usuário recusar/cancelar de forma natural (ex: "não", "deixa pra lá", "cancela", "não quero mais"), chame obrigatoriamente a tool 'cancel_schedule_participant'.
-   - Se o usuário solicitar a alteração de alguma informação (ex: "não, coloca na reunião das 12h" ou "agenda o João na outra"), chame a tool 'prepare_schedule_participant' com os novos IDs/dados correspondentes.
+   - Se o detalhe contiver "Agendar participante", a ação é do tipo agendamento:
+     * Se o usuário confirmar de forma natural (ex: "sim", "pode", "isso mesmo", "pode agendar", "ok", "confirmar"), chame a tool 'confirm_schedule_participant'.
+     * Se o usuário recusar/cancelar de forma natural (ex: "não", "deixa pra lá", "cancela", "não quero mais"), chame a tool 'cancel_schedule_participant'.
+     * Se o usuário solicitar alteração de dados, chame a tool 'prepare_schedule_participant' com os novos parâmetros.
+   - Se o detalhe contiver "Remarcar participante", a ação é do tipo remarcação:
+     * Se o usuário confirmar de forma natural, chame a tool 'confirm_reschedule_participant'.
+     * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_reschedule_participant'.
+     * Se o usuário solicitar alteração de dados, chame a tool 'prepare_reschedule_participant' com os novos parâmetros.
+
 2. Se não houver uma ação pendente:
-   - Se o usuário pedir para agendar um participante (ex: "Coloca o João na reunião de amanhã às 14h"), você deve buscar o cliente (find_client) e a reunião (list_presentations) usando tools. Se identificados, chame obrigatoriamente a tool 'prepare_schedule_participant' para salvar a pendência no banco de dados. Em seguida, apresente os detalhes ao usuário e pergunte explicitamente se ele confirma. Não confirme ao usuário sem ter invocado 'prepare_schedule_participant' primeiro.`;
+   - Se o usuário pedir para agendar um participante (ex: "Coloca o João na reunião de amanhã às 14h"), busque cliente e reunião e chame a tool 'prepare_schedule_participant'. Pergunte a confirmação depois disso.
+   - Se o usuário pedir para remarcar/mover um participante de uma reunião para outra (ex: "Remarca o Ronaldo da reunião de amanhã para a de sexta" ou "Move o participante X do dia Y para o dia Z"), busque o participante na reunião de origem, busque a reunião de destino e chame obrigatoriamente a tool 'prepare_reschedule_participant' para salvar a pendência no banco de dados. Em seguida, apresente os detalhes ao usuário e pergunte explicitamente se ele confirma. Não confirme ao usuário sem ter invocado 'prepare_reschedule_participant' primeiro.`;
 }
