@@ -113,6 +113,9 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_update_participation_observation`**: Cria o registro temporário de pendência de atualização da observação da participação.
 * **`confirm_update_participation_observation`**: Executa a atualização definitiva da observação da participação no banco de dados.
 * **`cancel_update_participation_observation`**: Limpa o registro de pendência de atualização da observação.
+* **`prepare_delete_client`**: Cria o registro temporário de pendência de inativação/exclusão lógica do cliente.
+* **`confirm_delete_client`**: Executa a inativação/exclusão lógica definitiva do cliente no banco de dados.
+* **`cancel_delete_client`**: Limpa o registro de pendência de exclusão do cliente.
 
 ---
 

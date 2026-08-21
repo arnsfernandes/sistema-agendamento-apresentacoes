@@ -1554,6 +1554,186 @@ async function executeTool(
     return data || []
   }
 
+  if (name === 'prepare_delete_client') {
+    const { clientId } = args
+
+    // 1. Fetch client and validate user/integration ownership
+    const { data: client, error: clientErr } = await supabaseAdmin
+      .from('clientes')
+      .select('id, nome, excluido')
+      .eq('id', clientId)
+      .eq('user_id', userId)
+      .eq('google_integracao_id', googleIntegracaoId)
+      .maybeSingle()
+
+    if (clientErr) throw clientErr
+    if (!client || client.excluido) {
+      return { error: 'Cliente não encontrado ou já inativo.' }
+    }
+
+    // 2. Check for active participations in future presentations (data >= hoje em America/Sao_Paulo)
+    const todaySaoPaulo = new Date().toLocaleDateString('sv', { timeZone: TIME_ZONE })
+
+    const { data: futureParticipations, error: partErr } = await supabaseAdmin
+      .from('participacoes')
+      .select(`
+        id,
+        apresentacoes!inner (
+          id,
+          titulo,
+          data
+        )
+      `)
+      .eq('cliente_id', clientId)
+      .eq('status', 'ativo')
+      .gte('apresentacoes.data', todaySaoPaulo)
+      .eq('apresentacoes.user_id', userId)
+      .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+
+    if (partErr) throw partErr
+    if (futureParticipations && futureParticipations.length > 0) {
+      const meetingsList = futureParticipations.map(p => {
+        const dateParts = p.apresentacoes?.data.split('-')
+        const formattedDate = dateParts ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : p.apresentacoes?.data
+        return `"${p.apresentacoes?.titulo}" em ${formattedDate}`
+      }).join(', ')
+      return { error: `Este cliente possui reuniões futuras (${meetingsList}). Remova-o dessas reuniões antes de excluir.` }
+    }
+
+    // 3. Save pending action
+    const pendingAction = {
+      type: 'delete_client',
+      clientId,
+      clientName: client.nome,
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de excluir o cliente "${client.nome}" salva como pendente. Confirma a exclusão?`
+    }
+  }
+
+  if (name === 'confirm_delete_client') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'delete_client') {
+      return { error: 'Não há nenhuma ação de excluir cliente pendente ou a pendência expirou.' }
+    }
+
+    const { clientId, clientName } = pendingAction
+
+    try {
+      // 1. Re-validate the client belongs to user + integration and is not already excluded
+      const { data: client, error: clientErr } = await supabaseAdmin
+        .from('clientes')
+        .select('id, nome, excluido')
+        .eq('id', clientId)
+        .eq('user_id', userId)
+        .eq('google_integracao_id', googleIntegracaoId)
+        .maybeSingle()
+
+      if (clientErr) throw clientErr
+      if (!client || client.excluido) {
+        return { error: 'Cliente não encontrado ou já inativo.' }
+      }
+
+      // 2. Re-validate no active future meetings (data >= hoje)
+      const todaySaoPaulo = new Date().toLocaleDateString('sv', { timeZone: TIME_ZONE })
+
+      const { data: futureParticipations, error: partErr } = await supabaseAdmin
+        .from('participacoes')
+        .select(`
+          id,
+          apresentacoes!inner (
+            id,
+            titulo,
+            data
+          )
+        `)
+        .eq('cliente_id', clientId)
+        .eq('status', 'ativo')
+        .gte('apresentacoes.data', todaySaoPaulo)
+        .eq('apresentacoes.user_id', userId)
+        .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+
+      if (partErr) throw partErr
+      if (futureParticipations && futureParticipations.length > 0) {
+        const meetingsList = futureParticipations.map(p => {
+          const dateParts = p.apresentacoes?.data.split('-')
+          const formattedDate = dateParts ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : p.apresentacoes?.data
+          return `"${p.apresentacoes?.titulo}" em ${formattedDate}`
+        }).join(', ')
+        return { error: `Este cliente possui reuniões futuras (${meetingsList}). Remova-o dessas reuniões antes de excluir.` }
+      }
+
+      // 3. Perform logical deletion (excluido = true)
+      const { error: deleteError } = await supabaseAdmin
+        .from('clientes')
+        .update({ excluido: true })
+        .eq('id', clientId)
+
+      if (deleteError) throw deleteError
+
+      // 4. Clear pending action
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: `Cliente "${clientName}" inativado com sucesso.`,
+        clientId
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao inativar cliente: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_delete_client') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de excluir cliente cancelada e removida com sucesso.'
+    }
+  }
+
   if (name === 'prepare_update_client') {
     const { clientId, nome, telefone, agencia } = args
 
@@ -2031,6 +2211,8 @@ Deno.serve(async (req) => {
         } else if (pendingAction.type === 'update_participation_observation') {
           const actionText = pendingAction.newObservacao ? `para "${pendingAction.newObservacao}"` : 'como vazia'
           pendingActionDetails = `Atualizar a observação de "${pendingAction.clientName}" na reunião "${pendingAction.presentationTitle}" ${actionText}`
+        } else if (pendingAction.type === 'delete_client') {
+          pendingActionDetails = `Excluir o cliente "${pendingAction.clientName}" (ID: ${pendingAction.clientId})`
         }
       }
     }
@@ -2762,6 +2944,44 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_update_participation_observation',
         description: 'Cancela e descarta a ação pendente de atualizar a observação do participante.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_delete_client',
+        description: 'Salva uma ação pendente de inativação/exclusão lógica de um cliente.',
+        parameters: {
+          type: 'object',
+          properties: {
+            clientId: {
+              type: 'integer',
+              description: 'ID do cliente a ser excluído logicamente'
+            }
+          },
+          required: ['clientId'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_delete_client',
+        description: 'Efetiva a inativação/exclusão lógica do cliente da ação pendente no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_delete_client',
+        description: 'Cancela e descarta a ação pendente de excluir/inativar o cliente.',
         parameters: {
           type: 'object',
           properties: {},

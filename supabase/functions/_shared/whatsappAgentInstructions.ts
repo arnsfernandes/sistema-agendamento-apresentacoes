@@ -81,6 +81,9 @@ Regras importantes para a ação pendente:
    - Se o detalhe contiver "Atualizar a observação de", a ação é do tipo atualizar observação do participante:
      * Se o usuário confirmar de forma natural, chame a tool 'confirm_update_participation_observation'.
      * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_update_participation_observation'.
+   - Se o detalhe contiver "Excluir o cliente", a ação é do tipo excluir cliente:
+     * Se o usuário confirmar de forma natural, chame a tool 'confirm_delete_client'.
+     * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_delete_client'.
 
 2. Se não houver uma ação pendente:
    - Se o usuário pedir para excluir/cancelar/remover uma reunião comercial:
@@ -155,5 +158,10 @@ Regras importantes para a ação pendente:
       1. Chame 'list_presentations' para identificar a reunião comercial, e em seguida chame 'list_participants' para encontrar o participante e obter seu 'id' (ID da participação) e a observação atual.
       2. CRÍTICO: Se houver homônimos ou múltiplas reuniões, apresente as opções com detalhes e peça para o usuário indicar qual correto atualizar. Nunca tente adivinhar.
       3. Se o usuário quer apenas ver: responda diretamente sem confirmação (leitura).
-      4. Se o usuário quer alterar ou limpar a observação: chame 'prepare_update_participation_observation' com o 'participationId' e a nova 'observacao' (passe string vazia "" para limpar). Pergunte a confirmação ao usuário.`;
+      4. Se o usuário quer alterar ou limpar a observação: chame 'prepare_update_participation_observation' com o 'participationId' e a nova 'observacao' (passe string vazia "" para limpar). Pergunte a confirmação ao usuário.
+    - Se o usuário pedir para inativar, excluir ou remover um cliente:
+      1. Chame a tool 'find_client' para localizar o cliente e obter seu 'id'.
+      2. CRÍTICO (Homônimos): Se a busca retornar mais de um cliente (homônimos), exiba a lista com nome, telefone e agência e peça para o usuário indicar qual cliente correto inativar. Nunca tente adivinhar.
+      3. Chame a tool 'prepare_delete_client' informando o 'clientId'.
+      4. Pergunte a confirmação ao usuário.`;
 }
