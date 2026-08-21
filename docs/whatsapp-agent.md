@@ -110,6 +110,9 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_update_client`**: Cria o registro temporário de pendência de atualização dos dados cadastrais do cliente.
 * **`confirm_update_client`**: Executa a atualização definitiva dos dados cadastrais do cliente no banco de dados.
 * **`cancel_update_client`**: Limpa o registro de pendência de atualização do cliente.
+* **`prepare_update_participation_observation`**: Cria o registro temporário de pendência de atualização da observação da participação.
+* **`confirm_update_participation_observation`**: Executa a atualização definitiva da observação da participação no banco de dados.
+* **`cancel_update_participation_observation`**: Limpa o registro de pendência de atualização da observação.
 
 ---
 

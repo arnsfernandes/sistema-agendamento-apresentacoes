@@ -137,7 +137,7 @@ async function executeTool(
 
     const { data, error } = await supabaseAdmin
       .from('participacoes')
-      .select('id, status, link_enviado, clientes(nome, telefone)')
+      .select('id, status, link_enviado, observacao, clientes(nome, telefone)')
       .eq('apresentacao_id', presentation_id)
       .eq('status', status)
 
@@ -1723,6 +1723,138 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_update_participation_observation') {
+    const { participationId, observacao } = args
+
+    // Fetch the participation and join with apresentacoes to validate user ownership
+    const { data: part, error: partErr } = await supabaseAdmin
+      .from('participacoes')
+      .select(`
+        id,
+        observacao,
+        status,
+        apresentacoes!inner (
+          id,
+          titulo,
+          data,
+          horario,
+          user_id,
+          google_integracao_id
+        ),
+        clientes!inner (
+          nome
+        )
+      `)
+      .eq('id', participationId)
+      .eq('apresentacoes.user_id', userId)
+      .eq('apresentacoes.google_integracao_id', googleIntegracaoId)
+      .maybeSingle()
+
+    if (partErr) throw partErr
+    if (!part) {
+      return { error: 'Participação não encontrada ou sem acesso.' }
+    }
+
+    if (part.status === 'cancelado') {
+      return { error: 'Não é possível alterar a observação de uma participação cancelada.' }
+    }
+
+    const cleanObs = observacao !== undefined ? (observacao || '').trim() : ''
+
+    if (cleanObs === (part.observacao || '')) {
+      return { error: 'A observação fornecida já é igual à observação atual.' }
+    }
+
+    const pendingAction = {
+      type: 'update_participation_observation',
+      participationId,
+      clientName: part.clientes?.nome || 'Cliente',
+      presentationTitle: part.apresentacoes?.titulo || 'Reunião',
+      oldObservacao: part.observacao || '',
+      newObservacao: cleanObs,
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    const oldObsText = part.observacao ? `"${part.observacao}"` : '(vazio)'
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de atualizar a observação de "${part.clientes?.nome}" na reunião "${part.apresentacoes?.titulo}" salva como pendente. Alteração: de ${oldObsText} para ${cleanObs ? `"${cleanObs}"` : '(vazio)'}. Confirma?`
+    }
+  }
+
+  if (name === 'confirm_update_participation_observation') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'update_participation_observation') {
+      return { error: 'Não há nenhuma ação de atualizar observação pendente ou a pendência expirou.' }
+    }
+
+    try {
+      const { error: updateError } = await supabaseAdmin
+        .from('participacoes')
+        .update({ observacao: pendingAction.newObservacao || '' })
+        .eq('id', pendingAction.participationId)
+
+      if (updateError) throw updateError
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Observação da participação atualizada com sucesso.',
+        observacao: pendingAction.newObservacao
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao atualizar a observação da participação: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_update_participation_observation') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de atualizar a observação do participante cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -1896,6 +2028,9 @@ Deno.serve(async (req) => {
           if (pendingAction.newData.telefone !== pendingAction.oldData.telefone) changes.push(`Telefone para "${pendingAction.newData.telefone}"`)
           if (pendingAction.newData.agencia !== pendingAction.oldData.agencia) changes.push(`Agência para "${pendingAction.newData.agencia || '(vazio)'}"`)
           pendingActionDetails = `Atualizar dados do cliente ID ${pendingAction.clientId}: ${changes.join(', ')}`
+        } else if (pendingAction.type === 'update_participation_observation') {
+          const actionText = pendingAction.newObservacao ? `para "${pendingAction.newObservacao}"` : 'como vazia'
+          pendingActionDetails = `Atualizar a observação de "${pendingAction.clientName}" na reunião "${pendingAction.presentationTitle}" ${actionText}`
         }
       }
     }
@@ -2585,6 +2720,48 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_update_client',
         description: 'Cancela e descarta a ação pendente de atualizar o cliente.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_update_participation_observation',
+        description: 'Salva uma ação pendente de atualizar a observação de uma participação de participante.',
+        parameters: {
+          type: 'object',
+          properties: {
+            participationId: {
+              type: 'integer',
+              description: 'ID da participação a ser atualizada'
+            },
+            observacao: {
+              type: 'string',
+              description: 'Texto da nova observação. Envie vazio ("") ou null para limpar a observacao atual.'
+            }
+          },
+          required: ['participationId'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_update_participation_observation',
+        description: 'Efetiva a atualização da observação da participação da ação pendente no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_update_participation_observation',
+        description: 'Cancela e descarta a ação pendente de atualizar a observação do participante.',
         parameters: {
           type: 'object',
           properties: {},
