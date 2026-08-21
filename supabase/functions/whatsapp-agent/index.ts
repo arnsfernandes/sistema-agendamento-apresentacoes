@@ -59,6 +59,31 @@ async function executeTool(
     if (start_date.includes('T')) start_date = start_date.split('T')[0]
     if (end_date.includes('T')) end_date = end_date.split('T')[0]
 
+    // Pré-sincroniza do Google Agenda para o Supabase
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+      if (supabaseUrl && serviceRoleKey) {
+        const syncResponse = await fetch(`${supabaseUrl}/functions/v1/google-calendar-sync-apply`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'x-user-id': userId
+          },
+          body: JSON.stringify({
+            startDate: start_date,
+            endDate: end_date
+          })
+        })
+        if (!syncResponse.ok) {
+          console.warn(`Pré-sincronização list_presentations retornou status ${syncResponse.status}`)
+        }
+      }
+    } catch (syncErr) {
+      console.error('Erro ao pré-sincronizar list_presentations:', syncErr)
+    }
+
     const { data, error } = await supabaseAdmin
       .from('apresentacoes')
       .select('id, titulo, data, horario, horario_fim')
@@ -740,7 +765,7 @@ async function executeTool(
   }
 
   if (name === 'prepare_create_presentation') {
-    const { title, date, startTime, endTime } = args
+    const { title, date, startTime, endTime, isRecurring, recurringDays, recurrenceEndOption, recurrenceEndDate } = args
 
     const pendingAction = {
       type: 'create_presentation',
@@ -748,6 +773,10 @@ async function executeTool(
       date,
       startTime,
       endTime,
+      isRecurring: !!isRecurring,
+      recurringDays: Array.isArray(recurringDays) ? recurringDays : [],
+      recurrenceEndOption: recurrenceEndOption || 'never',
+      recurrenceEndDate: recurrenceEndDate || '',
       timestamp: new Date().toISOString()
     }
 
@@ -762,9 +791,16 @@ async function executeTool(
 
     if (saveError) throw saveError
 
+    let summary = `Ação de criar reunião comercial "${title}" no dia ${date} das ${startTime} às ${endTime}`
+    if (isRecurring) {
+      const daysLabel = recurringDays?.join(', ') || ''
+      const endLabel = recurrenceEndOption === 'date' && recurrenceEndDate ? ` até ${recurrenceEndDate}` : ' sem data de término'
+      summary += ` [Recorrência semanal às ${daysLabel}${endLabel}]`
+    }
+
     return {
       status: 'pending_confirmation',
-      message: `Ação de criar reunião comercial "${title}" no dia ${date} das ${startTime} às ${endTime} salva como pendente. Aguardando confirmação do usuário.`
+      message: `${summary} salva como pendente. Aguardando confirmação do usuário.`
     }
   }
 
@@ -790,7 +826,11 @@ async function executeTool(
           title: pendingAction.title,
           date: pendingAction.date,
           startTime: pendingAction.startTime,
-          endTime: pendingAction.endTime
+          endTime: pendingAction.endTime,
+          isRecurring: pendingAction.isRecurring,
+          recurringDays: pendingAction.recurringDays,
+          recurrenceEndOption: pendingAction.recurrenceEndOption,
+          recurrenceEndDate: pendingAction.recurrenceEndDate
         })
       })
 
@@ -798,6 +838,29 @@ async function executeTool(
 
       if (!response.ok || responseData.error) {
         throw new Error(responseData.error || 'Erro desconhecido ao criar apresentação no Google.')
+      }
+      // Se for recorrente, dispara a sincronização inicial das primeiras ocorrências do mês de início
+      if (pendingAction.isRecurring) {
+        try {
+          const presentationDateObj = new Date(pendingAction.date + 'T00:00:00')
+          const y = presentationDateObj.getFullYear()
+          const m = presentationDateObj.getMonth()
+          const startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+          const next = new Date(y, m + 1, 1)
+          const endDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+
+          await fetch(`${supabaseUrl}/functions/v1/google-calendar-sync-apply`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'x-user-id': userId
+            },
+            body: JSON.stringify({ startDate, endDate })
+          })
+        } catch (syncErr) {
+          console.error('Erro ao rodar sincronização automática pós-criação da recorrência:', syncErr)
+        }
       }
 
       await supabaseAdmin
@@ -1254,6 +1317,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Parâmetros userId e text são obrigatórios.' }, 400)
     }
 
+
     const openAiApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openAiApiKey) {
       return jsonResponse({ error: 'Chave do OpenAI não configurada no servidor.' }, 500)
@@ -1360,7 +1424,15 @@ Deno.serve(async (req) => {
         } else if (pendingAction.type === 'create_presentation') {
           const dateParts = pendingAction.date.split('-')
           const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
-          pendingActionDetails = `Criar reunião comercial "${pendingAction.title}" no dia ${formattedDate} das ${pendingAction.startTime} às ${pendingAction.endTime}`
+          let recurrenceStr = ''
+          if (pendingAction.isRecurring) {
+            const daysLabel = pendingAction.recurringDays?.join(', ') || ''
+            const endLabel = pendingAction.recurrenceEndOption === 'date' && pendingAction.recurrenceEndDate
+              ? ` até ${pendingAction.recurrenceEndDate.split('-').reverse().join('/')}`
+              : ' sem data de término'
+            recurrenceStr = ` [Recorrência semanal às ${daysLabel}${endLabel}]`
+          }
+          pendingActionDetails = `Criar reunião comercial "${pendingAction.title}" no dia ${formattedDate} das ${pendingAction.startTime} às ${pendingAction.endTime}${recurrenceStr}`
         } else if (pendingAction.type === 'update_presentation') {
           const dateParts = pendingAction.date.split('-')
           const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
@@ -1718,6 +1790,27 @@ Deno.serve(async (req) => {
             endTime: {
               type: 'string',
               description: 'Horário de término no formato HH:MM'
+            },
+            isRecurring: {
+              type: 'boolean',
+              description: 'Indica se a reunião possui recorrência semanal'
+            },
+            recurringDays: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+              },
+              description: 'Dias da semana da recorrência'
+            },
+            recurrenceEndOption: {
+              type: 'string',
+              enum: ['never', 'date'],
+              description: 'Opção de término da recorrência'
+            },
+            recurrenceEndDate: {
+              type: 'string',
+              description: 'Data de término da recorrência no formato YYYY-MM-DD'
             }
           },
           required: ['title', 'date', 'startTime', 'endTime'],

@@ -132,17 +132,29 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Usuário não autenticado.' }, 401)
     }
 
-    const userAccessToken = authorization.slice('Bearer '.length)
+    let user: any = null
+    const clientAccessToken = authorization.slice('Bearer '.length)
 
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey)
+    if (clientAccessToken === supabaseServiceRoleKey) {
+      const targetUserId = req.headers.get('x-user-id')
+      if (!targetUserId) {
+        return jsonResponse(
+          { error: 'Cabeçalho x-user-id é obrigatório para chamadas de service role.' },
+          400
+        )
+      }
+      user = { id: targetUserId }
+    } else {
+      const supabaseUser = createClient(supabaseUrl, supabaseAnonKey)
+      const {
+        data: { user: authUser },
+        error: userError,
+      } = await supabaseUser.auth.getUser(clientAccessToken)
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseUser.auth.getUser(userAccessToken)
-
-    if (userError || !user) {
-      return jsonResponse({ error: 'Usuário não autenticado.' }, 401)
+      if (userError || !authUser) {
+        return jsonResponse({ error: 'Usuário não autenticado.' }, 401)
+      }
+      user = authUser
     }
 
     const body = await req.json().catch(() => null)
