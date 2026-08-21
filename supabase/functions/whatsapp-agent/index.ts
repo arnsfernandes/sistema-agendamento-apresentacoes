@@ -972,6 +972,262 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_delete_presentation') {
+    const { presentationId, deleteParticipants, deleteScope } = args
+
+    // Fetch original presentation to get details for confirmation message
+    const { data: original, error: fetchErr } = await supabaseAdmin
+      .from('apresentacoes')
+      .select('titulo, data, horario')
+      .eq('id', presentationId)
+      .single()
+
+    if (fetchErr || !original) {
+      return { error: 'Reunião comercial não encontrada.' }
+    }
+
+    const pendingAction = {
+      type: 'delete_presentation',
+      presentationId,
+      deleteParticipants: !!deleteParticipants,
+      deleteScope: deleteScope || 'occurrence',
+      title: original.titulo,
+      date: original.data,
+      startTime: original.horario.slice(0, 5),
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de excluir a reunião comercial de ID ${presentationId} salva como pendente. Aguardando confirmação.`
+    }
+  }
+
+  if (name === 'confirm_delete_presentation') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'delete_presentation') {
+      return { error: 'Não há nenhuma ação de exclusão de reunião pendente ou a pendência expirou.' }
+    }
+
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/google-presentation-delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'x-user-id': userId
+        },
+        body: JSON.stringify({
+          presentationId: pendingAction.presentationId,
+          deleteParticipants: pendingAction.deleteParticipants,
+          deleteScope: pendingAction.deleteScope
+        })
+      })
+
+      const rawText = await response.text()
+      console.log('google-presentation-delete response status:', response.status, 'body:', rawText)
+
+      let responseData: any = {}
+      try {
+        responseData = JSON.parse(rawText)
+      } catch (jsonErr) {
+        throw new Error(`Status ${response.status}: Resposta não-JSON do servidor de exclusão: ${rawText.slice(0, 100)}`)
+      }
+
+      if (!response.ok || responseData.error) {
+        throw new Error(responseData.error || `Status ${response.status}: Erro ao excluir apresentação.`)
+      }
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Reunião comercial excluída com sucesso.',
+        presentationId: pendingAction.presentationId
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao excluir reunião: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_delete_presentation') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de exclusão de reunião cancelada e removida com sucesso.'
+    }
+  }
+
+  if (name === 'prepare_move_and_delete_presentation') {
+    const { sourcePresentationId, targetPresentationId } = args
+
+    // Fetch original source and target presentations
+    const { data: source, error: sourceErr } = await supabaseAdmin
+      .from('apresentacoes')
+      .select('titulo, data, horario')
+      .eq('id', sourcePresentationId)
+      .single()
+
+    const { data: target, error: targetErr } = await supabaseAdmin
+      .from('apresentacoes')
+      .select('titulo, data, horario')
+      .eq('id', targetPresentationId)
+      .single()
+
+    if (sourceErr || !source || targetErr || !target) {
+      return { error: 'Reunião comercial de origem ou de destino não encontrada.' }
+    }
+
+    const pendingAction = {
+      type: 'move_and_delete_presentation',
+      sourcePresentationId,
+      targetPresentationId,
+      sourceTitle: source.titulo,
+      sourceDate: source.data,
+      sourceStartTime: source.horario.slice(0, 5),
+      targetTitle: target.titulo,
+      targetDate: target.data,
+      targetStartTime: target.horario.slice(0, 5),
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de mover participantes da reunião ID ${sourcePresentationId} para reunião ID ${targetPresentationId} e excluir a origem salva como pendente. Aguardando confirmação.`
+    }
+  }
+
+  if (name === 'confirm_move_and_delete_presentation') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'move_and_delete_presentation') {
+      return { error: 'Não há nenhuma ação de mover participantes pendente ou a pendência expirou.' }
+    }
+
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/google-presentation-move-and-delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'x-user-id': userId
+        },
+        body: JSON.stringify({
+          sourcePresentationId: pendingAction.sourcePresentationId,
+          targetPresentationId: pendingAction.targetPresentationId
+        })
+      })
+
+      const responseData = await response.json()
+
+      if (!response.ok || responseData.error) {
+        throw new Error(responseData.error || 'Erro desconhecido ao mover participantes e excluir apresentação de origem.')
+      }
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Participantes movidos e reunião de origem excluída com sucesso.',
+        sourcePresentationId: pendingAction.sourcePresentationId,
+        targetPresentationId: pendingAction.targetPresentationId
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao mover participantes e excluir: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_move_and_delete_presentation') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de mover participantes e excluir cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -1109,6 +1365,16 @@ Deno.serve(async (req) => {
           const dateParts = pendingAction.date.split('-')
           const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
           pendingActionDetails = `Editar reunião comercial de ID ${pendingAction.presentationId} para: Título: "${pendingAction.title}", Dia: ${formattedDate}, das ${pendingAction.startTime} às ${pendingAction.endTime} (Escopo: ${pendingAction.editScope === 'series' ? 'Série completa' : 'Apenas esta ocorrência'})`
+        } else if (pendingAction.type === 'delete_presentation') {
+          const dateParts = pendingAction.date.split('-')
+          const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+          pendingActionDetails = `Excluir a reunião comercial de ID ${pendingAction.presentationId} ("${pendingAction.title}" em ${formattedDate} às ${pendingAction.startTime}) com deleteParticipants: ${pendingAction.deleteParticipants} e deleteScope: ${pendingAction.deleteScope === 'series' ? 'Série completa' : 'Apenas esta ocorrência'}`
+        } else if (pendingAction.type === 'move_and_delete_presentation') {
+          const sDateParts = pendingAction.sourceDate.split('-')
+          const sFormattedDate = `${sDateParts[2]}/${sDateParts[1]}/${sDateParts[0]}`
+          const tDateParts = pendingAction.targetDate.split('-')
+          const tFormattedDate = `${tDateParts[2]}/${tDateParts[1]}/${tDateParts[0]}`
+          pendingActionDetails = `Mover participantes da reunião comercial de ID ${pendingAction.sourcePresentationId} ("${pendingAction.sourceTitle}" em ${sFormattedDate} às ${pendingAction.sourceStartTime}) para a reunião de ID ${pendingAction.targetPresentationId} ("${pendingAction.targetTitle}" em ${tFormattedDate} às ${pendingAction.targetStartTime}) e depois excluir a de origem`
         }
       }
     }
@@ -1537,6 +1803,94 @@ Deno.serve(async (req) => {
           required: [],
           additionalProperties: false
         }
+      },
+      {
+        type: 'function',
+        name: 'prepare_delete_presentation',
+        description: 'Salva uma ação pendente de excluir uma reunião comercial no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {
+            presentationId: {
+              type: 'integer',
+              description: 'ID da reunião comercial a ser excluída'
+            },
+            deleteParticipants: {
+              type: 'boolean',
+              description: 'Se verdadeiro, exclui os participantes da reunião'
+            },
+            deleteScope: {
+              type: 'string',
+              description: 'Escopo de exclusão para reuniões recorrentes: "occurrence" ou "series"'
+            }
+          },
+          required: ['presentationId', 'deleteParticipants'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_delete_presentation',
+        description: 'Efetiva a exclusão da reunião comercial da ação pendente no Google Agenda e banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_delete_presentation',
+        description: 'Cancela e descarta a ação pendente de exclusão de reunião atual.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_move_and_delete_presentation',
+        description: 'Salva uma ação pendente de mover participantes de uma reunião de origem para uma de destino e excluir a de origem.',
+        parameters: {
+          type: 'object',
+          properties: {
+            sourcePresentationId: {
+              type: 'integer',
+              description: 'ID da reunião de origem'
+            },
+            targetPresentationId: {
+              type: 'integer',
+              description: 'ID da reunião de destino'
+            }
+          },
+          required: ['sourcePresentationId', 'targetPresentationId'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_move_and_delete_presentation',
+        description: 'Efetiva a movimentação de participantes e exclusão da reunião de origem da ação pendente.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_move_and_delete_presentation',
+        description: 'Cancela e descarta a ação pendente de mover participantes e excluir.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
       }
     ]
 
@@ -1645,10 +1999,6 @@ Deno.serve(async (req) => {
           pending_action: latestContext?.pending_action || null,
           updated_at: new Date().toISOString()
         })
-
-      if (contextSaveError) {
-        console.error('Erro ao atualizar contexto de responses no banco:', contextSaveError)
-      }
 
       return jsonResponse({ responseText })
 

@@ -94,6 +94,12 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_update_presentation`**: Cria o registro temporário de pendência de edição de reunião comercial.
 * **`confirm_update_presentation`**: Executa a gravação definitiva da edição de reunião no Google Agenda e banco de dados.
 * **`cancel_update_presentation`**: Limpa o registro de pendência de edição de reunião.
+* **`prepare_delete_presentation`**: Cria o registro temporário de pendência de exclusão de reunião comercial.
+* **`confirm_delete_presentation`**: Executa a gravação definitiva da exclusão de reunião no Google Agenda e banco de dados.
+* **`cancel_delete_presentation`**: Limpa o registro de pendência de exclusão de reunião.
+* **`prepare_move_and_delete_presentation`**: Cria o registro temporário de pendência de mover participantes de reunião comercial.
+* **`confirm_move_and_delete_presentation`**: Executa a gravação definitiva de mover participantes e excluir no Google Agenda e banco de dados.
+* **`cancel_move_and_delete_presentation`**: Limpa o registro de pendência de mover participantes.
 
 ---
 

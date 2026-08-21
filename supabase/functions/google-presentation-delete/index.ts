@@ -43,20 +43,35 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Inicializa o cliente Supabase com a role do usuário para validação de sessão
-    const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      { global: { headers: { Authorization: authHeader } } }
-    )
+    let user: any = null
+    const clientAccessToken = authHeader.replace('Bearer ', '')
 
-    // Valida se o usuário está autenticado
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Usuário não autenticado.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    if (clientAccessToken === supabaseServiceRoleKey) {
+      const targetUserId = req.headers.get('x-user-id')
+      if (!targetUserId) {
+        return new Response(
+          JSON.stringify({ error: 'Cabeçalho x-user-id é obrigatório para chamadas de service role.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      user = { id: targetUserId }
+    } else {
+      // Inicializa o cliente Supabase com a role do usuário para validação de sessão
+      const supabaseClient = createClient(
+        supabaseUrl,
+        supabaseAnonKey,
+        { global: { headers: { Authorization: authHeader } } }
       )
+
+      // Valida se o usuário está autenticado
+      const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser()
+      if (authError || !authUser) {
+        return new Response(
+          JSON.stringify({ error: 'Usuário não autenticado.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      user = authUser
     }
 
     // Obtém o parâmetro presentationId e valida
