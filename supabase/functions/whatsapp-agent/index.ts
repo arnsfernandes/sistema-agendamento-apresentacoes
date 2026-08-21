@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { scheduleParticipant, rescheduleParticipant, cancelParticipant, reactivateParticipant, BusinessRuleError } from '../_shared/scheduling.ts'
+import { scheduleParticipant, rescheduleParticipant, cancelParticipant, reactivateParticipant, createClient as backendCreateClient, BusinessRuleError } from '../_shared/scheduling.ts'
 import { getAgentInstructions } from '../_shared/whatsappAgentInstructions.ts'
 
 const corsHeaders = {
@@ -634,6 +634,111 @@ async function executeTool(
     }
   }
 
+  if (name === 'prepare_create_client') {
+    const { nome, telefone, agencia } = args
+
+    // Save pending client creation action
+    const pendingAction = {
+      type: 'create_client',
+      nome,
+      telefone,
+      agencia: agencia || '',
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de cadastrar novo cliente "${nome}" com telefone "${telefone}" salva como pendente. Aguardando confirmação do usuário.`
+    }
+  }
+
+  if (name === 'confirm_create_client') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'create_client') {
+      return { error: 'Não há nenhuma ação de cadastro de cliente pendente ou a pendência expirou.' }
+    }
+
+    try {
+      const client = await backendCreateClient(
+        supabaseAdmin,
+        userId,
+        googleIntegracaoId,
+        {
+          nome: pendingAction.nome,
+          telefone: pendingAction.telefone,
+          agencia: pendingAction.agencia
+        }
+      )
+
+      // Clear pending action on success
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Cliente cadastrado com sucesso.',
+        client
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      if (err.name === 'BusinessRuleError' || err instanceof BusinessRuleError) {
+        return {
+          status: 'error',
+          code: err.code,
+          message: `Falha de validação: ${err.message}`,
+          details: err.details
+        }
+      }
+
+      return {
+        status: 'error',
+        message: `Falha ao cadastrar cliente: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_create_client') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de cadastro de cliente cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -761,6 +866,8 @@ Deno.serve(async (req) => {
             const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
             pendingActionDetails = `Reativar participante "${clientName}" na reunião "${pr.titulo}" no dia ${formattedDate} às ${pr.horario.slice(0, 5)}`
           }
+        } else if (pendingAction.type === 'create_client') {
+          pendingActionDetails = `Cadastrar cliente "${pendingAction.nome}" (Telefone: ${pendingAction.telefone}${pendingAction.agencia ? `, Agência: ${pendingAction.agencia}` : ''})`
         }
       }
     }
@@ -1029,6 +1136,52 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_reactivate_participant',
         description: 'Cancela e descarta a ação pendente de reativação de participação atual.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_create_client',
+        description: 'Salva uma ação pendente de cadastrar um novo cliente no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {
+            nome: {
+              type: 'string',
+              description: 'Nome completo do cliente a ser cadastrado'
+            },
+            telefone: {
+              type: 'string',
+              description: 'Telefone do cliente (DDD + Número)'
+            },
+            agencia: {
+              type: 'string',
+              description: 'Agência opcional do cliente'
+            }
+          },
+          required: ['nome', 'telefone'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_create_client',
+        description: 'Efetiva o cadastro do novo cliente da ação pendente no banco de dados aplicando todas as regras do Meety.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_create_client',
+        description: 'Cancela e descarta a ação pendente de cadastro de cliente atual.',
         parameters: {
           type: 'object',
           properties: {},

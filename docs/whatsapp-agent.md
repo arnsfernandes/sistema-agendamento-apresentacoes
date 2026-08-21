@@ -85,6 +85,9 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_reactivate_participant`**: Cria o registro temporário de pendência de reativação de participação no banco de dados.
 * **`confirm_reactivate_participant`**: Executa a gravação definitiva de reativação de participação (muda status para ativo) usando o módulo central do backend.
 * **`cancel_reactivate_participant`**: Limpa o registro de pendência de reativação de participação.
+* **`prepare_create_client`**: Cria o registro temporário de pendência de cadastro de novo cliente.
+* **`confirm_create_client`**: Executa a gravação definitiva de cadastro de cliente usando o módulo central do backend.
+* **`cancel_create_client`**: Limpa o registro de pendência de cadastro de cliente.
 
 ---
 
