@@ -50,22 +50,19 @@ export const findClientByPhone = async (telefone) => {
 }
 
 export const createClient = async ({ nome, telefone, agencia }) => {
-  const { userId, googleIntegracaoId } = await getActiveIntegration()
-  if (!googleIntegracaoId) {
-    throw new Error('Não é possível cadastrar cliente sem uma conta Google ativa conectada.')
-  }
-
-  const { data, error } = await supabase
-    .from('clientes')
-    .insert([{ nome, telefone, agencia, user_id: userId, google_integracao_id: googleIntegracaoId }])
-    .select(CLIENT_FIELDS)
-    .single()
+  const { data, error } = await supabase.functions.invoke('create-client', {
+    body: { nome, telefone, agencia }
+  })
 
   if (error) {
-    handleDbError(error, 'cadastrar o cliente')
+    throw new Error(error.message || 'Erro ao comunicar com o servidor.')
   }
 
-  return data
+  if (data && data.error) {
+    throw new Error(data.error)
+  }
+
+  return data.client
 }
 
 export const updateClient = async (clienteId, { nome, telefone, agencia }) => {

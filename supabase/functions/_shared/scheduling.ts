@@ -89,22 +89,7 @@ export async function scheduleParticipant(
   }
 
   if (!client) {
-    const { data: newClient, error: createError } = await supabaseAdmin
-      .from('clientes')
-      .insert([{
-        nome: participantData.nome,
-        telefone: participantData.telefone,
-        agencia: participantData.agencia || '',
-        user_id: userId,
-        google_integracao_id: googleIntegracaoId
-      }])
-      .select('id, nome, telefone, agencia')
-      .single()
-
-    if (createError) {
-      throw new Error('Erro ao cadastrar novo cliente.')
-    }
-    client = newClient
+    client = await createClient(supabaseAdmin, userId, googleIntegracaoId, participantData)
   }
 
   // 3. Verify existing participation on the same presentation
@@ -467,4 +452,60 @@ export async function reactivateParticipant(
     success: true,
     participation: updatedParticipation
   }
+}
+
+export async function createClient(
+  supabaseAdmin: any,
+  userId: string,
+  googleIntegracaoId: number,
+  clientData: { nome: string; telefone: string; agencia?: string }
+) {
+  const nome = (clientData.nome || '').trim()
+  if (!nome) {
+    throw new BusinessRuleError('Nome é obrigatório.', 'CLIENT_NAME_REQUIRED')
+  }
+
+  const cleanTel = (clientData.telefone || '').replace(/\D/g, '')
+  if (!cleanTel) {
+    throw new BusinessRuleError('Telefone é obrigatório.', 'CLIENT_PHONE_REQUIRED')
+  }
+
+  if (cleanTel.length !== 10 && cleanTel.length !== 11) {
+    throw new BusinessRuleError('Telefone deve conter 10 ou 11 dígitos.', 'CLIENT_PHONE_INVALID_LENGTH')
+  }
+
+  // Verify duplicate telephone in same integration
+  const { data: existing, error: findError } = await supabaseAdmin
+    .from('clientes')
+    .select('id')
+    .eq('telefone', cleanTel)
+    .eq('user_id', userId)
+    .eq('google_integracao_id', googleIntegracaoId)
+    .maybeSingle()
+
+  if (findError) {
+    throw new Error(`Erro ao verificar duplicidade de cliente: ${findError.message}`)
+  }
+
+  if (existing) {
+    throw new BusinessRuleError('Já existe um cliente cadastrado com este telefone.', 'CLIENT_DUPLICATE_PHONE')
+  }
+
+  const { data: newClient, error: createError } = await supabaseAdmin
+    .from('clientes')
+    .insert([{
+      nome,
+      telefone: cleanTel,
+      agencia: clientData.agencia || '',
+      user_id: userId,
+      google_integracao_id: googleIntegracaoId
+    }])
+    .select('id, nome, telefone, agencia')
+    .single()
+
+  if (createError) {
+    throw new Error(`Erro ao cadastrar o cliente: ${createError.message}`)
+  }
+
+  return newClient
 }
