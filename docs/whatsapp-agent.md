@@ -71,6 +71,7 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`get_presentation_details`**: Retorna informações básicas de uma apresentação específica e seu link do Meet.
 * **`list_participants`**: Retorna os nomes dos participantes confirmados em uma reunião e o status de envio do link (`link_enviado`).
 * **`find_client`**: Busca registros de clientes por nome ou telefone.
+* **`list_personal_reminders`**: Consulta lembretes pessoais futuros/não enviados do próprio usuário dentro de um intervalo opcional.
 
 ### Escrita (Write)
 * **`prepare_schedule_participant`**: Cria o registro temporário de pendência de agendamento no banco de dados.
@@ -106,6 +107,9 @@ A resposta final deve ser curta, natural, fluida e conversacional, sem estrutura
 * **`prepare_create_personal_reminder`**: Cria o registro temporário de pendência de criação de lembrete pessoal no banco de dados.
 * **`confirm_create_personal_reminder`**: Executa a criação definitiva do lembrete pessoal no banco de dados.
 * **`cancel_create_personal_reminder`**: Limpa o registro de pendência de criação de lembrete pessoal.
+* **`prepare_update_client`**: Cria o registro temporário de pendência de atualização dos dados cadastrais do cliente.
+* **`confirm_update_client`**: Executa a atualização definitiva dos dados cadastrais do cliente no banco de dados.
+* **`cancel_update_client`**: Limpa o registro de pendência de atualização do cliente.
 
 ---
 

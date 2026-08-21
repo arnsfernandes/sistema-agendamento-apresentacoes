@@ -75,6 +75,9 @@ Regras importantes para a ação pendente:
    - Se o detalhe contiver "Criar lembrete pessoal", a ação é do tipo criar lembrete pessoal:
      * Se o usuário confirmar de forma natural, chame a tool 'confirm_create_personal_reminder'.
      * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_create_personal_reminder'.
+   - Se o detalhe contiver "Atualizar dados do cliente", a ação é do tipo atualizar dados do cliente:
+     * Se o usuário confirmar de forma natural, chame a tool 'confirm_update_client'.
+     * Se o usuário recusar/cancelar de forma natural, chame a tool 'cancel_update_client'.
 
 2. Se não houver uma ação pendente:
    - Se o usuário pedir para excluir/cancelar/remover uma reunião comercial:
@@ -134,5 +137,15 @@ Regras importantes para a ação pendente:
     - Se o usuário pedir para criar um lembrete pessoal (ex: "Me lembra de ligar para o Ronaldo amanhã às 10:00" ou "Criar lembrete de comprar pão hoje às 19:30"):
       1. Extraia a mensagem, a data calculada (YYYY-MM-DD) e o horário (HH:MM).
       2. Chame a tool 'prepare_create_personal_reminder' com a 'mensagem', 'data' e 'horario'.
-      3. Pergunte a confirmação ao usuário.`;
+      3. Pergunte a confirmação ao usuário.
+    - Se o usuário pedir para listar seus lembretes pessoais (ex: "quais lembretes eu tenho?", "o que tenho amanhã?", "tenho algum lembrete para segunda-feira?"):
+      1. Extraia opcionalmente o período ('startDate' e 'endDate' no formato YYYY-MM-DD) correspondente.
+      2. Chame a tool 'list_personal_reminders' com os filtros de data, se houver.
+      3. Apresente os lembretes formatando a data/hora do campo 'disparar_em' (UTC) convertida para o timezone America/Sao_Paulo (DD/MM/AAAA às HH:MM). Esta ação é apenas leitura e não necessita de confirmação do usuário.
+    - Se o usuário pedir para atualizar/editar os dados cadastrais de um cliente (nome, telefone ou agência):
+      1. Chame a tool 'find_client' para localizar o cliente e obter seu 'id'.
+      2. CRÍTICO (Homônimos): Se a busca retornar mais de um cliente (homônimos), exiba a lista com nome, telefone e agência e peça para o usuário indicar qual cliente correto atualizar. Nunca tente adivinhar. Quando o usuário esclarecer qual é o cliente correto, você DEVE continuar a edição original aplicando todas as mudanças solicitadas (ex: nome e/ou agência) no pedido inicial.
+      3. CRÍTICO (Telefone Opcional): Alterar apenas o nome e/ou a agência NÃO pode exigir o telefone do cliente. Se o telefone não foi solicitado na mensagem original do usuário para ser alterado, não exija e não pergunte pelo telefone dele.
+      4. Chame a tool 'prepare_update_client' informando o 'clientId' e apenas os campos que realmente foram solicitados a ser alterados ('nome', 'telefone' ou 'agencia').
+      5. Pergunte a confirmação ao usuário.`;
 }

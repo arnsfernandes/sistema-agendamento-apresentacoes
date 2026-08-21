@@ -1528,6 +1528,201 @@ async function executeTool(
     }
   }
 
+  if (name === 'list_personal_reminders') {
+    const { startDate, endDate } = args
+
+    let query = supabaseAdmin
+      .from('lembretes_pessoais')
+      .select('id, mensagem, disparar_em')
+      .eq('user_id', userId)
+      .is('enviado_em', null)
+      .gt('disparar_em', new Date().toISOString())
+      .order('disparar_em', { ascending: true })
+
+    if (startDate) {
+      const startUtc = parseSaoPauloDateTime(startDate, '00:00').toISOString()
+      query = query.gte('disparar_em', startUtc)
+    }
+    if (endDate) {
+      const endUtc = parseSaoPauloDateTime(endDate, '23:59').toISOString()
+      query = query.lte('disparar_em', endUtc)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+
+    return data || []
+  }
+
+  if (name === 'prepare_update_client') {
+    const { clientId, nome, telefone, agencia } = args
+
+    const { data: client, error: clientErr } = await supabaseAdmin
+      .from('clientes')
+      .select('id, nome, telefone, agencia, excluido')
+      .eq('id', clientId)
+      .eq('user_id', userId)
+      .eq('google_integracao_id', googleIntegracaoId)
+      .maybeSingle()
+
+    if (clientErr) throw clientErr
+    if (!client || client.excluido) {
+      return { error: 'Cliente não encontrado ou inativo.' }
+    }
+
+    let cleanTel = client.telefone
+    if (telefone !== undefined) {
+      cleanTel = telefone.replace(/\D/g, '')
+      if (cleanTel.length !== 10 && cleanTel.length !== 11) {
+        return { error: 'Telefone deve conter 10 ou 11 dígitos.' }
+      }
+      if (cleanTel !== client.telefone) {
+        const { data: existing, error: findError } = await supabaseAdmin
+          .from('clientes')
+          .select('id')
+          .eq('telefone', cleanTel)
+          .eq('user_id', userId)
+          .eq('google_integracao_id', googleIntegracaoId)
+          .maybeSingle()
+
+        if (findError) throw findError
+        if (existing) {
+          return { error: 'Já existe um cliente cadastrado com este telefone.' }
+        }
+      }
+    }
+
+    const newNome = nome !== undefined ? nome.trim() : client.nome
+    const newTelefone = cleanTel
+    const newAgencia = agencia !== undefined ? agencia.trim() : client.agencia
+
+    if (newNome === client.nome && newTelefone === client.telefone && newAgencia === client.agencia) {
+      return { error: 'Nenhuma alteração informada em relação aos dados atuais.' }
+    }
+
+    const pendingAction = {
+      type: 'update_client',
+      clientId,
+      oldData: {
+        nome: client.nome,
+        telefone: client.telefone,
+        agencia: client.agencia
+      },
+      newData: {
+        nome: newNome,
+        telefone: newTelefone,
+        agencia: newAgencia
+      },
+      timestamp: new Date().toISOString()
+    }
+
+    const { error: saveError } = await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: pendingAction,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    if (saveError) throw saveError
+
+    // Resumo mostrando apenas os campos que realmente serão alterados
+    const changes: string[] = []
+    if (newNome !== client.nome) changes.push(`Nome: de "${client.nome}" para "${newNome}"`)
+    if (newTelefone !== client.telefone) changes.push(`Telefone: de "${client.telefone}" para "${newTelefone}"`)
+    if (newAgencia !== client.agencia) changes.push(`Agência: de "${client.agencia || '(vazio)'}" para "${newAgencia || '(vazio)'}"`)
+
+    return {
+      status: 'pending_confirmation',
+      message: `Ação de atualizar dados cadastrais do cliente "${client.nome}" salva como pendente. Alterações agendadas:\n- ${changes.join('\n- ')}\n\nConfirma as alterações?`
+    }
+  }
+
+  if (name === 'confirm_update_client') {
+    const pendingAction = contextData?.pending_action
+
+    if (!pendingAction || pendingAction.type !== 'update_client') {
+      return { error: 'Não há nenhuma ação de atualizar cliente pendente ou a pendência expirou.' }
+    }
+
+    try {
+      // Revalida duplicidade de telefone na confirmação se foi alterado
+      if (pendingAction.newData.telefone !== pendingAction.oldData.telefone) {
+        const { data: existing, error: findError } = await supabaseAdmin
+          .from('clientes')
+          .select('id')
+          .eq('telefone', pendingAction.newData.telefone)
+          .eq('user_id', userId)
+          .eq('google_integracao_id', googleIntegracaoId)
+          .maybeSingle()
+
+        if (findError) throw findError
+        if (existing) {
+          throw new Error('Já existe outro cliente cadastrado com este telefone.')
+        }
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from('clientes')
+        .update({
+          nome: pendingAction.newData.nome,
+          telefone: pendingAction.newData.telefone,
+          agencia: pendingAction.newData.agencia
+        })
+        .eq('id', pendingAction.clientId)
+        .eq('user_id', userId)
+        .eq('google_integracao_id', googleIntegracaoId)
+
+      if (updateError) throw updateError
+
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'success',
+        message: 'Cadastro do cliente atualizado com sucesso.',
+        client: pendingAction.newData
+      }
+    } catch (err: any) {
+      await supabaseAdmin
+        .from('whatsapp_agent_context')
+        .upsert({
+          user_id: userId,
+          pending_action: null,
+          previous_response_id: contextData?.previous_response_id || null,
+          updated_at: new Date().toISOString()
+        })
+
+      return {
+        status: 'error',
+        message: `Falha ao atualizar o cadastro do cliente: ${err.message}`
+      }
+    }
+  }
+
+  if (name === 'cancel_update_client') {
+    await supabaseAdmin
+      .from('whatsapp_agent_context')
+      .upsert({
+        user_id: userId,
+        pending_action: null,
+        previous_response_id: contextData?.previous_response_id || null,
+        updated_at: new Date().toISOString()
+      })
+
+    return {
+      status: 'canceled',
+      message: 'Ação pendente de atualizar cliente cancelada e removida com sucesso.'
+    }
+  }
+
   throw new Error(`Tool ${name} desconhecida.`)
 }
 
@@ -1695,6 +1890,12 @@ Deno.serve(async (req) => {
           const datePart = spStr.slice(0, 10).split('-').reverse().join('/')
           const timePart = spStr.slice(11, 16)
           pendingActionDetails = `Criar lembrete pessoal "${pendingAction.mensagem}" para o dia ${datePart} às ${timePart}`
+        } else if (pendingAction.type === 'update_client') {
+          const changes: string[] = []
+          if (pendingAction.newData.nome !== pendingAction.oldData.nome) changes.push(`Nome para "${pendingAction.newData.nome}"`)
+          if (pendingAction.newData.telefone !== pendingAction.oldData.telefone) changes.push(`Telefone para "${pendingAction.newData.telefone}"`)
+          if (pendingAction.newData.agencia !== pendingAction.oldData.agencia) changes.push(`Agência para "${pendingAction.newData.agencia || '(vazio)'}"`)
+          pendingActionDetails = `Atualizar dados do cliente ID ${pendingAction.clientId}: ${changes.join(', ')}`
         }
       }
     }
@@ -2314,6 +2515,76 @@ Deno.serve(async (req) => {
         type: 'function',
         name: 'cancel_create_personal_reminder',
         description: 'Cancela e descarta a ação pendente de criação de lembrete pessoal.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'list_personal_reminders',
+        description: 'Lista os lembretes pessoais pendentes/futuros do usuário, com filtros opcionais de data.',
+        parameters: {
+          type: 'object',
+          properties: {
+            startDate: {
+              type: 'string',
+              description: 'Filtro de data inicial no formato YYYY-MM-DD (inclusive)'
+            },
+            endDate: {
+              type: 'string',
+              description: 'Filtro de data final no formato YYYY-MM-DD (inclusive)'
+            }
+          },
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'prepare_update_client',
+        description: 'Salva uma ação pendente de atualizar dados cadastrais de um cliente.',
+        parameters: {
+          type: 'object',
+          properties: {
+            clientId: {
+              type: 'integer',
+              description: 'ID do cliente a ser atualizado'
+            },
+            nome: {
+              type: 'string',
+              description: 'Novo nome do cliente (opcional)'
+            },
+            telefone: {
+              type: 'string',
+              description: 'Novo telefone do cliente (opcional)'
+            },
+            agencia: {
+              type: 'string',
+              description: 'Nova agência do cliente (opcional)'
+            }
+          },
+          required: ['clientId'],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'confirm_update_client',
+        description: 'Efetiva a atualização dos dados cadastrais do cliente da ação pendente no banco de dados.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false
+        }
+      },
+      {
+        type: 'function',
+        name: 'cancel_update_client',
+        description: 'Cancela e descarta a ação pendente de atualizar o cliente.',
         parameters: {
           type: 'object',
           properties: {},
