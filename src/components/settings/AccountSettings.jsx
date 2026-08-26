@@ -235,9 +235,9 @@ export default function AccountSettings({ user }) {
 
   return (
     <div className="settings-section-card" style={{
-      backgroundColor: '#0B0C16',
-      border: '1px solid rgba(124, 92, 255, 0.28)',
-      boxShadow: '0 0 24px rgba(124, 92, 255, 0.06)',
+      backgroundColor: 'var(--bg-panel)',
+      border: '1px solid var(--border-accent)',
+      boxShadow: 'var(--shadow-card)',
       borderRadius: '18px',
       padding: '28px',
       boxSizing: 'border-box'
@@ -259,8 +259,8 @@ export default function AccountSettings({ user }) {
           </svg>
         </div>
         <div>
-          <h3 className="settings-section-title" style={{ fontSize: '20px', fontWeight: '700', color: '#F8FAFC', margin: 0, letterSpacing: 'normal', textTransform: 'none' }}>Minha Conta</h3>
-          <p className="settings-section-subtitle" style={{ fontSize: '14px', color: '#94A3B8', margin: 0 }}>Informações básicas do seu perfil de usuário.</p>
+          <h3 className="settings-section-title" style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', margin: 0, letterSpacing: 'normal', textTransform: 'none' }}>Minha Conta</h3>
+          <p className="settings-section-subtitle" style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>Informações básicas do seu perfil de usuário.</p>
         </div>
       </div>
 
@@ -276,17 +276,17 @@ export default function AccountSettings({ user }) {
         />
 
         {/* Divisor vertical */}
-        <div style={{ width: '1px', alignSelf: 'stretch', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+        <div style={{ width: '1px', alignSelf: 'stretch', backgroundColor: 'var(--border-color)' }} />
 
         {/* Coluna Direita: Dados */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: '#E2E8F0' }}>Nome</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>Nome</label>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: '#11131F',
-              border: focusedInput === 'nome' ? '1px solid #6366F1' : '1px solid rgba(148, 163, 184, 0.20)',
+              backgroundColor: 'var(--input-bg)',
+              border: focusedInput === 'nome' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
               borderRadius: '10px',
               height: '52px',
               padding: '0 16px',
@@ -306,7 +306,7 @@ export default function AccountSettings({ user }) {
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
-                  color: '#F8FAFC',
+                  color: 'var(--text-primary)',
                   fontSize: '15px'
                 }}
               />
@@ -314,12 +314,12 @@ export default function AccountSettings({ user }) {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: '#E2E8F0' }}>WhatsApp</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>WhatsApp</label>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: '#11131F',
-              border: focusedInput === 'whatsapp' ? '1px solid #6366F1' : '1px solid rgba(148, 163, 184, 0.20)',
+              backgroundColor: 'var(--input-bg)',
+              border: focusedInput === 'whatsapp' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
               borderRadius: '10px',
               height: '52px',
               padding: '0 16px',
@@ -340,7 +340,7 @@ export default function AccountSettings({ user }) {
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
-                  color: '#F8FAFC',
+                  color: 'var(--text-primary)',
                   fontSize: '15px'
                 }}
               />
@@ -348,12 +348,12 @@ export default function AccountSettings({ user }) {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: '#E2E8F0' }}>E-mail</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>E-mail</label>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: '#11131F',
-              border: focusedInput === 'email' ? '1px solid #6366F1' : '1px solid rgba(148, 163, 184, 0.20)',
+              backgroundColor: 'var(--input-bg)',
+              border: focusedInput === 'email' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
               borderRadius: '10px',
               height: '52px',
               padding: '0 16px',
@@ -374,7 +374,7 @@ export default function AccountSettings({ user }) {
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
-                  color: '#F8FAFC',
+                  color: 'var(--text-primary)',
                   fontSize: '15px',
                   cursor: 'not-allowed'
                 }}

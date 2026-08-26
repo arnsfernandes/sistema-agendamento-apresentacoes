@@ -34,13 +34,13 @@ export default function MeetingsPanel({
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '320px', flexShrink: 0 }}>
+    <div className="meetings-panel-container">
       {/* Resumo do Dia Card */}
       <div className="meetings-panel" style={{
         width: '100%',
-        backgroundColor: '#0B0C16',
-        border: '1px solid rgba(124, 92, 255, 0.28)',
-        boxShadow: '0 0 24px rgba(124, 92, 255, 0.06)',
+        backgroundColor: 'var(--bg-panel)',
+        border: '1px solid var(--border-accent)',
+        boxShadow: 'var(--shadow-card)',
         borderRadius: '18px',
         padding: '24px',
         boxSizing: 'border-box',
@@ -59,92 +59,82 @@ export default function MeetingsPanel({
             justifyContent: 'center',
             color: '#7C5CFF'
           }}>
-            <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', color: '#F8FAFC' }}>Resumo do dia</h3>
-            <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              {selectedDateKey ? formattedSelectedDate : 'Selecione um dia'}
-            </p>
+            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-primary)' }}>Resumo do dia</h3>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{selectedDateKey ? formattedSelectedDate : 'Selecione um dia'}</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
-          {selectedDateKey && activeDayMeetings.length > 0 ? (
-            activeDayMeetings.map((meeting) => {
-              const status = getStatusDetails(meeting)
-              const participantText = meeting.participantsList && meeting.participantsList.length > 0
-                ? meeting.participantsList.map(p => p.nome).join(', ')
-                : 'Sem participantes'
-
-              return (
-                <div
-                  key={meeting.id}
-                  onClick={() => {
-                    setSelectedMeetingId(meeting.id)
-                    setShowMeetLink(false)
-                    setMeetCopied(false)
-                    resetMessageStates()
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    backgroundColor: selectedMeetingId === meeting.id ? 'rgba(124, 92, 255, 0.08)' : '#07080F',
-                    border: selectedMeetingId === meeting.id ? '1px solid #7C5CFF' : '1px solid rgba(255, 255, 255, 0.03)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', overflow: 'hidden' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#F8FAFC', whiteSpace: 'nowrap' }}>
-                      {meeting.time ? meeting.time.slice(0, 5) : ''}
-                    </span>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: status.color, flexShrink: 0 }} />
-                    <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#F8FAFC', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {meeting.title}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
-                        👤 {participantText}
-                      </span>
+        {activeDayMeetings.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {activeDayMeetings.map((meeting) => (
+              <div
+                key={meeting.id}
+                onClick={() => {
+                  setSelectedMeetingId(meeting.id)
+                  setShowMeetLink(false)
+                  setMeetCopied(false)
+                  resetMessageStates()
+                }}
+                className={`panel-meeting-item ${selectedMeetingId === meeting.id ? 'active' : ''} ${meeting.syncStatus === 'google_deleted' ? 'deleted' : ''}`}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '0', flexGrow: 1 }}>
+                  <div style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    color: 'var(--text-primary)',
+                    backgroundColor: 'var(--bg-elevated)',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {meeting.time ? meeting.time.slice(0, 5) : ''}
+                  </div>
+                  <div style={{ minWidth: '0', flexGrow: 1 }}>
+                    <div style={{
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {meeting.title}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      {meeting.participantsList?.length || 0} {meeting.participantsList?.length === 1 ? 'participante' : 'participantes'}
                     </div>
                   </div>
-                  <span style={{
-                    padding: '2px 8px',
-                    borderRadius: '20px',
-                    border: `1px solid ${status.color}3d`,
-                    backgroundColor: `${status.color}0a`,
-                    color: status.color,
-                    fontSize: '0.7rem',
-                    fontWeight: '600',
-                    whiteSpace: 'nowrap',
-                    marginLeft: '8px'
-                  }}>
-                    {status.label}
-                  </span>
                 </div>
-              )
-            })
-          ) : (
-            <p style={{ margin: '12px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-              {selectedDateKey ? 'Nenhuma reunião para esta data.' : 'Selecione um dia no calendário.'}
-            </p>
-          )}
-        </div>
-
-        {selectedDateKey && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.04)', paddingTop: '12px', marginTop: '4px' }}>
-            <span
-              onClick={() => openPresentationModal(selectedDateKey)}
-              style={{ fontSize: '0.8rem', color: '#7C5CFF', fontWeight: '600', cursor: 'pointer' }}
-            >
-              + Agendar neste dia
-            </span>
+                <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', marginLeft: '6px', flexShrink: 0 }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: '12px', height: '12px' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 0', gap: '8px' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>{selectedDateKey ? 'Nenhuma reunião encontrada' : 'Selecione um dia'}</span>
+            {selectedDateKey && (
+              <span
+                onClick={() => openPresentationModal(selectedDateKey)}
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  color: '#7C5CFF',
+                  cursor: 'pointer',
+                  transition: 'color 150ms ease'
+                }}
+              >
+                + Agendar neste dia
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -152,9 +142,9 @@ export default function MeetingsPanel({
       {/* Próximas Reuniões Card */}
       <div className="meetings-panel" style={{
         width: '100%',
-        backgroundColor: '#0B0C16',
-        border: '1px solid rgba(124, 92, 255, 0.28)',
-        boxShadow: '0 0 24px rgba(124, 92, 255, 0.06)',
+        backgroundColor: 'var(--bg-panel)',
+        border: '1px solid var(--border-accent)',
+        boxShadow: 'var(--shadow-card)',
         borderRadius: '18px',
         padding: '24px',
         boxSizing: 'border-box',
@@ -167,13 +157,13 @@ export default function MeetingsPanel({
             <svg style={{ width: '18px', height: '18px', color: 'var(--text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', color: '#F8FAFC' }}>Próximas reuniões</h3>
+            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-primary)' }}>Próximas reuniões</h3>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {upcomingMeetings.length > 0 ? (
-            upcomingMeetings.map((meeting, index) => {
+            upcomingMeetings.map((meeting) => {
               const status = getStatusDetails(meeting)
               const { day, month } = formatShortDate(meeting.date)
               const participantText = meeting.participantsList && meeting.participantsList.length > 0
@@ -192,8 +182,6 @@ export default function MeetingsPanel({
                 statusIcon = '⊘'
               }
 
-              const isLast = index === upcomingMeetings.length - 1
-
               return (
                 <div
                   key={meeting.id}
@@ -204,17 +192,9 @@ export default function MeetingsPanel({
                     setMeetCopied(false)
                     resetMessageStates()
                   }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    paddingBottom: isLast ? '0' : '16px',
-                    borderBottom: isLast ? 'none' : '1px solid rgba(255, 255, 255, 0.06)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
+                  className={`panel-meeting-item ${selectedMeetingId === meeting.id ? 'active' : ''}`}
                 >
-                  <div style={{ display: 'flex', gap: '14px', alignItems: 'center', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', gap: '14px', alignItems: 'center', overflow: 'hidden', flexGrow: 1 }}>
                     <div style={{
                       display: 'flex',
                       flexDirection: 'column',
@@ -222,42 +202,48 @@ export default function MeetingsPanel({
                       justifyContent: 'center',
                       width: '44px',
                       height: '44px',
-                      backgroundColor: 'rgba(7, 8, 15, 0.3)',
+                      backgroundColor: 'var(--bg-primary)',
                       border: `1.5px solid ${status.color}`,
                       borderRadius: '10px',
                       flexShrink: 0
                     }}>
-                      <span style={{ fontSize: '1rem', fontWeight: '800', color: '#F8FAFC', lineHeight: 1 }}>{day}</span>
-                      <span style={{ fontSize: '0.6rem', fontWeight: '700', color: '#94A3B8', marginTop: '2px', lineHeight: 1 }}>{month}</span>
+                      <span style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1 }}>{day}</span>
+                      <span style={{ fontSize: '0.6rem', fontWeight: '700', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: 1 }}>{month}</span>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '500' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, flexGrow: 1 }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '500' }}>
                         {meeting.time ? meeting.time.slice(0, 5) : ''}
                       </span>
-                      <span style={{ fontSize: '0.9rem', color: '#F8FAFC', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
                         {meeting.title}
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#94A3B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
                         {participantText}
                       </span>
                     </div>
                   </div>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    border: `1.5px solid ${status.color}`,
-                    backgroundColor: `${status.color}14`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: status.color,
-                    fontWeight: '700',
-                    fontSize: '0.9rem',
-                    flexShrink: 0,
-                    marginLeft: '8px'
-                  }}>
-                    {statusIcon}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, marginLeft: '8px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      border: `1.5px solid ${status.color}`,
+                      backgroundColor: `${status.color}14`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: status.color,
+                      fontWeight: '700',
+                      fontSize: '0.9rem',
+                      flexShrink: 0
+                    }}>
+                      {statusIcon}
+                    </div>
+                    <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: '12px', height: '12px' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               )

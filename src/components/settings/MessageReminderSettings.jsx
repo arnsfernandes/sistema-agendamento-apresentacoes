@@ -62,9 +62,9 @@ export default function MessageReminderSettings({ user }) {
 
   return (
     <div className="settings-section-card" style={{
-      backgroundColor: '#0B0C16',
-      border: '1px solid rgba(124, 92, 255, 0.28)',
-      boxShadow: '0 0 24px rgba(124, 92, 255, 0.06)',
+      backgroundColor: 'var(--bg-panel)',
+      border: '1px solid var(--border-accent)',
+      boxShadow: 'var(--shadow-card)',
       borderRadius: '18px',
       padding: '28px',
       boxSizing: 'border-box',
@@ -73,8 +73,8 @@ export default function MessageReminderSettings({ user }) {
       gap: '24px'
     }}>
       <div>
-        <h3 className="settings-section-title" style={{ fontSize: '20px', fontWeight: '700', color: '#F8FAFC', margin: '0 0 8px 0', letterSpacing: 'normal', textTransform: 'none' }}>Lembrete automático</h3>
-        <p className="settings-section-subtitle" style={{ fontSize: '14px', color: '#94A3B8', margin: 0 }}>Essa mensagem é usada pelo sistema para enviar lembretes automáticos de reuniões agendadas.</p>
+        <h3 className="settings-section-title" style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 8px 0', letterSpacing: 'normal', textTransform: 'none' }}>Lembrete automático</h3>
+        <p className="settings-section-subtitle" style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>Essa mensagem é usada pelo sistema para enviar lembretes automáticos de reuniões agendadas.</p>
       </div>
 
       {/* Bloco Mensagem do lembrete */}
@@ -83,11 +83,11 @@ export default function MessageReminderSettings({ user }) {
         flexDirection: 'column',
         gap: '12px',
         padding: '20px',
-        backgroundColor: '#11131F',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--border-color)',
         borderRadius: '12px'
       }}>
-        <label style={{ color: '#E2E8F0', fontSize: '14px', fontWeight: '600' }}>Mensagem do lembrete</label>
+        <label style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '600' }}>Mensagem do lembrete</label>
         <textarea
           value={reminderMessage}
           onChange={(e) => setReminderMessage(e.target.value)}
@@ -104,9 +104,9 @@ export default function MessageReminderSettings({ user }) {
             padding: '16px',
             resize: 'vertical',
             borderRadius: '10px',
-            border: textareaFocused ? '1px solid #6366F1' : '1px solid rgba(148, 163, 184, 0.20)',
-            backgroundColor: '#0D0F1A',
-            color: '#F8FAFC',
+            border: textareaFocused ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
             outline: 'none',
             boxShadow: textareaFocused ? '0 0 0 3px rgba(99, 102, 241, 0.10)' : 'none',
             boxSizing: 'border-box',
@@ -121,8 +121,8 @@ export default function MessageReminderSettings({ user }) {
         alignItems: 'center',
         gap: '12px',
         padding: '20px',
-        backgroundColor: '#11131F',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--border-color)',
         borderRadius: '12px'
       }}>
         <input
@@ -142,7 +142,7 @@ export default function MessageReminderSettings({ user }) {
           htmlFor="reminder-without-participants"
           style={{
             fontSize: '14px',
-            color: '#E2E8F0',
+            color: 'var(--text-secondary)',
             fontWeight: '600',
             cursor: isEditingMessage ? 'pointer' : 'default',
             userSelect: 'none'

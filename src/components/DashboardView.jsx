@@ -49,8 +49,8 @@ export default function DashboardView({
 
   return (
     <div className="dashboard-content" style={{
-      backgroundColor: '#07080f',
-      color: '#ffffff',
+      backgroundColor: 'var(--bg-primary)',
+      color: 'var(--text-primary)',
       fontFamily: "'Outfit', sans-serif",
       padding: '2.5rem',
       height: '100vh',
@@ -65,7 +65,7 @@ export default function DashboardView({
             fontWeight: '700', 
             margin: '0 0 6px 0', 
             lineHeight: '1.1',
-            color: '#F8FAFC'
+            color: 'var(--text-primary)'
           }}>
             Olá, <span style={{ 
               background: 'linear-gradient(90deg, #A855F7 0%, #6366F1 100%)', 
@@ -75,13 +75,13 @@ export default function DashboardView({
             }}>{firstName}</span>
             <span style={{ marginLeft: '8px' }}>👋</span>
           </h1>
-          <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.95rem' }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
             {totalTodayCount === 0 ? (
               "Você não tem reuniões agendadas para hoje."
             ) : totalTodayCount === 1 ? (
-              <>Você tem <span style={{ color: '#ffffff', fontWeight: '500' }}>1 reunião agendada</span> para hoje.</>
+              <>Você tem <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>1 reunião agendada</span> para hoje.</>
             ) : (
-              <>Você tem <span style={{ color: '#ffffff', fontWeight: '500' }}>{totalTodayCount} reuniões agendadas</span> para hoje.</>
+              <>Você tem <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{totalTodayCount} reuniões agendadas</span> para hoje.</>
             )}
           </p>
         </div>
@@ -118,10 +118,10 @@ export default function DashboardView({
         justifyContent: 'space-between',
         padding: '1.75rem 2rem',
         borderRadius: '16px',
-        backgroundColor: '#0b0c16',
-        border: '1px solid rgba(79, 70, 230, 0.15)',
+        background: 'var(--bg-banner)',
+        border: '1px solid var(--border-accent)',
         marginBottom: '2rem',
-        boxShadow: 'inset 0 0 20px rgba(79, 70, 230, 0.05)'
+        boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <div style={{
@@ -141,27 +141,27 @@ export default function DashboardView({
             </svg>
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '600' }}>Seu dia, resumido</h3>
-            <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', color: '#94a3b8' }}>
-              Você está com a agenda equilibrada. <span style={{ color: '#ffffff' }}>Boa produtividade!</span>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '600', color: 'var(--text-primary)' }}>Seu dia, resumido</h3>
+            <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              Você está com a agenda equilibrada. <span style={{ color: 'var(--text-primary)' }}>Boa produtividade!</span>
             </p>
           </div>
         </div>
         <button
           onClick={() => onNavigate('calendario')}
+          className="btn-ver-agenda"
           style={{
             padding: '0.65rem 1.25rem',
             borderRadius: '8px',
-            backgroundColor: '#111322',
-            border: '1px solid rgba(255,255,255,0.08)',
-            color: '#ffffff',
+            backgroundColor: 'var(--bg-elevated)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-secondary)',
             fontSize: '0.85rem',
             fontWeight: '600',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            transition: 'background-color 0.2s'
+            gap: '0.5rem'
           }}
         >
           Ver agenda <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>→</span>

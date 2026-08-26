@@ -5,15 +5,15 @@ export default function AppearanceSettings({ theme, setTheme }) {
 
   return (
     <div className="settings-section-card" style={{
-      backgroundColor: '#0B0C16',
-      border: '1px solid rgba(124, 92, 255, 0.28)',
-      boxShadow: '0 0 24px rgba(124, 92, 255, 0.06)',
+      backgroundColor: 'var(--bg-panel)',
+      border: '1px solid var(--border-accent)',
+      boxShadow: 'var(--shadow-card)',
       borderRadius: '18px',
       padding: '28px',
       boxSizing: 'border-box'
     }}>
-      <h3 className="settings-section-title" style={{ fontSize: '20px', fontWeight: '700', color: '#F8FAFC', margin: '0 0 8px 0', letterSpacing: 'normal', textTransform: 'none' }}>Preferência de Tema</h3>
-      <p className="settings-section-subtitle" style={{ fontSize: '14px', color: '#94A3B8', margin: '0 0 24px 0' }}>Escolha entre a aparência Clara ou Escura para a interface da plataforma.</p>
+      <h3 className="settings-section-title" style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 8px 0', letterSpacing: 'normal', textTransform: 'none' }}>Preferência de Tema</h3>
+      <p className="settings-section-subtitle" style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '0 0 24px 0' }}>Escolha entre a aparência Clara ou Escura para a interface da plataforma.</p>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
         {[
@@ -57,8 +57,8 @@ export default function AppearanceSettings({ theme, setTheme }) {
               onMouseEnter={() => setHoveredCard(opt.id)}
               onMouseLeave={() => setHoveredCard(null)}
               style={{
-                backgroundColor: '#11131F',
-                border: isSelected ? '2px solid #818cf8' : (isHovered ? '1px solid rgba(124, 92, 255, 0.45)' : '1px solid rgba(255, 255, 255, 0.08)'),
+                backgroundColor: 'var(--bg-card)',
+                border: isSelected ? '2px solid var(--accent-color)' : (isHovered ? '1px solid var(--border-accent-strong)' : '1px solid var(--border-color)'),
                 boxShadow: isSelected ? '0 0 16px rgba(129, 140, 248, 0.15)' : 'none',
                 borderRadius: '12px',
                 padding: '24px',
@@ -76,9 +76,9 @@ export default function AppearanceSettings({ theme, setTheme }) {
                   position: 'absolute',
                   top: '12px',
                   right: '12px',
-                  backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                  border: '1px solid #6366F1',
-                  color: '#a5b4fc',
+                  backgroundColor: 'var(--accent-glow)',
+                  border: '1px solid var(--accent-color)',
+                  color: 'var(--accent-color)',
                   fontSize: '11px',
                   fontWeight: '700',
                   padding: '2px 8px',
@@ -93,8 +93,8 @@ export default function AppearanceSettings({ theme, setTheme }) {
                 width: '44px',
                 height: '44px',
                 borderRadius: '10px',
-                backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                color: isSelected ? '#a5b4fc' : '#94a3b8',
+                backgroundColor: isSelected ? 'var(--accent-glow)' : 'var(--bg-elevated)',
+                color: isSelected ? 'var(--accent-color)' : 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -103,8 +103,8 @@ export default function AppearanceSettings({ theme, setTheme }) {
                 {opt.icon}
               </div>
               <div>
-                <h4 style={{ color: '#F8FAFC', fontSize: '16px', fontWeight: '600', margin: '0 0 4px 0' }}>{opt.title}</h4>
-                <p style={{ color: '#94A3B8', fontSize: '13px', margin: 0, lineHeight: '1.4' }}>{opt.description}</p>
+                <h4 style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: '600', margin: '0 0 4px 0' }}>{opt.title}</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0, lineHeight: '1.4' }}>{opt.description}</p>
               </div>
             </div>
           )

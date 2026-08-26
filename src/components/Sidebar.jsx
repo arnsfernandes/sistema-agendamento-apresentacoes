@@ -61,8 +61,8 @@ export default function Sidebar({
   return (
     <aside className="sidebar" style={{
       width: collapsed ? '84px' : '260px',
-      backgroundColor: '#0b0c16',
-      borderRight: '1px solid rgba(255,255,255,0.04)',
+      backgroundColor: 'var(--bg-panel)',
+      borderRight: '1px solid var(--border-color)',
       display: 'flex',
       flexDirection: 'column',
       padding: collapsed ? '28px 14px 1.75rem 14px' : '28px 28px 1.75rem 28px',
@@ -92,7 +92,7 @@ export default function Sidebar({
               </linearGradient>
             </defs>
           </svg>
-          {!collapsed && <span style={{ color: '#F8FAFC', fontWeight: 700, fontSize: '24px', fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>Meety</span>}
+          {!collapsed && <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '24px', fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>Meety</span>}
         </div>
         {/* Toggle Collapse Chevron from mockup */}
         <button
@@ -143,9 +143,9 @@ export default function Sidebar({
                     border: 'none',
                     borderRadius: '10px',
                     backgroundColor: isAgendaActive
-                      ? 'rgba(79, 70, 229, 0.22)'
-                      : (isActive ? 'rgba(79, 70, 230, 0.15)' : 'transparent'),
-                    color: isAgendaActive ? '#F8FAFC' : (isActive ? '#ffffff' : '#94a3b8'),
+                      ? 'var(--accent-glow)'
+                      : (isActive ? 'var(--accent-hover)' : 'transparent'),
+                    color: isAgendaActive ? 'var(--text-primary)' : (isActive ? 'var(--text-primary)' : 'var(--text-muted)'),
                     fontSize: '0.9rem',
                     fontWeight: isAgendaActive ? '600' : '500',
                     cursor: 'pointer',
@@ -162,7 +162,7 @@ export default function Sidebar({
                       top: '6px',
                       bottom: '6px',
                       width: '3px',
-                      backgroundColor: '#a855f7',
+                      backgroundColor: 'var(--accent-color)',
                       borderRadius: '1.5px'
                     }} />
                   )}
@@ -172,7 +172,7 @@ export default function Sidebar({
                     justifyContent: 'center',
                     width: '20px',
                     height: '20px',
-                    color: isAgendaActive ? '#A5B4FC' : (isActive ? '#818cf8' : '#94a3b8'),
+                    color: isAgendaActive ? 'var(--accent-color)' : (isActive ? 'var(--accent-color)' : 'var(--text-muted)'),
                     flexShrink: 0
                   }}>{item.icon}</span>
                   {!collapsed && <span className="menu-label">{item.label}</span>}
@@ -186,9 +186,9 @@ export default function Sidebar({
         {!collapsed && (
           <div style={{
             marginTop: 'auto',
-            backgroundColor: '#111322',
-            border: '1px solid rgba(124, 92, 255, 0.28)',
-            boxShadow: '0 0 16px rgba(124, 92, 255, 0.04)',
+            backgroundColor: 'var(--bg-elevated)',
+            border: '1px solid var(--border-accent)',
+            boxShadow: 'var(--shadow-card)',
             borderRadius: '12px',
             padding: '1.1rem',
             display: 'flex',
@@ -215,8 +215,8 @@ export default function Sidebar({
               </svg>
             </div>
             <div style={{ marginTop: '0.2rem' }}>
-              <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: '#ffffff' }}>Agente de IA</h4>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.72rem', color: '#94a3b8', lineHeight: '1.3' }}>Seu assistente no WhatsApp para reuniões, clientes e agendamentos.</p>
+              <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-primary)' }}>Agente de IA</h4>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>Seu assistente no WhatsApp para reuniões, clientes e agendamentos.</p>
             </div>
             <button
               onMouseEnter={() => setBtnHovered(true)}
@@ -245,7 +245,7 @@ export default function Sidebar({
       <div style={{
         marginTop: collapsed ? 'auto' : '1.25rem',
         paddingTop: '1.25rem',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
+        borderTop: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.75rem'
@@ -274,13 +274,13 @@ export default function Sidebar({
           </div>
           {!collapsed && (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.88rem', fontWeight: '600', color: '#ffffff' }}>{userName}</span>
+              <span style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)' }}>{userName}</span>
             </div>
           )}
         </div>
 
         {/* Sair action separated by divider */}
-        {!collapsed && <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', margin: '0.2rem 0' }} />}
+        {!collapsed && <div style={{ borderTop: '1px solid var(--border-color)', margin: '0.2rem 0' }} />}
 
         <div style={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-start' }}>
           <button

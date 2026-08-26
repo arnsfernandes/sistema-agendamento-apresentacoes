@@ -9,21 +9,21 @@ export default function TodaySchedulePanel({ displayTodayMeetings, onNavigate, s
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{ 
-        backgroundColor: '#0b0c16', 
-        border: hovered ? '1px solid rgba(124, 92, 255, 0.52)' : '1px solid rgba(124, 92, 255, 0.28)', 
+        backgroundColor: 'var(--bg-panel)', 
+        border: hovered ? '1px solid var(--border-accent-strong)' : '1px solid var(--border-accent)', 
         borderRadius: '20px', 
         padding: '24px', 
         display: 'flex', 
         flexDirection: 'column', 
         gap: '1.5rem',
-        boxShadow: hovered ? '0 0 24px rgba(124, 92, 255, 0.1)' : '0 0 20px rgba(124, 92, 255, 0.04)',
+        boxShadow: 'var(--shadow-card)',
         transition: 'border-color 180ms ease, box-shadow 180ms ease',
         height: '100%',
         boxSizing: 'border-box'
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="#94a3b8" style={{ width: '20px', height: '20px' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25" />
           </svg>
@@ -33,9 +33,9 @@ export default function TodaySchedulePanel({ displayTodayMeetings, onNavigate, s
           onClick={() => onNavigate('calendario')}
           style={{
             fontSize: '0.8rem',
-            color: '#94a3b8',
-            backgroundColor: '#111322',
-            border: '1px solid rgba(255,255,255,0.06)',
+            color: 'var(--text-secondary)',
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
             borderRadius: '6px',
             padding: '0.4rem 0.8rem',
             cursor: 'pointer',
@@ -77,13 +77,13 @@ export default function TodaySchedulePanel({ displayTodayMeetings, onNavigate, s
                 gap: '12px',
                 alignItems: 'center',
                 paddingBlock: '14px',
-                borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
                 cursor: 'pointer'
               }}
             >
               {/* 1. Horário & Duração */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', lineHeight: 1.2 }}>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', lineHeight: 1.2 }}>
                   {m.horario ? m.horario.slice(0, 5) : '00:00'}
                 </span>
                 <span style={{ fontSize: '12px', color: '#64748b' }}>
@@ -102,7 +102,7 @@ export default function TodaySchedulePanel({ displayTodayMeetings, onNavigate, s
                   margin: 0,
                   fontSize: '0.95rem',
                   fontWeight: '600',
-                  color: '#ffffff',
+                  color: 'var(--text-primary)',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: 'vertical',
@@ -111,7 +111,7 @@ export default function TodaySchedulePanel({ displayTodayMeetings, onNavigate, s
                 }}>
                   {m.titulo}
                 </h4>
-                <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                   {partsText}
                 </span>
               </div>

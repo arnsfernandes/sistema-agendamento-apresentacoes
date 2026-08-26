@@ -151,11 +151,11 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
 
   // Input common inline style helper
   const getInputStyle = (inputName, hasError) => ({
-    backgroundColor: '#11131F',
+    backgroundColor: 'var(--input-bg)',
     border: hasError
       ? '1px solid #ef4444'
-      : (focusedInput === inputName ? '1px solid #6366F1' : '1px solid rgba(148, 163, 184, 0.22)'),
-    color: '#F8FAFC',
+      : (focusedInput === inputName ? '1px solid var(--accent-color)' : '1px solid var(--border-color)'),
+    color: 'var(--text-primary)',
     height: '52px',
     borderRadius: '10px',
     padding: '0 16px',
@@ -169,7 +169,7 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
 
   // Label common inline style
   const labelStyle = {
-    color: '#E2E8F0',
+    color: 'var(--text-secondary)',
     fontSize: '14px',
     fontWeight: '600',
     marginBottom: '6px',
@@ -196,9 +196,9 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
       <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{
         width: '100%',
         maxWidth: '690px',
-        backgroundColor: '#0B0C16',
-        border: '1px solid rgba(124, 92, 255, 0.45)',
-        boxShadow: '0 0 28px rgba(124, 92, 255, 0.10)',
+        backgroundColor: 'var(--bg-panel)',
+        border: '1px solid var(--border-accent)',
+        boxShadow: 'var(--shadow-card)',
         borderRadius: '20px',
         padding: '32px',
         boxSizing: 'border-box',
@@ -211,13 +211,13 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid var(--border-color)',
           paddingBottom: '16px'
         }}>
           <h3 className="modal-title" style={{
             fontSize: '24px',
             fontWeight: '700',
-            color: '#F8FAFC',
+            color: 'var(--text-primary)',
             textTransform: 'none',
             letterSpacing: 'normal',
             margin: 0
@@ -231,7 +231,7 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
             style={{
               background: 'none',
               border: 'none',
-              color: '#94A3B8',
+              color: 'var(--text-secondary)',
               fontSize: '28px',
               cursor: 'pointer',
               padding: '0 4px',
@@ -342,13 +342,13 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                 cursor: 'pointer'
               }}
             />
-            <label htmlFor="isRecurring" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: '#CBD5E1', fontSize: '14px' }}>
+            <label htmlFor="isRecurring" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '14px' }}>
               Reunião recorrente
             </label>
           </div>
 
           {isRecurring && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem', border: '1px solid rgba(148,163,184,0.15)', borderRadius: '12px', background: '#11131F' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem', border: '1px solid var(--border-color)', borderRadius: '12px', background: 'var(--bg-elevated)' }}>
               <div className="form-group">
                 <label className="form-label" style={labelStyle}>Repetir nos dias da semana *</label>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
@@ -370,9 +370,9 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                           width: '32px',
                           height: '32px',
                           borderRadius: '50%',
-                          border: '1px solid ' + (isSelected ? '#6366F1' : 'rgba(148,163,184,0.22)'),
-                          background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-                          color: isSelected ? '#a5b4fc' : '#94a3b8',
+                          border: '1px solid ' + (isSelected ? 'var(--accent-color)' : 'var(--border-color)'),
+                          background: isSelected ? 'var(--accent-glow)' : 'transparent',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--text-muted)',
                           fontWeight: '600',
                           cursor: 'pointer',
                           display: 'flex',
@@ -393,7 +393,7 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
               <div className="form-group">
                 <label className="form-label" style={labelStyle}>Término da recorrência</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: '#94a3b8' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     <input
                       type="radio"
                       name="recurrenceEndOption"
@@ -405,7 +405,7 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                     />
                     Sem data para terminar
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: '#94a3b8' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     <input
                       type="radio"
                       name="recurrenceEndOption"
@@ -452,8 +452,8 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                 height: '48px',
                 borderRadius: '10px',
                 backgroundColor: 'transparent',
-                border: '1px solid rgba(148,163,184,0.28)',
-                color: '#E2E8F0',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
                 padding: '0 24px',
                 fontWeight: '600',
                 fontSize: '0.9rem',

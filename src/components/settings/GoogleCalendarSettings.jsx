@@ -32,9 +32,9 @@ export default function GoogleCalendarSettings({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
       {!hasActiveGoogleIntegration ? (
         <div className="settings-section-card" style={{
-          backgroundColor: '#0B0C16',
-          border: '1px solid rgba(124, 92, 255, 0.28)',
-          boxShadow: '0 0 24px rgba(124, 92, 255, 0.06)',
+          backgroundColor: 'var(--bg-panel)',
+          border: '1px solid var(--border-accent)',
+          boxShadow: 'var(--shadow-card)',
           borderRadius: '18px',
           padding: '28px',
           boxSizing: 'border-box',
@@ -45,12 +45,12 @@ export default function GoogleCalendarSettings({
           maxWidth: '100%'
         }}>
           <div>
-            <h3 className="settings-section-title" style={{ fontSize: '20px', fontWeight: '700', color: '#F8FAFC', margin: '0 0 8px 0', letterSpacing: 'normal', textTransform: 'none' }}>Integração Google Agenda</h3>
-            <p className="settings-section-subtitle" style={{ fontSize: '14px', color: '#94A3B8', margin: 0 }}>Vincule sua conta Google para sincronizar e gerenciar as apresentações comerciais diretamente na sua agenda.</p>
+            <h3 className="settings-section-title" style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 8px 0', letterSpacing: 'normal', textTransform: 'none' }}>Integração Google Agenda</h3>
+            <p className="settings-section-subtitle" style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>Vincule sua conta Google para sincronizar e gerenciar as apresentações comerciais diretamente na sua agenda.</p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-            <p style={{ fontSize: '0.95rem', color: '#94A3B8', margin: 0 }}>Sua conta Google está desconectada no momento.</p>
+            <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', margin: 0 }}>Sua conta Google está desconectada no momento.</p>
             <button
               type="button"
               onClick={handleConnectGoogle}
@@ -83,9 +83,9 @@ export default function GoogleCalendarSettings({
         <>
           {/* Card Conta Google */}
           <div className="settings-section-card" style={{
-            backgroundColor: '#0B0C16',
-            border: '1px solid rgba(124, 92, 255, 0.22)',
-            boxShadow: '0 0 24px rgba(124, 92, 255, 0.06)',
+            backgroundColor: 'var(--bg-panel)',
+            border: '1px solid var(--border-accent)',
+            boxShadow: 'var(--shadow-card)',
             borderRadius: '18px',
             padding: '28px',
             boxSizing: 'border-box',
@@ -114,7 +114,7 @@ export default function GoogleCalendarSettings({
                 </svg>
               </div>
               <div>
-                <h3 className="settings-section-title" style={{ fontSize: '18px', fontWeight: '700', color: '#F8FAFC', margin: '0 0 4px 0', letterSpacing: 'normal', textTransform: 'none' }}>Conta Google</h3>
+                <h3 className="settings-section-title" style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 4px 0', letterSpacing: 'normal', textTransform: 'none' }}>Conta Google</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span style={{
                     backgroundColor: 'rgba(16, 185, 129, 0.15)',
@@ -128,7 +128,7 @@ export default function GoogleCalendarSettings({
                   }}>
                     Conectado
                   </span>
-                  <span style={{ color: '#94A3B8', fontSize: '14px' }}>{googleAccountEmail || 'Carregando...'}</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{googleAccountEmail || 'Carregando...'}</span>
                 </div>
               </div>
             </div>
@@ -141,9 +141,9 @@ export default function GoogleCalendarSettings({
                 style={{
                   height: '42px',
                   borderRadius: '8px',
-                  backgroundColor: '#11131F',
-                  border: '1px solid rgba(148, 163, 184, 0.22)',
-                  color: '#E2E8F0',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)',
                   padding: '0 16px',
                   fontWeight: '600',
                   fontSize: '0.85rem',
@@ -191,9 +191,9 @@ export default function GoogleCalendarSettings({
             const activeCal = googleCalendars.find(cal => cal.id === activeCalendarId);
             return (
               <div className="settings-section-card" style={{
-                backgroundColor: '#0B0C16',
-                border: '1px solid rgba(124, 92, 255, 0.55)',
-                boxShadow: '0 0 24px rgba(124, 92, 255, 0.08)',
+                backgroundColor: 'var(--bg-panel)',
+                border: '1px solid var(--border-accent)',
+                boxShadow: 'var(--shadow-card)',
                 borderRadius: '18px',
                 padding: '28px',
                 boxSizing: 'border-box',
@@ -204,13 +204,13 @@ export default function GoogleCalendarSettings({
                 maxWidth: '100%'
               }}>
                 <div>
-                  <h3 className="settings-section-title" style={{ fontSize: '18px', fontWeight: '700', color: '#F8FAFC', margin: '0 0 4px 0', letterSpacing: 'normal', textTransform: 'none' }}>Agenda selecionada</h3>
-                  <p className="settings-section-subtitle" style={{ fontSize: '14px', color: '#94A3B8', margin: 0 }}>Esta é a agenda sincronizada com o Meety.</p>
+                  <h3 className="settings-section-title" style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 4px 0', letterSpacing: 'normal', textTransform: 'none' }}>Agenda selecionada</h3>
+                  <p className="settings-section-subtitle" style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>Esta é a agenda sincronizada com o Meety.</p>
                 </div>
 
                 <div style={{
-                  backgroundColor: '#11131F',
-                  border: '1px solid rgba(124, 92, 255, 0.22)',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-accent)',
                   borderRadius: '12px',
                   padding: '16px 20px',
                   display: 'flex',
@@ -221,14 +221,14 @@ export default function GoogleCalendarSettings({
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="#A5B4FC" style={{ width: '20px', height: '20px' }}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008z" />
                     </svg>
-                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#F8FAFC' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
                       {activeCal ? getCalName(activeCal) : 'Nenhuma agenda ativa sincronizada'}
                     </span>
                   </div>
                   <span style={{
-                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                    border: '1px solid #6366F1',
-                    color: '#a5b4fc',
+                    backgroundColor: 'var(--accent-glow)',
+                    border: '1px solid var(--accent-color)',
+                    color: 'var(--accent-color)',
                     fontSize: '11px',
                     fontWeight: '700',
                     padding: '2px 8px',
@@ -244,9 +244,9 @@ export default function GoogleCalendarSettings({
 
           {/* Card Outras agendas disponíveis */}
           <div className="settings-section-card" style={{
-            backgroundColor: '#0B0C16',
-            border: '1px solid rgba(124, 92, 255, 0.22)',
-            boxShadow: '0 0 24px rgba(124, 92, 255, 0.06)',
+            backgroundColor: 'var(--bg-panel)',
+            border: '1px solid var(--border-accent)',
+            boxShadow: 'var(--shadow-card)',
             borderRadius: '18px',
             padding: '28px',
             boxSizing: 'border-box',
@@ -257,8 +257,8 @@ export default function GoogleCalendarSettings({
             maxWidth: '100%'
           }}>
             <div>
-              <h3 className="settings-section-title" style={{ fontSize: '18px', fontWeight: '700', color: '#F8FAFC', margin: '0 0 4px 0', letterSpacing: 'normal', textTransform: 'none' }}>Outras agendas disponíveis</h3>
-              <p className="settings-section-subtitle" style={{ fontSize: '14px', color: '#94A3B8', margin: 0 }}>Escolha outra agenda para sincronizar com o Meety.</p>
+              <h3 className="settings-section-title" style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 4px 0', letterSpacing: 'normal', textTransform: 'none' }}>Outras agendas disponíveis</h3>
+              <p className="settings-section-subtitle" style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>Escolha outra agenda para sincronizar com o Meety.</p>
             </div>
 
             {calendarsLoading ? (
@@ -286,8 +286,8 @@ export default function GoogleCalendarSettings({
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '16px 20px',
-                        backgroundColor: '#11131F',
-                        border: isSelected ? '1px solid #6366F1' : '1px solid rgba(255, 255, 255, 0.06)',
+                        backgroundColor: 'var(--bg-elevated)',
+                        border: isSelected ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
                         borderRadius: '12px',
                         opacity: isSelectable ? 1 : 0.5,
                         transition: 'all 0.15s ease'
@@ -298,7 +298,7 @@ export default function GoogleCalendarSettings({
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                         </svg>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '15px', fontWeight: '600', color: '#F8FAFC' }}>
+                          <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
                             {getCalName(cal)}
                           </span>
                           {!isSelectable && (
@@ -335,9 +335,9 @@ export default function GoogleCalendarSettings({
                             style={{
                               height: '36px',
                               borderRadius: '8px',
-                              backgroundColor: isSavingCalendar && selectedCalendar?.id === cal.id ? '#6366F1' : '#1E2030',
+                              backgroundColor: isSavingCalendar && selectedCalendar?.id === cal.id ? 'var(--accent-color)' : 'var(--bg-elevated)',
                               border: 'none',
-                              color: '#ffffff',
+                              color: 'var(--text-primary)',
                               padding: '0 16px',
                               fontWeight: '600',
                               fontSize: '0.85rem',

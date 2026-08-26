@@ -10,7 +10,7 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
         onMouseEnter={() => setHoveredCard(1)}
         onMouseLeave={() => setHoveredCard(null)}
         style={{ 
-          backgroundColor: '#0b0c16', 
+          backgroundColor: 'var(--bg-panel)', 
           border: hoveredCard === 1 ? '1px solid rgba(99, 102, 241, 0.55)' : '1px solid rgba(99, 102, 241, 0.35)', 
           borderRadius: '16px', 
           padding: '18px 20px', 
@@ -33,7 +33,7 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 12V7a3 3 0 00-3-3" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 8.5h14" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 11.5h.01M12 11.5h.01M16 11.5h.01M8 14.5h.01M12 14.5h.01" />
-              <circle cx="17" cy="17" r="4" stroke="#6366f1" strokeWidth={2.2} fill="#0b0c16" />
+              <circle cx="17" cy="17" r="4" stroke="#6366f1" strokeWidth={2.2} fill="var(--bg-panel)" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 15v2h1.5" />
             </svg>
           </div>
@@ -55,7 +55,7 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
         onMouseEnter={() => setHoveredCard(2)}
         onMouseLeave={() => setHoveredCard(null)}
         style={{ 
-          backgroundColor: '#0b0c16', 
+          backgroundColor: 'var(--bg-panel)', 
           border: hoveredCard === 2 ? '1px solid rgba(168, 85, 247, 0.55)' : '1px solid rgba(168, 85, 247, 0.35)', 
           borderRadius: '16px', 
           padding: '18px 20px', 
@@ -75,8 +75,8 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="#a855f7" style={{ width: '20px', height: '20px' }}>
               <circle cx="15.5" cy="9.5" r="2.5" stroke="#a855f7" strokeWidth={2.2} />
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.5 17a4.5 4.5 0 018 0" />
-              <circle cx="8.5" cy="7.5" r="3.2" stroke="#a855f7" strokeWidth={2.2} fill="#0b0c16" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 17a6.5 6.5 0 0111 0" fill="#0b0c16" />
+              <circle cx="8.5" cy="7.5" r="3.2" stroke="#a855f7" strokeWidth={2.2} fill="var(--bg-panel)" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 17a6.5 6.5 0 0111 0" fill="var(--bg-panel)" />
             </svg>
           </div>
           <svg width="72" height="22" style={{ opacity: 0.7 }}>
@@ -97,7 +97,7 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
         onMouseEnter={() => setHoveredCard(3)}
         onMouseLeave={() => setHoveredCard(null)}
         style={{ 
-          backgroundColor: '#0b0c16', 
+          backgroundColor: 'var(--bg-panel)', 
           border: hoveredCard === 3 ? '1px solid rgba(59, 130, 246, 0.55)' : '1px solid rgba(59, 130, 246, 0.35)', 
           borderRadius: '16px', 
           padding: '18px 20px', 
@@ -136,7 +136,7 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
         onMouseEnter={() => setHoveredCard(4)}
         onMouseLeave={() => setHoveredCard(null)}
         style={{ 
-          backgroundColor: '#0b0c16', 
+          backgroundColor: 'var(--bg-panel)', 
           border: hoveredCard === 4 ? '1px solid rgba(251, 191, 36, 0.55)' : '1px solid rgba(251, 191, 36, 0.35)', 
           borderRadius: '16px', 
           padding: '18px 20px', 

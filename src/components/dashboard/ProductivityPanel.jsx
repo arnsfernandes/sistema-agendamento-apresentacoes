@@ -8,31 +8,31 @@ export default function ProductivityPanel({ onNavigate }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{ 
-        backgroundColor: '#0b0c16', 
-        border: hovered ? '1px solid rgba(124, 92, 255, 0.52)' : '1px solid rgba(124, 92, 255, 0.28)', 
+        backgroundColor: 'var(--bg-panel)', 
+        border: hovered ? '1px solid var(--border-accent-strong)' : '1px solid var(--border-accent)', 
         borderRadius: '20px', 
         padding: '24px', 
         display: 'flex', 
         flexDirection: 'column', 
         gap: '1.5rem',
-        boxShadow: hovered ? '0 0 24px rgba(124, 92, 255, 0.1)' : '0 0 20px rgba(124, 92, 255, 0.04)',
+        boxShadow: 'var(--shadow-card)',
         transition: 'border-color 180ms ease, box-shadow 180ms ease',
         boxSizing: 'border-box'
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="#94a3b8" style={{ width: '20px', height: '20px' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.281m5.94 2.28l-2.28 5.941" />
           </svg>
           Produtividade
         </h3>
         <select style={{
-          backgroundColor: '#111322',
-          border: '1px solid rgba(255,255,255,0.06)',
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
           borderRadius: '6px',
           padding: '0.3rem 0.6rem',
-          color: '#94a3b8',
+          color: 'var(--text-secondary)',
           fontSize: '0.8rem',
           fontWeight: '500',
           outline: 'none',
@@ -47,8 +47,8 @@ export default function ProductivityPanel({ onNavigate }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
         {/* Stat 1: Reuniões Realizadas */}
         <div style={{
-          backgroundColor: '#07080F',
-          border: '1px solid rgba(255,255,255,0.03)',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
           borderRadius: '12px',
           padding: '14px',
           display: 'flex',
@@ -71,16 +71,16 @@ export default function ProductivityPanel({ onNavigate }) {
             </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '1.4rem', fontWeight: '700', color: '#F8FAFC', lineHeight: 1.1 }}>12</span>
-            <span style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>Reuniões realizadas</span>
+            <span style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-primary)', lineHeight: 1.1 }}>12</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '3px' }}>Reuniões realizadas</span>
             <span style={{ fontSize: '0.62rem', color: '#10B981', marginTop: '2px', fontWeight: '600' }}>+20% vs. sem. passada ↗</span>
           </div>
         </div>
 
         {/* Stat 2: Participantes Atendidos */}
         <div style={{
-          backgroundColor: '#07080F',
-          border: '1px solid rgba(255,255,255,0.03)',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
           borderRadius: '12px',
           padding: '14px',
           display: 'flex',
@@ -103,16 +103,16 @@ export default function ProductivityPanel({ onNavigate }) {
             </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '1.4rem', fontWeight: '700', color: '#F8FAFC', lineHeight: 1.1 }}>27</span>
-            <span style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>Part. atendidos</span>
+            <span style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-primary)', lineHeight: 1.1 }}>27</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '3px' }}>Part. atendidos</span>
             <span style={{ fontSize: '0.62rem', color: '#10B981', marginTop: '2px', fontWeight: '600' }}>+12% vs. sem. passada ↗</span>
           </div>
         </div>
 
         {/* Stat 3: Clientes Atendidos */}
         <div style={{
-          backgroundColor: '#07080F',
-          border: '1px solid rgba(255,255,255,0.03)',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
           borderRadius: '12px',
           padding: '14px',
           display: 'flex',
@@ -135,16 +135,16 @@ export default function ProductivityPanel({ onNavigate }) {
             </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '1.4rem', fontWeight: '700', color: '#F8FAFC', lineHeight: 1.1 }}>15</span>
-            <span style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>Clientes atendidos</span>
+            <span style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-primary)', lineHeight: 1.1 }}>15</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '3px' }}>Clientes atendidos</span>
             <span style={{ fontSize: '0.62rem', color: '#10B981', marginTop: '2px', fontWeight: '600' }}>+15% vs. sem. passada ↗</span>
           </div>
         </div>
 
         {/* Stat 4: Horas em Reuniões */}
         <div style={{
-          backgroundColor: '#07080F',
-          border: '1px solid rgba(255,255,255,0.03)',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
           borderRadius: '12px',
           padding: '14px',
           display: 'flex',
@@ -167,8 +167,8 @@ export default function ProductivityPanel({ onNavigate }) {
             </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '1.4rem', fontWeight: '700', color: '#F8FAFC', lineHeight: 1.1 }}>18h 30m</span>
-            <span style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>Horas em reuniões</span>
+            <span style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-primary)', lineHeight: 1.1 }}>18h 30m</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '3px' }}>Horas em reuniões</span>
             <span style={{ fontSize: '0.62rem', color: '#10B981', marginTop: '2px', fontWeight: '600' }}>+8% vs. sem. passada ↗</span>
           </div>
         </div>

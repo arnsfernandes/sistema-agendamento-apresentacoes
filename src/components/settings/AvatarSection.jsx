@@ -46,7 +46,7 @@ export default function AvatarSection({
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          border: '2px solid #0B0C16',
+          border: '2px solid var(--bg-panel)',
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
         }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#ffffff" style={{ width: '14px', height: '14px' }}>
@@ -70,9 +70,9 @@ export default function AvatarSection({
           justifyContent: 'center',
           height: '38px',
           borderRadius: '8px',
-          backgroundColor: '#11131F',
-          border: '1px solid rgba(148, 163, 184, 0.22)',
-          color: '#E2E8F0',
+          backgroundColor: 'var(--bg-elevated)',
+          border: '1px solid var(--border-color)',
+          color: 'var(--text-primary)',
           fontSize: '0.85rem',
           fontWeight: '600',
           padding: '0 16px',

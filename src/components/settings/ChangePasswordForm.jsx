@@ -52,7 +52,7 @@ export default function ChangePasswordForm() {
 
   return (
     <>
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.08)', margin: '2rem 0' }} />
+      <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '2rem 0' }} />
 
       {!isChangingPassword ? (
         <div>
@@ -68,9 +68,9 @@ export default function ChangePasswordForm() {
             style={{
               height: '44px',
               borderRadius: '10px',
-              backgroundColor: isSenhaHovered ? '#1e2030' : '#11131F',
-              border: isSenhaHovered ? '1px solid rgba(167, 139, 250, 0.45)' : '1px solid rgba(148, 163, 184, 0.24)',
-              color: '#E2E8F0',
+              backgroundColor: isSenhaHovered ? 'var(--accent-hover)' : 'var(--bg-elevated)',
+              border: isSenhaHovered ? '1px solid var(--border-accent-strong)' : '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
               padding: '0 16px',
               fontWeight: '600',
               fontSize: '0.9rem',
@@ -89,9 +89,9 @@ export default function ChangePasswordForm() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: '#F8FAFC', margin: 0 }}>Alterar Senha</h4>
+          <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>Alterar Senha</h4>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: '#E2E8F0' }}>Nova senha</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>Nova senha</label>
             <input
               type="password"
               value={newPassword}
@@ -102,9 +102,9 @@ export default function ChangePasswordForm() {
                 width: '100%',
                 height: '42px',
                 borderRadius: '8px',
-                backgroundColor: '#11131F',
-                border: '1px solid rgba(148, 163, 184, 0.20)',
-                color: '#F8FAFC',
+                backgroundColor: 'var(--input-bg)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
                 padding: '0 12px',
                 boxSizing: 'border-box',
                 outline: 'none'
@@ -112,7 +112,7 @@ export default function ChangePasswordForm() {
             />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: '#E2E8F0' }}>Confirmar nova senha</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>Confirmar nova senha</label>
             <input
               type="password"
               value={confirmPassword}
@@ -122,9 +122,9 @@ export default function ChangePasswordForm() {
                 width: '100%',
                 height: '42px',
                 borderRadius: '8px',
-                backgroundColor: '#11131F',
-                border: '1px solid rgba(148, 163, 184, 0.20)',
-                color: '#F8FAFC',
+                backgroundColor: 'var(--input-bg)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
                 padding: '0 12px',
                 boxSizing: 'border-box',
                 outline: 'none'
@@ -158,8 +158,8 @@ export default function ChangePasswordForm() {
                 height: '40px',
                 borderRadius: '8px',
                 backgroundColor: 'transparent',
-                border: '1px solid rgba(148, 163, 184, 0.22)',
-                color: '#E2E8F0',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
                 padding: '0 20px',
                 fontWeight: '600',
                 fontSize: '0.85rem',

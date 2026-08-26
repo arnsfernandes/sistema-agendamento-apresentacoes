@@ -33,25 +33,25 @@ export default function GoogleSettings({
 
   return (
     <div className="view-container" style={{
-      backgroundColor: '#07080F',
+      backgroundColor: 'var(--bg-primary)',
       border: 'none',
       padding: '2.5rem',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
       minHeight: '100vh',
-      color: '#ffffff'
+      color: 'var(--text-primary)'
     }}>
       <div className="view-header" style={{ flexShrink: 0, marginBottom: '1.5rem' }}>
         <h1 className="view-title" style={{
-          color: '#F8FAFC',
+          color: 'var(--text-primary)',
           fontSize: '32px',
           fontWeight: '700',
           background: 'none',
           WebkitBackgroundClip: 'unset',
-          WebkitTextFillColor: '#F8FAFC'
+          WebkitTextFillColor: 'var(--text-primary)'
         }}>Configurações</h1>
-        <p className="view-description">Gerencie as preferências da aplicação, incluindo o tema de exibição e os dados da sua conta.</p>
+        <p className="view-description" style={{ color: 'var(--text-secondary)' }}>Gerencie as preferências da aplicação, incluindo o tema de exibição e os dados da sua conta.</p>
       </div>
 
       <div className="settings-subtabs" style={{
