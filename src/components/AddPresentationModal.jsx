@@ -140,6 +140,8 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
     }
   }
 
+  const [focusedInput, setFocusedInput] = useState(null)
+
   const handleOverlayClick = () => {
     if (isSubmitting) return
     handleClose()
@@ -147,17 +149,94 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
 
   if (!isOpen) return null
 
+  // Input common inline style helper
+  const getInputStyle = (inputName, hasError) => ({
+    backgroundColor: '#11131F',
+    border: hasError
+      ? '1px solid #ef4444'
+      : (focusedInput === inputName ? '1px solid #6366F1' : '1px solid rgba(148, 163, 184, 0.22)'),
+    color: '#F8FAFC',
+    height: '52px',
+    borderRadius: '10px',
+    padding: '0 16px',
+    boxSizing: 'border-box',
+    outline: 'none',
+    width: '100%',
+    fontSize: '0.95rem',
+    boxShadow: focusedInput === inputName && !hasError ? '0 0 0 3px rgba(99, 102, 241, 0.10)' : 'none',
+    transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
+  })
+
+  // Label common inline style
+  const labelStyle = {
+    color: '#E2E8F0',
+    fontSize: '14px',
+    fontWeight: '600',
+    marginBottom: '6px',
+    display: 'block'
+  }
+
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">Nova Apresentação Comercial</h3>
+    <div className="modal-overlay" onClick={handleOverlayClick} style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+      boxSizing: 'border-box',
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      zIndex: 1000
+    }}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{
+        width: '100%',
+        maxWidth: '690px',
+        backgroundColor: '#0B0C16',
+        border: '1px solid rgba(124, 92, 255, 0.45)',
+        boxShadow: '0 0 28px rgba(124, 92, 255, 0.10)',
+        borderRadius: '20px',
+        padding: '32px',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.5rem',
+        animation: 'modalScale 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}>
+        <div className="modal-header" style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          paddingBottom: '16px'
+        }}>
+          <h3 className="modal-title" style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            color: '#F8FAFC',
+            textTransform: 'none',
+            letterSpacing: 'normal',
+            margin: 0
+          }}>Nova Apresentação Comercial</h3>
           <button
             className="btn-close"
             onClick={handleClose}
             type="button"
             aria-label="Fechar modal"
             disabled={isSubmitting}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#94A3B8',
+              fontSize: '28px',
+              cursor: 'pointer',
+              padding: '0 4px',
+              lineHeight: 1
+            }}
           >
             &times;
           </button>
@@ -174,7 +253,7 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
           )}
 
           <div className="form-group">
-            <label className="form-label">Título da Apresentação *</label>
+            <label className="form-label" style={labelStyle}>Título da Apresentação *</label>
             <input
               type="text"
               className={`form-input ${errors.title ? 'error' : ''}`}
@@ -186,12 +265,15 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
               }}
               maxLength={80}
               disabled={isSubmitting}
+              style={getInputStyle('title', errors.title)}
+              onFocus={() => setFocusedInput('title')}
+              onBlur={() => setFocusedInput(null)}
             />
             {errors.title && <span className="form-error-msg">{errors.title}</span>}
           </div>
 
           <div className="form-group">
-            <label className="form-label">Data *</label>
+            <label className="form-label" style={labelStyle}>Data *</label>
             <input
               type="date"
               className={`form-input ${errors.date ? 'error' : ''}`}
@@ -201,13 +283,16 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                 setErrors(prev => ({ ...prev, date: null }))
               }}
               disabled={isSubmitting}
+              style={getInputStyle('date', errors.date)}
+              onFocus={() => setFocusedInput('date')}
+              onBlur={() => setFocusedInput(null)}
             />
             {errors.date && <span className="form-error-msg">{errors.date}</span>}
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '20px' }}>
             <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">Horário Inicial *</label>
+              <label className="form-label" style={labelStyle}>Horário Inicial *</label>
               <input
                 type="time"
                 className={`form-input ${errors.startTime ? 'error' : ''}`}
@@ -217,12 +302,15 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                   setErrors(prev => ({ ...prev, startTime: null }))
                 }}
                 disabled={isSubmitting}
+                style={getInputStyle('startTime', errors.startTime)}
+                onFocus={() => setFocusedInput('startTime')}
+                onBlur={() => setFocusedInput(null)}
               />
               {errors.startTime && <span className="form-error-msg">{errors.startTime}</span>}
             </div>
 
             <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">Horário Final *</label>
+              <label className="form-label" style={labelStyle}>Horário Final *</label>
               <input
                 type="time"
                 className={`form-input ${errors.endTime ? 'error' : ''}`}
@@ -232,28 +320,37 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                   setErrors(prev => ({ ...prev, endTime: null }))
                 }}
                 disabled={isSubmitting}
+                style={getInputStyle('endTime', errors.endTime)}
+                onFocus={() => setFocusedInput('endTime')}
+                onBlur={() => setFocusedInput(null)}
               />
               {errors.endTime && <span className="form-error-msg">{errors.endTime}</span>}
             </div>
           </div>
 
-          <div className="recurring-checkbox-container">
+          <div className="recurring-checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input
               type="checkbox"
               id="isRecurring"
               checked={isRecurring}
               onChange={(e) => setIsRecurring(e.target.checked)}
               disabled={isSubmitting}
+              style={{
+                width: '18px',
+                height: '18px',
+                accentColor: '#6366F1',
+                cursor: 'pointer'
+              }}
             />
-            <label htmlFor="isRecurring" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 500 }}>
+            <label htmlFor="isRecurring" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: '#CBD5E1', fontSize: '14px' }}>
               Reunião recorrente
             </label>
           </div>
 
           {isRecurring && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '12px', background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem', border: '1px solid rgba(148,163,184,0.15)', borderRadius: '12px', background: '#11131F' }}>
               <div className="form-group">
-                <label className="form-label">Repetir nos dias da semana *</label>
+                <label className="form-label" style={labelStyle}>Repetir nos dias da semana *</label>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                   {DAYS_OF_WEEK.map(day => {
                     const isSelected = recurringDays.includes(day.value)
@@ -273,9 +370,9 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                           width: '32px',
                           height: '32px',
                           borderRadius: '50%',
-                          border: '1px solid ' + (isSelected ? 'var(--text-accent)' : 'var(--border-color)'),
-                          background: isSelected ? 'var(--accent-glow)' : 'transparent',
-                          color: isSelected ? 'var(--text-accent)' : 'var(--text-secondary)',
+                          border: '1px solid ' + (isSelected ? '#6366F1' : 'rgba(148,163,184,0.22)'),
+                          background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+                          color: isSelected ? '#a5b4fc' : '#94a3b8',
                           fontWeight: '600',
                           cursor: 'pointer',
                           display: 'flex',
@@ -294,9 +391,9 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
               </div>
 
               <div className="form-group">
-                <label className="form-label">Término da recorrência</label>
+                <label className="form-label" style={labelStyle}>Término da recorrência</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: '#94a3b8' }}>
                     <input
                       type="radio"
                       name="recurrenceEndOption"
@@ -304,11 +401,11 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                       checked={recurrenceEndOption === 'never'}
                       onChange={() => setRecurrenceEndOption('never')}
                       disabled={isSubmitting}
-                      style={{ width: 'auto' }}
+                      style={{ width: 'auto', accentColor: '#6366F1' }}
                     />
                     Sem data para terminar
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: '#94a3b8' }}>
                     <input
                       type="radio"
                       name="recurrenceEndOption"
@@ -316,7 +413,7 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                       checked={recurrenceEndOption === 'date'}
                       onChange={() => setRecurrenceEndOption('date')}
                       disabled={isSubmitting}
-                      style={{ width: 'auto' }}
+                      style={{ width: 'auto', accentColor: '#6366F1' }}
                     />
                     Termina em uma data
                   </label>
@@ -325,7 +422,7 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
 
               {recurrenceEndOption === 'date' && (
                 <div className="form-group">
-                  <label className="form-label">Data de Término *</label>
+                  <label className="form-label" style={labelStyle}>Data de Término *</label>
                   <input
                     type="date"
                     className={`form-input ${errors.recurrenceEndDate ? 'error' : ''}`}
@@ -335,6 +432,9 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
                       setErrors(prev => ({ ...prev, recurrenceEndDate: null }))
                     }}
                     disabled={isSubmitting}
+                    style={getInputStyle('recurrenceEndDate', errors.recurrenceEndDate)}
+                    onFocus={() => setFocusedInput('recurrenceEndDate')}
+                    onBlur={() => setFocusedInput(null)}
                   />
                   {errors.recurrenceEndDate && <span className="form-error-msg">{errors.recurrenceEndDate}</span>}
                 </div>
@@ -342,12 +442,24 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
             </div>
           )}
 
-          <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+          <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '1.5rem' }}>
             <button
               type="button"
               className="btn btn-secondary"
               onClick={handleClose}
               disabled={isSubmitting}
+              style={{
+                height: '48px',
+                borderRadius: '10px',
+                backgroundColor: 'transparent',
+                border: '1px solid rgba(148,163,184,0.28)',
+                color: '#E2E8F0',
+                padding: '0 24px',
+                fontWeight: '600',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
             >
               Cancelar
             </button>
@@ -355,6 +467,19 @@ export default function AddPresentationModal({ isOpen, onClose, onCreate, initia
               type="submit"
               className="btn btn-primary"
               disabled={isSubmitting}
+              style={{
+                height: '48px',
+                borderRadius: '10px',
+                background: 'linear-gradient(90deg, #6366F1 0%, #7C3AED 100%)',
+                border: 'none',
+                color: '#ffffff',
+                padding: '0 24px',
+                fontWeight: '600',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: '0 0 16px rgba(124, 58, 237, 0.25)',
+                transition: 'all 0.2s ease'
+              }}
             >
               {isSubmitting ? 'Criando...' : 'Criar Apresentação'}
             </button>

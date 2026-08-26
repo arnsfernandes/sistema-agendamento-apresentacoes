@@ -1,3 +1,5 @@
+import { getStatusDetails } from '../utils/statusHelper'
+
 export default function CalendarGrid({
   handlePrevMonth,
   handleNextMonth,
@@ -42,6 +44,15 @@ export default function CalendarGrid({
             return <div key={day.id} className="calendar-day-cell empty" />
           }
           const isSelected = day.dateKey === selectedDateKey
+
+          const dayMeetings = meetings.filter(m => m.date === day.dateKey)
+          const activeMeetings = dayMeetings.filter(m => m.syncStatus !== 'google_deleted')
+          const deletedMeetings = dayMeetings.filter(m => m.syncStatus === 'google_deleted')
+
+          const mainMeeting = activeMeetings[0] || deletedMeetings[0]
+
+          const status = mainMeeting ? getStatusDetails(mainMeeting) : null
+
           return (
             <div
               key={day.id}
@@ -49,36 +60,64 @@ export default function CalendarGrid({
               onClick={() => {
                 setSelectedDateKey(day.dateKey)
               }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                justifyContent: 'flex-start',
+                padding: '8px',
+                boxSizing: 'border-box'
+              }}
             >
-              {(() => {
-                const dayMeetings = meetings.filter(m => m.date === day.dateKey)
-                const hasRecurringEmpty = dayMeetings.some(m => m.googleRecurringEventId && m.syncStatus !== 'google_deleted' && (!m.participantsList || !m.participantsList.some(p => p.statusAtivo)))
-                return hasRecurringEmpty ? <span className="recurring-indicator-dot" title="Recorrência sem participantes" /> : null
-              })()}
-              <span className="day-number">{day.dayNumber}</span>
-              {(() => {
-                const dayMeetings = meetings.filter(m => m.date === day.dateKey)
-                const activeMeetings = dayMeetings.filter(m =>
-                  m.syncStatus !== 'google_deleted' &&
-                  m.participantsList &&
-                  m.participantsList.some(p => p.statusAtivo)
-                )
-                const hasMeetings = dayMeetings.length > 0
-                const hasParticipants = dayMeetings.some(m => m.participantsList && m.participantsList.some(p => p.statusAtivo))
+              <div className="day-cell-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span className="day-number">{day.dayNumber}</span>
+                {status && (
+                  <span style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: status.color,
+                    display: 'inline-block'
+                  }} />
+                )}
+              </div>
 
-                if (!hasMeetings) return null
+              {mainMeeting && status && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 6px',
+                  borderRadius: '6px',
+                  border: `1px solid ${status.color}47`,
+                  backgroundColor: `${status.color}14`,
+                  color: status.color,
+                  fontSize: '0.7rem',
+                  fontWeight: '600',
+                  marginTop: '8px',
+                  justifyContent: 'center',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden'
+                }}>
+                  <span style={{ fontSize: '0.65rem' }}>{status.icon}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{status.label}</span>
+                </div>
+              )}
 
-                return (
-                  <>
-                    {activeMeetings.length > 0 && (
-                      <span className="meetings-count-badge">
-                        {activeMeetings.length} {activeMeetings.length === 1 ? 'reunião' : 'reuniões'}
-                      </span>
-                    )}
-                    <span className={`meetings-dot-indicator ${hasParticipants ? 'purple-dot' : 'grey-dot'}`} />
-                  </>
-                )
-              })()}
+              {dayMeetings.length > 1 && (
+                <div style={{
+                  fontSize: '0.7rem',
+                  fontWeight: '600',
+                  color: status ? status.color : 'var(--text-secondary)',
+                  marginTop: '4px',
+                  textAlign: 'center',
+                  width: '100%'
+                }}>
+                  +{dayMeetings.length - 1}
+                </div>
+              )}
             </div>
           )
         })}

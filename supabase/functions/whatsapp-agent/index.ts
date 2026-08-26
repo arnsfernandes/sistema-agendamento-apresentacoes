@@ -45,8 +45,65 @@ async function executeTool(
   googleIntegracaoId: number,
   name: string,
   args: any,
-  contextData: any
+  contextData: any,
+  agentConfig?: any
 ) {
+  const capGerenciarReunioes = agentConfig?.cap_gerenciar_reunioes !== false
+  if (!capGerenciarReunioes) {
+    if (
+      name === 'prepare_create_presentation' ||
+      name === 'confirm_create_presentation' ||
+      name === 'prepare_update_presentation' ||
+      name === 'confirm_update_presentation' ||
+      name === 'prepare_delete_presentation' ||
+      name === 'confirm_delete_presentation' ||
+      name === 'prepare_move_and_delete_presentation' ||
+      name === 'confirm_move_and_delete_presentation'
+    ) {
+      return { error: 'A capacidade de gerenciar reuniões comerciais está desabilitada para esta conta.' }
+    }
+  }
+  const capParticipacoes = agentConfig?.cap_participacoes !== false
+  if (!capParticipacoes) {
+    if (
+      name === 'prepare_schedule_participant' ||
+      name === 'confirm_schedule_participant' ||
+      name === 'prepare_reschedule_participant' ||
+      name === 'confirm_reschedule_participant' ||
+      name === 'prepare_cancel_participant' ||
+      name === 'confirm_cancel_participant' ||
+      name === 'prepare_reactivate_participant' ||
+      name === 'confirm_reactivate_participant' ||
+      name === 'prepare_update_participant_link_status' ||
+      name === 'confirm_update_participant_link_status' ||
+      name === 'prepare_update_participation_observation' ||
+      name === 'confirm_update_participation_observation'
+    ) {
+      return { error: 'A capacidade de gerenciar participações está desabilitada para esta conta.' }
+    }
+  }
+  const capClientes = agentConfig?.cap_clientes !== false
+  if (!capClientes) {
+    if (
+      name === 'prepare_create_client' ||
+      name === 'confirm_create_client' ||
+      name === 'prepare_update_client' ||
+      name === 'confirm_update_client' ||
+      name === 'prepare_delete_client' ||
+      name === 'confirm_delete_client'
+    ) {
+      return { error: 'A capacidade de gerenciar clientes está desabilitada para esta conta.' }
+    }
+  }
+  const capLembretesPessoais = agentConfig?.cap_lembretes_pessoais !== false
+  if (!capLembretesPessoais) {
+    if (
+      name === 'prepare_create_personal_reminder' ||
+      name === 'confirm_create_personal_reminder'
+    ) {
+      return { error: 'A capacidade de criar lembretes pessoais está desabilitada para esta conta.' }
+    }
+  }
   if (
     name === 'list_presentations' ||
     name === 'get_presentation_details' ||
@@ -155,6 +212,27 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
+    // Load Agent Config and check active status
+    const { data: agentConfig, error: configError } = await supabaseAdmin
+      .from('whatsapp_agent_config')
+      .select('ativo, msg_aviso_inativo, model_name, tempo_contexto_minutos, tom_agente, cap_gerenciar_reunioes, cap_participacoes, cap_clientes, cap_lembretes_pessoais')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (configError) {
+      console.error('Erro ao buscar whatsapp_agent_config:', configError)
+    }
+
+    const isAgentActive = agentConfig ? agentConfig.ativo : true
+    if (!isAgentActive) {
+      const warningMessage = agentConfig?.msg_aviso_inativo || 'Olá! Nosso assistente virtual está temporariamente desativado.'
+      return jsonResponse({ responseText: warningMessage })
+    }
+
+    const agentModel = agentConfig?.model_name || 'gpt-4o-mini'
+    const agentContextMinutes = agentConfig?.tempo_contexto_minutos || 30
+    const agentTone = agentConfig?.tom_agente || 'profissional'
+
     // A. Check active Google integration
     const { data: integration, error: integrationError } = await supabaseAdmin
       .from('google_integracao')
@@ -171,8 +249,8 @@ Deno.serve(async (req) => {
 
     const googleIntegracaoId = integration.id
 
-    // B. Load previous response context (expiration window: 30 minutes)
-    const limitTime = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+    // B. Load previous response context (expiration window: dynamic based on config)
+    const limitTime = new Date(Date.now() - agentContextMinutes * 60 * 1000).toISOString()
     const { data: contextData } = await supabaseAdmin
       .from('whatsapp_agent_context')
       .select('previous_response_id, pending_action, updated_at')
@@ -319,11 +397,11 @@ Deno.serve(async (req) => {
 
     const todayDateDetails = getSaoPauloTodayDetails()
 
-    const instructions = getAgentInstructions(todayDateDetails, contextStr, pendingActionDetails)
+    const instructions = getAgentInstructions(todayDateDetails, contextStr, pendingActionDetails, agentTone)
 
     // D. Setup Responses payload
     const payload: Record<string, any> = {
-      model: 'gpt-4o-mini',
+      model: agentModel,
       input: text,
       instructions,
       tools
@@ -377,7 +455,7 @@ Deno.serve(async (req) => {
             result = await executeTool(supabaseAdmin, userId, googleIntegracaoId, name, args, {
               previous_response_id: responseData.id,
               pending_action: pendingAction
-            })
+            }, agentConfig)
           } catch (err: any) {
             console.error(`Erro ao executar tool ${name}:`, err)
             result = { error: `Erro ao processar dados: ${err.message}` }
@@ -392,7 +470,7 @@ Deno.serve(async (req) => {
 
         // Submit tool outputs to continue the conversation
         const submitPayload: Record<string, any> = {
-          model: 'gpt-4o-mini',
+          model: agentModel,
           previous_response_id: responseData.id,
           input: toolOutputs,
           instructions,

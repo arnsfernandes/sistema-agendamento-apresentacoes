@@ -9,7 +9,7 @@ const handleFunctionError = async (err, defaultMessage) => {
       if (body && body.error) {
         errorMsg = body.error
       }
-    } catch (_) {}
+    } catch {}
   } else if (err && err.message) {
     errorMsg = err.message
   }

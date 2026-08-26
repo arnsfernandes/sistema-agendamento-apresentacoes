@@ -1,30 +1,12 @@
-import meetyLogo from '../assets/meety-logo.png'
-import iconCalendario from '../assets/icon-calendario.png'
-import iconClientes from '../assets/icon-clientes.png'
-import iconConfig from '../assets/icon-config.png'
-import iconCriarApresentacao from '../assets/icon-criar-apresentacao.png'
-import iconResumo from '../assets/icon-resumo.png'
-import iconSair from '../assets/icon-sair.png'
+import { useState } from 'react'
 
-const navigationItems = [
+const navigationPrincipal = [
   {
-    id: 'calendario',
-    label: 'Calendário',
+    id: 'agenda',
+    label: 'Início',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <foreignObject width="24" height="24">
-          <div style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'currentColor',
-            WebkitMaskImage: `url(${iconCalendario})`,
-            maskImage: `url(${iconCalendario})`,
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat'
-          }} />
-        </foreignObject>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
       </svg>
     )
   },
@@ -32,46 +14,30 @@ const navigationItems = [
     id: 'clientes',
     label: 'Clientes',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <foreignObject width="24" height="24">
-          <div style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'currentColor',
-            WebkitMaskImage: `url(${iconClientes})`,
-            maskImage: `url(${iconClientes})`,
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat'
-          }} />
-        </foreignObject>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+      </svg>
+    )
+  },
+  {
+    id: 'calendario',
+    label: 'Calendário',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
       </svg>
     )
   },
   {
     id: 'configuracoes',
-    label: 'Configurações',
+    label: 'Ajustes',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <foreignObject width="24" height="24">
-          <div style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'currentColor',
-            WebkitMaskImage: `url(${iconConfig})`,
-            maskImage: `url(${iconConfig})`,
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat'
-          }} />
-        </foreignObject>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
       </svg>
     )
   }
 ]
-
 export default function Sidebar({
   activeTab,
   setActiveTab,
@@ -79,176 +45,272 @@ export default function Sidebar({
   setShowMeetLink,
   setMeetCopied,
   resetMessageStates,
-  openPresentationModal,
-  meetings,
-  setShowPendingList,
   handleLogout,
-  user
+  user,
+  collapsed,
+  setCollapsed
 }) {
+  const userName = user?.user_metadata?.name || 'Arnaldo Fernandes'
+  const [btnHovered, setBtnHovered] = useState(false)
+
+  // Custom Initials for Avatar Icon
+  const getInitials = (name) => {
+    return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+  }
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <img src={meetyLogo} alt="Meety Logo" className="sidebar-logo" />
+    <aside className="sidebar" style={{
+      width: collapsed ? '84px' : '260px',
+      backgroundColor: '#0b0c16',
+      borderRight: '1px solid rgba(255,255,255,0.04)',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: collapsed ? '28px 14px 1.75rem 14px' : '28px 28px 1.75rem 28px',
+      boxSizing: 'border-box',
+      height: '100vh',
+      flexShrink: 0,
+      transition: 'width 200ms ease, padding 200ms ease'
+    }}>
+      {/* Brand logo header with collapsing sidebar arrow visual element */}
+      <div className="sidebar-brand" style={{
+        display: 'flex',
+        flexDirection: collapsed ? 'column' : 'row',
+        alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'space-between',
+        marginBottom: '36px',
+        gap: collapsed ? '14px' : '0',
+        height: 'auto',
+        padding: '0'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '40px' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+            <path d="M4 5V19L10 12L14 16L20 5V19" stroke="url(#logoGrad)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#6366f1" />
+                <stop offset="100%" stopColor="#a855f7" />
+              </linearGradient>
+            </defs>
+          </svg>
+          {!collapsed && <span style={{ color: '#F8FAFC', fontWeight: 700, fontSize: '24px', fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>Meety</span>}
+        </div>
+        {/* Toggle Collapse Chevron from mockup */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#94A3B8',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            padding: 0,
+            transform: collapsed ? 'rotate(180deg)' : 'none',
+            transition: 'transform 200ms ease'
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
       </div>
 
-      {(() => {
-        const name = user?.user_metadata?.name
-        return (
-          <div className="sidebar-greeting" style={{ padding: '0.25rem 1.5rem 0.25rem 1.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-              Olá{name ? `, ${name}` : ''}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-              Gerencie todas as suas reuniões aqui.
-            </div>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '2rem', flexGrow: 1, overflowY: 'auto' }}>
+        <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {navigationPrincipal.map((item) => {
+              const isActive = activeTab === item.id;
+              const isAgendaActive = isActive && item.id === 'agenda';
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`menu-item ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(item.id)
+                    setSelectedMeetingId(null)
+                    setShowMeetLink(false)
+                    setMeetCopied(false)
+                    resetMessageStates()
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    gap: collapsed ? '0' : '0.75rem',
+                    padding: collapsed ? '0' : '0 16px',
+                    height: '46px',
+                    border: 'none',
+                    borderRadius: '10px',
+                    backgroundColor: isAgendaActive
+                      ? 'rgba(79, 70, 229, 0.22)'
+                      : (isActive ? 'rgba(79, 70, 230, 0.15)' : 'transparent'),
+                    color: isAgendaActive ? '#F8FAFC' : (isActive ? '#ffffff' : '#94a3b8'),
+                    fontSize: '0.9rem',
+                    fontWeight: isAgendaActive ? '600' : '500',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    position: 'relative',
+                    transition: 'background-color 0.2s, color 0.2s'
+                  }}
+                >
+                  {isAgendaActive && (
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: '6px',
+                      bottom: '6px',
+                      width: '3px',
+                      backgroundColor: '#a855f7',
+                      borderRadius: '1.5px'
+                    }} />
+                  )}
+                  <span className="menu-icon" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '20px',
+                    height: '20px',
+                    color: isAgendaActive ? '#A5B4FC' : (isActive ? '#818cf8' : '#94a3b8'),
+                    flexShrink: 0
+                  }}>{item.icon}</span>
+                  {!collapsed && <span className="menu-label">{item.label}</span>}
+                </button>
+              )
+            })}
           </div>
-        )
-      })()}
-
-      <nav className="sidebar-menu">
-        {/* Calendário */}
-        {navigationItems.slice(0, 1).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab(item.id)
-              setSelectedMeetingId(null)
-              setShowMeetLink(false)
-              setMeetCopied(false)
-              resetMessageStates()
-            }}
-          >
-            <span className="menu-icon">{item.icon}</span>
-            <span className="menu-label">{item.label}</span>
-          </button>
-        ))}
-
-        {/* Botões de Ação Exclusivos do Desktop no Meio do Menu */}
-        <div className="desktop-only" style={{ flexDirection: 'column', gap: '0.5rem' }}>
-          <button
-            type="button"
-            className="menu-item"
-            onClick={() => openPresentationModal()}
-          >
-            <span className="menu-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <foreignObject width="24" height="24">
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'currentColor',
-                    WebkitMaskImage: `url(${iconCriarApresentacao})`,
-                    maskImage: `url(${iconCriarApresentacao})`,
-                    WebkitMaskSize: 'contain',
-                    maskSize: 'contain',
-                    WebkitMaskRepeat: 'no-repeat',
-                    maskRepeat: 'no-repeat'
-                  }} />
-                </foreignObject>
-              </svg>
-            </span>
-            <span className="menu-label">Criar apresentação</span>
-          </button>
-          <button
-            type="button"
-            className={`menu-item ${activeTab === 'resumo' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('resumo')
-              setSelectedMeetingId(null)
-              setShowMeetLink(false)
-              setMeetCopied(false)
-              resetMessageStates()
-            }}
-          >
-            <span className="menu-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <foreignObject width="24" height="24">
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'currentColor',
-                    WebkitMaskImage: `url(${iconResumo})`,
-                    maskImage: `url(${iconResumo})`,
-                    WebkitMaskSize: 'contain',
-                    maskSize: 'contain',
-                    WebkitMaskRepeat: 'no-repeat',
-                    maskRepeat: 'no-repeat'
-                  }} />
-                </foreignObject>
-              </svg>
-            </span>
-            <span className="menu-label">Resumo da semana</span>
-          </button>
         </div>
 
-        {/* Clientes e Configurações */}
-        {navigationItems.slice(1).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab(item.id)
-              setSelectedMeetingId(null)
-              setShowMeetLink(false)
-              setMeetCopied(false)
-              resetMessageStates()
-            }}
-          >
-            <span className="menu-icon">{item.icon}</span>
-            <span className="menu-label">{item.label}</span>
-          </button>
-        ))}
-
-        {(() => {
-          const pendingCount = meetings.filter(m => m.syncStatus === 'pending').length
-          if (pendingCount === 0) return null
-          return (
+        {/* IA Agent widget banner */}
+        {!collapsed && (
+          <div style={{
+            marginTop: 'auto',
+            backgroundColor: '#111322',
+            border: '1px solid rgba(124, 92, 255, 0.28)',
+            boxShadow: '0 0 16px rgba(124, 92, 255, 0.04)',
+            borderRadius: '12px',
+            padding: '1.1rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            position: 'relative'
+          }}>
+            {/* WhatsApp/Chat icon decor */}
+            <div style={{
+              position: 'absolute',
+              top: '-12px',
+              left: '12px',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.28)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#10b981" style={{ width: '12px', height: '12px' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <div style={{ marginTop: '0.2rem' }}>
+              <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: '#ffffff' }}>Agente de IA</h4>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.72rem', color: '#94a3b8', lineHeight: '1.3' }}>Seu assistente no WhatsApp para reuniões, clientes e agendamentos.</p>
+            </div>
             <button
-              type="button"
-              className="menu-item pending-menu-item"
-              onClick={() => setShowPendingList(true)}
+              onMouseEnter={() => setBtnHovered(true)}
+              onMouseLeave={() => setBtnHovered(false)}
+              style={{
+                width: '100%',
+                padding: '0.5rem 0',
+                borderRadius: '6px',
+                backgroundColor: btnHovered ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid #10b981',
+                boxShadow: btnHovered ? '0 0 12px rgba(16, 185, 129, 0.3)' : '0 0 8px rgba(16, 185, 129, 0.15)',
+                color: '#10b981',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
             >
-              <span className="menu-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                </svg>
-              </span>
-              <span className="menu-label">
-                {pendingCount === 1 ? '1 ação necessária' : `${pendingCount} ações necessárias`}
-              </span>
+              Abrir conversa
             </button>
-          )
-        })()}
-        
-        <button
-          type="button"
-          className="menu-item logout-menu-item"
-          onClick={handleLogout}
-          style={{ marginTop: 'auto' }}
-        >
-          <span className="menu-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <foreignObject width="24" height="24">
-                <div style={{
-                  width: '100%',
-                  height: '100%',
-                  backgroundColor: 'currentColor',
-                  WebkitMaskImage: `url(${iconSair})`,
-                  maskImage: `url(${iconSair})`,
-                  WebkitMaskSize: 'contain',
-                  maskSize: 'contain',
-                  WebkitMaskRepeat: 'no-repeat',
-                  maskRepeat: 'no-repeat'
-                }} />
-              </foreignObject>
-            </svg>
-          </span>
-          <span className="menu-label">Sair</span>
-        </button>
+          </div>
+        )}
       </nav>
+
+      {/* Bottom Profile block */}
+      <div style={{
+        marginTop: collapsed ? 'auto' : '1.25rem',
+        paddingTop: '1.25rem',
+        borderTop: '1px solid rgba(255,255,255,0.04)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem'
+      }}>
+        {/* User Info (informative only, no click) */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: collapsed ? '0' : '0.75rem',
+          justifyContent: collapsed ? 'center' : 'flex-start'
+        }}>
+          <div style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            backgroundColor: '#4f46e6',
+            color: '#ffffff',
+            fontSize: '0.85rem',
+            fontWeight: '700',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            {getInitials(userName)}
+          </div>
+          {!collapsed && (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: '600', color: '#ffffff' }}>{userName}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Sair action separated by divider */}
+        {!collapsed && <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', margin: '0.2rem 0' }} />}
+
+        <div style={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-start' }}>
+          <button
+            onClick={handleLogout}
+            className="sidebar-logout-btn"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ef4444cc',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              padding: '0.4rem 0.6rem',
+              borderRadius: '6px',
+              width: collapsed ? '38px' : '100%',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              transition: 'all 150ms ease'
+            }}
+            title="Sair da conta"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+            </svg>
+            {!collapsed && <span>Sair</span>}
+          </button>
+        </div>
+      </div>
     </aside>
   )
 }

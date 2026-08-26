@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 
 export default function AddParticipantModal({ isOpen, selectedMeeting, editingParticipant, onClose, onAdd, onFindClient }) {
-  if (!isOpen || !selectedMeeting) return null
-
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [agencia, setAgencia] = useState('')
@@ -13,24 +11,23 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
   const [submitError, setSubmitError] = useState(null)
 
   useEffect(() => {
-    if (isOpen) {
-      if (editingParticipant) {
-        setNome(editingParticipant.nome)
-        setTelefone(editingParticipant.telefone)
-        setAgencia(editingParticipant.agencia || '')
-        setObservacao(editingParticipant.observacao || '')
-      } else {
-        setNome('')
-        setTelefone('')
-        setAgencia('')
-        setObservacao('')
-      }
-      setErrors({})
-      setFoundClient(null)
-      setIsSubmitting(false)
-      setSubmitError(null)
+    if (!isOpen || !selectedMeeting) return
+    if (editingParticipant) {
+      setNome(editingParticipant.nome)
+      setTelefone(editingParticipant.telefone)
+      setAgencia(editingParticipant.agencia || '')
+      setObservacao(editingParticipant.observacao || '')
+    } else {
+      setNome('')
+      setTelefone('')
+      setAgencia('')
+      setObservacao('')
     }
-  }, [editingParticipant, isOpen])
+    setErrors({})
+    setFoundClient(null)
+    setIsSubmitting(false)
+    setSubmitError(null)
+  }, [editingParticipant, isOpen, selectedMeeting])
 
   const handleClose = () => {
     setNome('')
@@ -74,7 +71,7 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
         } else {
           setFoundClient(null)
         }
-      } catch (err) {
+      } catch {
         setFoundClient(null)
       }
     } else {
@@ -135,6 +132,8 @@ export default function AddParticipantModal({ isOpen, selectedMeeting, editingPa
       setIsSubmitting(false)
     }
   }
+
+  if (!isOpen || !selectedMeeting) return null
 
   return (
     <div className="sub-modal-overlay" onClick={handleClose}>
