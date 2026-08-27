@@ -116,6 +116,7 @@ export default function AccountSettings({ user }) {
 
       setSuccessMsg('Dados atualizados com sucesso!')
       setIsEditing(false)
+      window.dispatchEvent(new Event('whatsapp_number_updated'))
     } catch (err) {
       setErrorMsg(err?.message || 'Erro ao atualizar os dados.')
     } finally {

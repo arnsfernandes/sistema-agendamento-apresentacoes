@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../services/supabaseClient'
 
 const navigationPrincipal = [
   {
@@ -52,6 +53,68 @@ export default function Sidebar({
 }) {
   const userName = user?.user_metadata?.name || 'Arnaldo Fernandes'
   const [btnHovered, setBtnHovered] = useState(false)
+  const [chatLoading, setChatLoading] = useState(false)
+  const [hasPhone, setHasPhone] = useState(false)
+  const [phoneLoading, setPhoneLoading] = useState(true)
+
+  const checkPhone = useCallback(async () => {
+    if (!user) return
+    try {
+      const { data } = await supabase
+        .from('usuario_whatsapp')
+        .select('whatsapp_number')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (data && data.whatsapp_number) {
+        setHasPhone(true)
+      } else {
+        setHasPhone(false)
+      }
+    } catch (err) {
+      console.error('Erro ao verificar telefone:', err)
+    } finally {
+      setPhoneLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    checkPhone()
+  }, [activeTab, checkPhone])
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      checkPhone()
+    }
+    window.addEventListener('whatsapp_number_updated', handleUpdate)
+    return () => window.removeEventListener('whatsapp_number_updated', handleUpdate)
+  }, [checkPhone])
+
+  const handleOpenAgentChat = async () => {
+    setChatLoading(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-master-info')
+      if (error) throw error
+      if (data && data.whatsapp_number) {
+        const cleanedNumber = data.whatsapp_number.replace(/\D/g, '')
+        if (!cleanedNumber) {
+          window.alert('Número do Agente de IA está em formato inválido ou vazio.')
+          return
+        }
+        const message = encodeURIComponent('Olá')
+        const url = `https://wa.me/${cleanedNumber}?text=${message}`
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer')
+        if (newWindow) newWindow.opener = null
+      } else {
+        window.alert('Não foi possível obter o número de WhatsApp do Agente de IA.')
+      }
+    } catch (err) {
+      console.error('Erro ao buscar o número master do WhatsApp:', err)
+      window.alert('Serviço indisponível temporariamente. Não foi possível conectar ao Agente de IA.')
+    } finally {
+      setChatLoading(false)
+    }
+  }
 
   // Custom Initials for Avatar Icon
   const getInitials = (name) => {
@@ -216,26 +279,30 @@ export default function Sidebar({
             </div>
             <div style={{ marginTop: '0.2rem' }}>
               <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-primary)' }}>Agente de IA</h4>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>Seu assistente no WhatsApp para reuniões, clientes e agendamentos.</p>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
+                {phoneLoading ? 'Verificando cadastro...' : (hasPhone ? 'Seu assistente no WhatsApp para reuniões, clientes e agendamentos.' : 'Cadastre seu WhatsApp para usar o Agente de IA.')}
+              </p>
             </div>
             <button
+              onClick={hasPhone ? handleOpenAgentChat : () => setActiveTab('configuracoes')}
+              disabled={chatLoading || phoneLoading}
               onMouseEnter={() => setBtnHovered(true)}
               onMouseLeave={() => setBtnHovered(false)}
               style={{
                 width: '100%',
                 padding: '0.5rem 0',
                 borderRadius: '6px',
-                backgroundColor: btnHovered ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)',
-                border: '1px solid #10b981',
-                boxShadow: btnHovered ? '0 0 12px rgba(16, 185, 129, 0.3)' : '0 0 8px rgba(16, 185, 129, 0.15)',
-                color: '#10b981',
+                backgroundColor: (chatLoading || phoneLoading) ? 'var(--bg-elevated)' : (btnHovered ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)'),
+                border: (chatLoading || phoneLoading) ? '1px solid var(--border-color)' : '1px solid #10b981',
+                boxShadow: (chatLoading || phoneLoading) ? 'none' : (btnHovered ? '0 0 12px rgba(16, 185, 129, 0.3)' : '0 0 8px rgba(16, 185, 129, 0.15)'),
+                color: (chatLoading || phoneLoading) ? 'var(--text-muted)' : '#10b981',
                 fontSize: '0.75rem',
                 fontWeight: '600',
-                cursor: 'pointer',
+                cursor: (chatLoading || phoneLoading) ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease'
               }}
             >
-              Abrir conversa
+              {chatLoading ? 'Carregando...' : (hasPhone ? 'Abrir conversa' : 'Configurar WhatsApp')}
             </button>
           </div>
         )}
