@@ -1,4 +1,4 @@
-import { backendCreateClient, BusinessRuleError } from '../../_shared/scheduling.ts'
+import { createClient as backendCreateClient, BusinessRuleError } from '../../_shared/scheduling.ts'
 import { TIME_ZONE } from '../../_shared/dateUtils.ts'
 
 export async function handleClientTool(

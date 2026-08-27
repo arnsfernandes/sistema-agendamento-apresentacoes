@@ -80,19 +80,20 @@ Deno.serve(async (req) => {
     }
 
     const activeIntegration = activeIntegrationList?.[0] || null
-    if (!activeIntegration) {
-      return Response.json(
-        { error: 'Nenhuma integração WhatsApp ativa encontrada.' },
-        { status: 404, headers: corsHeaders }
-      )
-    }
-
-    const { server_url, token } = activeIntegration
+    
+    // Fallback to Deno env variables if activeIntegration is not set
+    const server_url = activeIntegration?.server_url || 
+                       Deno.env.get('WHATSAPP_SERVER_URL') || 
+                       Deno.env.get('GATEWAY_URL') || '';
+    const token = activeIntegration?.token || 
+                  Deno.env.get('WHATSAPP_TOKEN') || 
+                  Deno.env.get('GATEWAY_API_KEY') || 
+                  Deno.env.get('GATEWAY_SECRET') || '';
 
     if (!server_url || !token) {
       return Response.json(
-        { error: 'Configuração da integração WhatsApp incompleta no servidor.' },
-        { status: 400, headers: corsHeaders }
+        { error: 'Configuração da integração WhatsApp ausente no banco de dados e no ambiente.' },
+        { status: 404, headers: corsHeaders }
       )
     }
 
@@ -142,6 +143,28 @@ Deno.serve(async (req) => {
       }
 
       const statusData = await response.json()
+
+      if (statusData.connected && statusData.number) {
+        if (!activeIntegration || activeIntegration.whatsapp_number !== statusData.number) {
+          const provider = 'baileys'
+
+          const { error: saveError } = await supabaseAdmin.rpc(
+            'salvar_whatsapp_integracao',
+            {
+              p_whatsapp_number: statusData.number,
+              p_instance_name: activeIntegration?.instance_name || statusData.name || 'meety-master',
+              p_server_url: server_url,
+              p_token: token,
+              p_provider: provider
+            }
+          )
+          if (saveError) {
+            console.error('Erro ao sincronizar número no banco:', saveError.message || saveError)
+          } else {
+            console.log('Número master sincronizado no banco de dados:', statusData.number)
+          }
+        }
+      }
 
       return Response.json(
         {

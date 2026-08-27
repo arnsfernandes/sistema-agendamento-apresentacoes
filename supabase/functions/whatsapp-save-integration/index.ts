@@ -87,7 +87,8 @@ Deno.serve(async (req) => {
         p_whatsapp_number: whatsapp_number,
         p_instance_name: instance_name,
         p_server_url: server_url,
-        p_token: token // Passed securely, never logged
+        p_token: token, // Passed securely, never logged
+        p_provider: 'baileys'
       }
     )
 
