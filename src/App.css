@@ -1958,18 +1958,27 @@ body {
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  color: #FFFFFF;
+  color: var(--text-primary);
   font-family: 'Outfit', sans-serif;
   box-sizing: border-box;
 
-  background-color: #070B14;
+  background-color: var(--bg-primary);
   background-image:
-    radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.15) 0%, transparent 40%),
-    radial-gradient(circle at 5% 95%, rgba(6, 182, 212, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 90% 50%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
-    linear-gradient(rgba(34, 211, 238, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.015) 1px, transparent 1px);
+    radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 5% 95%, rgba(6, 182, 212, 0.14) 0%, transparent 45%),
+    radial-gradient(circle at 90% 50%, rgba(99, 102, 241, 0.09) 0%, transparent 50%),
+    linear-gradient(rgba(34, 211, 238, 0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.01) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 100% 100%, 45px 45px, 45px 45px;
+}
+
+[data-theme='light'] .auth-screen-layout {
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 5% 95%, rgba(6, 182, 212, 0.05) 0%, transparent 45%),
+    radial-gradient(circle at 90% 50%, rgba(168, 85, 247, 0.04) 0%, transparent 50%),
+    linear-gradient(rgba(99, 102, 241, 0.005) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.005) 1px, transparent 1px);
 }
 
 .auth-screen-layout::before {
@@ -1985,12 +1994,16 @@ body {
   z-index: 0;
 }
 
+[data-theme='light'] .auth-screen-layout::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cpath d='M-100,200 Q200,-50 350,150 T800,250' fill='none' stroke='rgba(99, 102, 241, 0.03)' stroke-width='1'/%3E%3Cpath d='M-50,400 Q300,100 450,500 T1000,300' fill='none' stroke='rgba(168, 85, 247, 0.015)' stroke-width='1'/%3E%3Ccircle cx='100' cy='250' r='1.5' fill='rgba(99, 102, 241, 0.2)'/%3E%3Ccircle cx='400' cy='150' r='1' fill='rgba(168, 85, 247, 0.15)'/%3E%3Ccircle cx='300' cy='600' r='2' fill='rgba(99, 102, 241, 0.2)'/%3E%3Ccircle cx='800' cy='450' r='1.5' fill='rgba(99, 102, 241, 0.2)'/%3E%3Ccircle cx='700' cy='150' r='2' fill='rgba(99, 102, 241, 0.2)'/%3E%3C/svg%3E");
+}
+
 .auth-left-branding {
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 4rem 6rem;
-  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  border-right: 1px solid var(--border-color);
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -2000,7 +2013,7 @@ body {
   font-size: 3rem;
   font-weight: 800;
   line-height: 1.1;
-  color: #F8FAFC;
+  color: var(--text-primary);
   margin: 0 0 1.5rem 0;
   letter-spacing: -0.02em;
 }
@@ -2014,7 +2027,7 @@ body {
 
 .auth-left-subtitle {
   font-size: 1.1rem;
-  color: #94A3B8;
+  color: var(--text-secondary);
   line-height: 1.5;
   margin: 0 0 3rem 0;
   max-width: 460px;
@@ -2051,13 +2064,13 @@ body {
 .auth-benefit-title {
   font-size: 1rem;
   font-weight: 700;
-  color: #F8FAFC;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .auth-benefit-desc {
   font-size: 0.85rem;
-  color: #94A3B8;
+  color: var(--text-muted);
   margin: 0;
   line-height: 1.4;
 }
@@ -2075,9 +2088,9 @@ body {
 .auth-form-card {
   width: 100%;
   max-width: 440px;
-  backgroundColor: #0B0C16;
-  border: 1px solid rgba(124, 92, 255, 0.28);
-  box-shadow: 0 0 32px rgba(124, 92, 255, 0.05);
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-accent);
+  box-shadow: var(--shadow-card);
   border-radius: 20px;
   padding: 40px;
   box-sizing: border-box;
@@ -2096,13 +2109,13 @@ body {
 .auth-form-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #F8FAFC;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .auth-form-subtitle {
   font-size: 0.875rem;
-  color: #94A3B8;
+  color: var(--text-muted);
   margin: 0;
   line-height: 1.4;
 }
@@ -2155,7 +2168,7 @@ body {
 }
 
 .form-input-eye:hover {
-  color: #F8FAFC;
+  color: var(--text-primary);
 }
 
 .form-input-eye svg {
@@ -2167,11 +2180,11 @@ body {
 .auth-form-card .form-input {
   padding-left: 44px !important;
   padding-right: 16px !important;
-  background-color: #07080F !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background-color: var(--input-bg) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 10px !important;
   height: 46px !important;
-  color: #FFFFFF !important;
+  color: var(--text-primary) !important;
   font-size: 0.9rem !important;
   outline: none !important;
   transition: all 0.15s ease !important;
@@ -2180,8 +2193,8 @@ body {
 }
 
 .auth-form-card .form-input:focus {
-  border-color: #7C5CFF !important;
-  box-shadow: 0 0 8px rgba(124, 92, 255, 0.2) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 8px var(--accent-glow) !important;
 }
 
 .auth-form-card .form-input-container:has(.form-input-eye) .form-input {

@@ -97,7 +97,7 @@ export default function AuthView({
               </linearGradient>
             </defs>
           </svg>
-          <span style={{ color: '#F8FAFC', fontWeight: 700, fontSize: '24px', fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>Meety</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '24px', fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>Meety</span>
         </div>
 
         <h1 className="auth-left-title">
@@ -374,7 +374,7 @@ export default function AuthView({
             </button>
 
             {authMode === 'login' && (
-              <p className="login-switch-text" style={{ marginTop: '1.5rem', color: '#94A3B8' }}>
+              <p className="login-switch-text" style={{ marginTop: '1.5rem' }}>
                 Ainda não tem uma conta?{' '}
                 <button
                   type="button"
@@ -392,7 +392,7 @@ export default function AuthView({
             )}
 
             {authMode === 'signup' && (
-              <p className="login-switch-text" style={{ marginTop: '1.5rem', color: '#94A3B8' }}>
+              <p className="login-switch-text" style={{ marginTop: '1.5rem' }}>
                 Já tem uma conta?{' '}
                 <button
                   type="button"
