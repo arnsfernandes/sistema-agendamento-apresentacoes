@@ -20,32 +20,19 @@ export default function DashboardView({
 
   // Data processing (Real Data)
   const todayStr = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD
-  const realTodayMeetings = meetings.filter(m => m.date === todayStr && m.participacoes && m.participacoes.some(p => p.status === 'ativo'))
-  
-  // Mock Data for High-Fidelity display if real data is empty
-  const mockTodayMeetings = [
-    { id: 'mock-1', titulo: 'Reunião de alinhamento', date: todayStr, horario: '09:00:00', duration: '60 min', participacoes: [{ nome: 'Ronaldo' }, { nome: 'Camila' }], syncStatus: 'synced' },
-    { id: 'mock-2', titulo: 'Apresentação comercial', date: todayStr, horario: '11:30:00', duration: '60 min', participacoes: [{ nome: 'Fernanda' }], syncStatus: 'pending' },
-    { id: 'mock-3', titulo: 'Revisão de proposta', date: todayStr, horario: '14:00:00', duration: '60 min', participacoes: [{ nome: 'Gustavo' }, { nome: 'Ana' }], syncStatus: 'synced' },
-    { id: 'mock-4', titulo: 'Follow-up', date: todayStr, horario: '16:30:00', duration: '45 min', participacoes: [{ nome: 'Marcos' }], syncStatus: 'rescheduled' }
-  ]
-
-  const displayTodayMeetings = realTodayMeetings.length > 0 ? realTodayMeetings : mockTodayMeetings
+  const realTodayMeetings = meetings.filter(m => m.date === todayStr && m.syncStatus !== 'google_deleted')
   const totalTodayCount = realTodayMeetings.length
 
-  // Future meetings calculation
-  const futureMeetings = meetings.filter(m => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const mDate = new Date(m.date + 'T00:00:00')
-    return mDate >= today
-  })
-
-  const realAgendadosCount = futureMeetings.reduce((acc, m) => acc + (m.participacoes ? m.participacoes.length : 0), 0)
-  const displayAgendadosCount = realAgendadosCount > 0 ? realAgendadosCount : 9
+  // Calculate active participants for today's meetings
+  const activeParticipantsCount = realTodayMeetings.reduce((acc, m) => {
+    const activeParts = (m.participantsList || []).filter(p => p.statusAtivo)
+    return acc + activeParts.length
+  }, 0)
 
   const realClientsCount = clients.length
-  const displayClientsCount = realClientsCount > 0 ? realClientsCount : 28
+
+  // Future meetings count (meetings from tomorrow onwards)
+  const futureMeetingsCount = meetings.filter(m => m.date > todayStr && m.syncStatus !== 'google_deleted').length
 
   return (
     <div className="dashboard-content" style={{
@@ -171,23 +158,22 @@ export default function DashboardView({
       {/* Info Stats Cards Row */}
       <StatsCards 
         totalTodayCount={totalTodayCount}
-        displayAgendadosCount={displayAgendadosCount}
-        displayClientsCount={displayClientsCount}
+        activeParticipantsCount={activeParticipantsCount}
+        realClientsCount={realClientsCount}
+        futureMeetingsCount={futureMeetingsCount}
       />
 
       {/* Main Sections Grid layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'start' }}>
         {/* Box 1: Agenda de hoje */}
         <TodaySchedulePanel 
-          displayTodayMeetings={displayTodayMeetings}
+          displayTodayMeetings={realTodayMeetings}
           onNavigate={onNavigate}
           setSelectedMeetingId={setSelectedMeetingId}
         />
 
         {/* Box 3: Produtividade */}
-        <ProductivityPanel 
-          onNavigate={onNavigate}
-        />
+        <ProductivityPanel />
       </div>
     </div>
   )

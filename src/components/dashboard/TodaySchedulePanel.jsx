@@ -52,115 +52,102 @@ export default function TodaySchedulePanel({ displayTodayMeetings, onNavigate, s
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        {displayTodayMeetings.map((m, index) => {
-          const partsText = m.participacoes && m.participacoes.length > 0
-            ? m.participacoes.map(p => p.nome).join(', ')
-            : 'Sem participantes'
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', flexGrow: 1, justifyContent: displayTodayMeetings.length === 0 ? 'center' : 'flex-start' }}>
+        {displayTodayMeetings.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 0', gap: '8px', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>Nenhuma reunião agendada para hoje</span>
+          </div>
+        ) : (
+          displayTodayMeetings.map((m, index) => {
+            const partsText = m.participantsList && m.participantsList.length > 0
+              ? m.participantsList.map(p => p.nome).join(', ')
+              : 'Sem participantes'
 
-          const statusDetails = getStatusDetails(m)
-          const pillBg = statusDetails.bg
-          const pillColor = statusDetails.color
-          const pillLabel = statusDetails.label
-          const dotColor = statusDetails.color
+            const statusDetails = getStatusDetails(m)
+            const pillBg = statusDetails.bg
+            const pillColor = statusDetails.color
+            const pillLabel = statusDetails.label
+            const dotColor = statusDetails.color
 
-          const isLast = index === displayTodayMeetings.length - 1;
+            const isLast = index === displayTodayMeetings.length - 1;
 
-          return (
-            <div
-              key={m.id}
-              onClick={() => setSelectedMeetingId && setSelectedMeetingId(m.id)}
-              className="dashboard-meeting-row"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '70px 18px 1fr auto',
-                gap: '12px',
-                alignItems: 'center',
-                paddingBlock: '14px',
-                borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
-                cursor: 'pointer'
-              }}
-            >
-              {/* 1. Horário & Duração */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', lineHeight: 1.2 }}>
-                  {m.horario ? m.horario.slice(0, 5) : '00:00'}
-                </span>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>
-                  {m.duration || '60 min'}
-                </span>
+            return (
+              <div
+                key={m.id}
+                onClick={() => setSelectedMeetingId && setSelectedMeetingId(m.id)}
+                className="dashboard-meeting-row"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '70px 18px 1fr auto',
+                  gap: '12px',
+                  alignItems: 'center',
+                  paddingBlock: '14px',
+                  borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
+                  cursor: 'pointer'
+                }}
+              >
+                {/* 1. Horário & Duração */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                    {m.time ? m.time.slice(0, 5) : '00:00'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    {m.duration || '60 min'}
+                  </span>
+                </div>
+
+                {/* 2. Status Dot/Visual Indicator */}
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }} />
+                </div>
+
+                {/* 3. Main content (Title & Participants) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                  <h4 style={{
+                    margin: 0,
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    color: 'var(--text-primary)',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    lineHeight: 1.3
+                  }}>
+                    {m.title}
+                  </h4>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    {partsText}
+                  </span>
+                </div>
+
+                {/* 4. Status Badge & Menu */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    padding: '0.25rem 0.6rem',
+                    borderRadius: '6px',
+                    backgroundColor: pillBg,
+                    color: pillColor
+                  }}>{pillLabel}</span>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.25rem' }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-
-              {/* 2. Status Dot/Visual Indicator */}
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }} />
-              </div>
-
-              {/* 3. Main content (Title & Participants) */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
-                <h4 style={{
-                  margin: 0,
-                  fontSize: '0.95rem',
-                  fontWeight: '600',
-                  color: 'var(--text-primary)',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  lineHeight: 1.3
-                }}>
-                  {m.titulo}
-                </h4>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  {partsText}
-                </span>
-              </div>
-
-              {/* 4. Status Badge & Menu */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  padding: '0.25rem 0.6rem',
-                  borderRadius: '6px',
-                  backgroundColor: pillBg,
-                  color: pillColor
-                }}>{pillLabel}</span>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.25rem' }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: '16px', height: '16px' }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </div>
-
-      <button
-        onClick={() => onNavigate('calendario')}
-        style={{
-          marginTop: 'auto',
-          background: 'none',
-          border: 'none',
-          color: '#7C5CFF',
-          fontSize: '0.85rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.25rem'
-        }}
-      >
-        Ver agenda completa <span style={{ fontSize: '1.1rem', fontWeight: '500' }}>→</span>
-      </button>
     </div>
   )
 }

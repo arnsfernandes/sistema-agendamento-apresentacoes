@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function StatsCards({ totalTodayCount, displayAgendadosCount, displayClientsCount }) {
+export default function StatsCards({ totalTodayCount, activeParticipantsCount, realClientsCount, futureMeetingsCount }) {
   const [hoveredCard, setHoveredCard] = useState(null)
 
   return (
@@ -45,7 +45,7 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
           <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500' }}>Reuniões hoje</span>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <h2 style={{ margin: 0, fontSize: '30px', fontWeight: '700', lineHeight: 1 }}>{totalTodayCount}</h2>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>2 restantes</span>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>Hoje</span>
           </div>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: 'auto' }}>
           <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500' }}>Participantes agendados</span>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <h2 style={{ margin: 0, fontSize: '30px', fontWeight: '700', lineHeight: 1 }}>{displayAgendadosCount}</h2>
+            <h2 style={{ margin: 0, fontSize: '30px', fontWeight: '700', lineHeight: 1 }}>{activeParticipantsCount}</h2>
             <span style={{ fontSize: '12px', color: '#64748b' }}>Hoje</span>
           </div>
         </div>
@@ -125,8 +125,8 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: 'auto' }}>
           <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500' }}>Clientes ativos</span>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <h2 style={{ margin: 0, fontSize: '30px', fontWeight: '700', lineHeight: 1 }}>{displayClientsCount}</h2>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>Este mês</span>
+            <h2 style={{ margin: 0, fontSize: '30px', fontWeight: '700', lineHeight: 1 }}>{realClientsCount}</h2>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>Cadastrados</span>
           </div>
         </div>
       </div>
@@ -154,7 +154,7 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'rgba(251, 191, 36, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#fbbf24" style={{ width: '18px', height: '18px' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25" />
             </svg>
           </div>
           <svg width="72" height="22" style={{ opacity: 0.7 }}>
@@ -162,10 +162,10 @@ export default function StatsCards({ totalTodayCount, displayAgendadosCount, dis
           </svg>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: 'auto' }}>
-          <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500' }}>Lembretes pendentes</span>
+          <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500' }}>Reuniões futuras</span>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <h2 style={{ margin: 0, fontSize: '30px', fontWeight: '700', lineHeight: 1 }}>2</h2>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>Precisam de atenção</span>
+            <h2 style={{ margin: 0, fontSize: '30px', fontWeight: '700', lineHeight: 1 }}>{futureMeetingsCount}</h2>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>Próximos dias</span>
           </div>
         </div>
       </div>
