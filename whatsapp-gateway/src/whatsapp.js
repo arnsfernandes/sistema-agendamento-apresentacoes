@@ -188,8 +188,9 @@ export async function connectToWhatsApp() {
 
           const agentData = await agentResponse.json();
           if (agentData.responseText) {
-            await sock.sendMessage(jid, { text: agentData.responseText });
-            console.log(`[WhatsApp Agent Sent] Mensagem enviada para ${maskedPhone}: "${agentData.responseText.replace(/\n/g, ' ')}"`);
+            const targetJid = data.whatsapp_number ? `${data.whatsapp_number}@s.whatsapp.net` : jid;
+            await sock.sendMessage(targetJid, { text: agentData.responseText });
+            console.log(`[WhatsApp Agent Sent] Mensagem enviada para ${targetJid}: "${agentData.responseText.replace(/\n/g, ' ')}"`);
           }
         }
 
